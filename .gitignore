@@ -1,0 +1,31 @@
+# Rust
+/target/
+**/target/
+
+# macOS
+.DS_Store
+
+# Android (shells live in android/ later; rules here so they are never missed)
+local.properties
+keystore.properties
+*.keystore
+*.jks
+build/
+.gradle/
+.kotlin/
+# cargo-ndk output — rebuilt from the Rust core on every Android build.
+android/app/src/main/jniLibs/
+
+# Editors
+.idea/
+.vscode/
+
+# Generated bindings output (regenerated from vault-ffi)
+/bindings/
+android/app/src/main/kotlin/uniffi/
+
+# Fixture containers are regenerable (tools/gen-fixtures); manifest is not committed
+# here either — the corpus lives outside git, matrix.json is the committed spec
+/fixtures/
+
+__pycache__/

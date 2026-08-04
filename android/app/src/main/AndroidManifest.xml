@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Near-zero permissions. No INTERNET, no storage — pure SAF (planning doc §8).
+     The absence list is a headline feature; adding any permission is a
+     THREAT_MODEL.md review event.
+
+     USE_BIOMETRIC is the one deliberate exception: it backs the opt-in,
+     off-by-default biometric unlock (BiometricUnlock.kt). It is a "normal"
+     permission (no runtime prompt) and is required by any biometric use. It is
+     declared here explicitly — rather than left to merge silently from the
+     androidx.biometric dependency — so the app's own manifest remains a
+     complete, auditable record of what it can do. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <application
+        android:name=".VaultPonyApp"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:allowBackup="false"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Open-with / share for extensionless containers ("*/*",
+                 the PGPony picker lesson institutionalized, doc §8). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Unlocked volumes appear system-wide in Files (doc §8). -->
+        <provider
+            android:name=".provider.VaultDocumentsProvider"
+            android:authorities="dev.norsehorse.vaultpony.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+    </application>
+</manifest>
