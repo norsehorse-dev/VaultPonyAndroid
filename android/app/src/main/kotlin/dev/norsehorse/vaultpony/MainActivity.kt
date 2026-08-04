@@ -37,15 +37,9 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // FLAG_SECURE default-on for unlock and browser surfaces (doc §8,
-        // the Issue #8 gap). The settings toggle to relax it comes with the
-        // settings screen — until then, always on. Also blanks the recents
-        // thumbnail, which the deniability-adjacent posture wants anyway
-        // (doc §11).
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE,
-        )
+        // FLAG_SECURE (blank screenshots + Recents thumbnail, doc §8/§11) is
+        // default-on but user-configurable in Settings. Re-applied on resume.
+        applySecure()
 
         // Container arriving via open-with / share.
         if (intent?.action == Intent.ACTION_VIEW) {
@@ -59,10 +53,25 @@ class MainActivity : FragmentActivity() {
                     SessionRegistry.expectPicker()
                     openContainer.launch(arrayOf("*/*"))
                 },
+                onContainerConsumed = { pickedContainer.value = null },
             )
         }
     }
-    // Auto-lock is app-wide, not activity-scoped: VaultPonyApp registers a
-    // screen-off receiver that drops every session (doc §8). Nothing to do
-    // per-activity here.
+
+    override fun onResume() {
+        super.onResume()
+        applySecure()
+    }
+
+    private fun applySecure() {
+        if (AppPrefs.secureScreen(this)) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE,
+            )
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+    // Auto-lock is app-wide (VaultPonyApp's ProcessLifecycle observer).
 }

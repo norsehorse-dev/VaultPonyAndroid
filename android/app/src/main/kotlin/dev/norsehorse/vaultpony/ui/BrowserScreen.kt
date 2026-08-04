@@ -4,20 +4,42 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,24 +48,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.VaultRepository
+import dev.norsehorse.vaultpony.ui.components.ChipTone
+import dev.norsehorse.vaultpony.ui.components.MonoChip
+import dev.norsehorse.vaultpony.ui.components.fileIcon
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.vault_ffi.DirEntry
 import uniffi.vault_ffi.VaultSession
 
-/**
- * Read/write browser (doc §7). Folders descend, files open in the viewer.
- * When the volume is writable, the top bar offers New Folder / Import and a
- * long-press gives Rename / Delete. Every mutation flushes and refreshes; no
- * filename ever reaches logs or system UI.
- */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
     val context = LocalContext.current
@@ -57,7 +79,6 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
     var refresh by remember { mutableIntStateOf(0) }
     var viewing by remember { mutableStateOf<DirEntry?>(null) }
 
-    // Dialog state.
     var showNewFolder by remember { mutableStateOf(false) }
     var actionFor by remember { mutableStateOf<DirEntry?>(null) }
     var renaming by remember { mutableStateOf<DirEntry?>(null) }
@@ -117,110 +138,187 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(
-                text = path,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
-            )
-            if (path != "/") {
-                TextButton(onClick = { path = parent(path) }) { Text("Up") }
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            // App bar
+            Row(
+                Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Vault", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                MonoChip(if (writable) "read/write" else "read-only", ChipTone.Accent)
+                TextButton(onClick = onLock) { Text("Lock") }
             }
-            TextButton(onClick = onLock) { Text("Lock") }
-        }
-        if (writable) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                TextButton(onClick = { showNewFolder = true }) { Text("New Folder") }
-                TextButton(onClick = {
-                    SessionRegistry.expectPicker()
-                    importPicker.launch(arrayOf("*/*"))
-                }) { Text("Import") }
-            }
-        }
-        HorizontalDivider()
 
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
-
-        LazyColumn {
-            items(entries, key = { it.name }) { entry ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .combinedClickable(
-                            onClick = {
-                                if (entry.isDir) path = child(path, entry.name) else viewing = entry
-                            },
-                            onLongClick = { if (writable) actionFor = entry },
+            // Breadcrumb
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val crumbs = breadcrumbs(path)
+                crumbs.forEachIndexed { i, (label, full) ->
+                    if (i > 0) {
+                        Icon(
+                            Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
                         )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) {
+                    }
                     Text(
-                        text = if (entry.isDir) "${entry.name}/" else entry.name,
-                        modifier = Modifier.weight(1f),
+                        label,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (i == crumbs.lastIndex) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .clickable { path = full }
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
                     )
-                    if (!entry.isDir) {
-                        Text(
-                            text = humanSize(entry.size),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                }
+            }
+
+            if (writable) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
+                    ActionPill(Icons.Filled.CreateNewFolder, "New folder", accent = true) {
+                        showNewFolder = true
+                    }
+                    Spacer(Modifier.size(8.dp))
+                    ActionPill(Icons.Filled.FileUpload, "Import") {
+                        SessionRegistry.expectPicker()
+                        importPicker.launch(arrayOf("*/*"))
+                    }
+                }
+            }
+            HorizontalDivider(Modifier.padding(top = 6.dp))
+
+            error?.let {
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(entries, key = { it.name }) { entry ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
+                                onClick = {
+                                    if (entry.isDir) path = child(path, entry.name) else viewing = entry
+                                },
+                                onLongClick = { if (writable) actionFor = entry },
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            Modifier
+                                .size(38.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(10.dp),
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                fileIcon(entry.name, entry.isDir),
+                                contentDescription = null,
+                                tint = if (entry.isDir) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Spacer(Modifier.size(12.dp))
+                        Text(entry.name, modifier = Modifier.weight(1f))
+                        if (entry.isDir) {
+                            Icon(
+                                Icons.Filled.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        } else {
+                            MonoChip(humanSize(entry.size))
+                        }
                     }
                 }
             }
         }
     }
 
-    // -- Dialogs ----------------------------------------------------------
+    // -- Bottom sheet: per-entry actions ----------------------------------
+    actionFor?.let { entry ->
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(onDismissRequest = { actionFor = null }, sheetState = sheetState) {
+            Column(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        fileIcon(entry.name, entry.isDir),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Text(entry.name, style = MaterialTheme.typography.titleMedium)
+                }
+                HorizontalDivider()
+                if (!entry.isDir) {
+                    SheetRow(Icons.Filled.Visibility, "Open") {
+                        actionFor = null
+                        viewing = entry
+                    }
+                }
+                SheetRow(Icons.Filled.Edit, "Rename") {
+                    renaming = entry
+                    actionFor = null
+                }
+                SheetRow(Icons.Filled.Delete, "Delete", danger = true) {
+                    deleting = entry
+                    actionFor = null
+                }
+            }
+        }
+    }
 
     if (showNewFolder) {
         NameDialog(
-            title = "New folder",
-            initial = "",
-            confirm = "Create",
+            title = "New folder", initial = "", confirm = "Create",
             onDismiss = { showNewFolder = false },
             onConfirm = { name ->
                 showNewFolder = false
                 scope.launch {
-                    try {
-                        repo.mkdir(session, child(path, name))
-                        refresh++
-                    } catch (e: Exception) {
-                        error = e.message ?: "could not create folder"
-                    }
+                    try { repo.mkdir(session, child(path, name)); refresh++ }
+                    catch (e: Exception) { error = e.message ?: "could not create folder" }
                 }
-            },
-        )
-    }
-
-    actionFor?.let { entry ->
-        AlertDialog(
-            onDismissRequest = { actionFor = null },
-            title = { Text(entry.name) },
-            text = { Text("Choose an action.") },
-            confirmButton = {
-                TextButton(onClick = { renaming = entry; actionFor = null }) { Text("Rename") }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleting = entry; actionFor = null }) { Text("Delete") }
             },
         )
     }
 
     renaming?.let { entry ->
         NameDialog(
-            title = "Rename",
-            initial = entry.name,
-            confirm = "Rename",
+            title = "Rename", initial = entry.name, confirm = "Rename",
             onDismiss = { renaming = null },
             onConfirm = { newName ->
                 renaming = null
                 scope.launch {
-                    try {
-                        repo.rename(session, child(path, entry.name), child(path, newName))
-                        refresh++
-                    } catch (e: Exception) {
-                        error = e.message ?: "rename failed"
-                    }
+                    try { repo.rename(session, child(path, entry.name), child(path, newName)); refresh++ }
+                    catch (e: Exception) { error = e.message ?: "rename failed" }
                 }
             },
         )
@@ -240,17 +338,54 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                 TextButton(onClick = {
                     deleting = null
                     scope.launch {
-                        try {
-                            repo.remove(session, child(path, entry.name))
-                            refresh++
-                        } catch (e: Exception) {
-                            error = e.message ?: "delete failed"
-                        }
+                        try { repo.remove(session, child(path, entry.name)); refresh++ }
+                        catch (e: Exception) { error = e.message ?: "delete failed" }
                     }
-                }) { Text("Delete") }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
         )
+    }
+}
+
+@Composable
+private fun ActionPill(icon: ImageVector, label: String, accent: Boolean = false, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Row(
+        Modifier
+            .background(
+                if (accent) cs.primary.copy(alpha = 0.13f) else cs.surfaceVariant,
+                RoundedCornerShape(11.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = if (accent) cs.primary else cs.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.size(7.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (accent) cs.primary else cs.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun SheetRow(icon: ImageVector, label: String, danger: Boolean = false, onClick: () -> Unit) {
+    val color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.size(16.dp))
+        Text(label, color = color)
     }
 }
 
@@ -282,6 +417,18 @@ private fun NameDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/** Path → [(label, fullPath)] with the root shown as "Vault". */
+private fun breadcrumbs(path: String): List<Pair<String, String>> {
+    val out = mutableListOf("Vault" to "/")
+    val segs = path.trim('/').split('/').filter { it.isNotEmpty() }
+    var acc = ""
+    for (s in segs) {
+        acc += "/$s"
+        out.add(s to acc)
+    }
+    return out
 }
 
 private fun parent(path: String): String =

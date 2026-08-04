@@ -6,14 +6,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,8 +41,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import dev.norsehorse.vaultpony.BiometricUnlock
+import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.UnlockProgress
 import dev.norsehorse.vaultpony.VaultRepository
+import dev.norsehorse.vaultpony.ui.components.VaultSeal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,8 +82,6 @@ fun UnlockScreen(
     var progress by remember { mutableStateOf<UnlockProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // Keyfile picker: multi-select, any type (keyfiles are often extensionless).
-    // Bytes are read once here — no persisted permission needed.
     val keyfilePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris ->
@@ -89,22 +98,38 @@ fun UnlockScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("VaultPony", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(8.dp))
+        VaultSeal()
+        Text(
+            if (container == null) "VaultPony" else "Unlock vault",
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        Text(
+            if (container == null) "Open or create an encrypted container"
+            else "This container is sealed",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(6.dp))
 
         if (container == null) {
-            Button(onClick = onPickContainer) { Text("Open container…") }
-            TextButton(onClick = onCreateNew) { Text("Create new container…") }
+            Button(onClick = onPickContainer, modifier = Modifier.fillMaxWidth()) {
+                Text("Open container…")
+            }
+            OutlinedButton(onClick = onCreateNew, modifier = Modifier.fillMaxWidth()) {
+                Text("Create new container…")
+            }
         } else {
-            Text("Container selected", style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onPickContainer) { Text("Choose a different file") }
-
             // Biometric fast-path: only when this container has an enrollment.
             if (enrolled && canBio && activity != null && volumeId != null && !busy) {
-                Button(
+                OutlinedButton(
                     onClick = {
                         error = null
                         busy = true
@@ -133,9 +158,13 @@ fun UnlockScreen(
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Unlock with biometrics") }
+                ) {
+                    Icon(Icons.Filled.Fingerprint, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text("Unlock with biometrics")
+                }
                 TextButton(onClick = {
-                    volumeId.let { BiometricUnlock.clear(context, it) }
+                    BiometricUnlock.clear(context, volumeId)
                     enrolled = false
                 }) { Text("Forget biometric unlock") }
             }
@@ -153,16 +182,19 @@ fun UnlockScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            // Keyfiles (doc §4): optional; a container may use password,
-            // keyfiles, or both. Selection count only — never a filename.
-            TextButton(onClick = {
-                dev.norsehorse.vaultpony.SessionRegistry.expectPicker()
-                keyfilePicker.launch(arrayOf("*/*"))
-            }) {
-                Text(
-                    if (keyfiles.isEmpty()) "Add keyfiles (optional)"
-                    else "${keyfiles.size} keyfile(s) selected — change",
-                )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = {
+                    SessionRegistry.expectPicker()
+                    keyfilePicker.launch(arrayOf("*/*"))
+                }) {
+                    Text(
+                        if (keyfiles.isEmpty()) "Add keyfiles"
+                        else "${keyfiles.size} keyfile(s) — change",
+                    )
+                }
+                if (!showPim) {
+                    TextButton(onClick = { showPim = true }) { Text("PIM") }
+                }
             }
             if (keyfiles.isNotEmpty()) {
                 TextButton(onClick = {
@@ -171,8 +203,6 @@ fun UnlockScreen(
                     enrollBio = false
                 }) { Text("Clear keyfiles") }
             }
-
-            // PIM is an advanced field (doc §6): tucked away by default.
             if (showPim) {
                 OutlinedTextField(
                     value = pim,
@@ -182,17 +212,10 @@ fun UnlockScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                 )
-            } else {
-                TextButton(onClick = { showPim = true }) { Text("Advanced: PIM") }
             }
 
-            // Biometric enrollment offer — password-only (keyfiles keep their
-            // "have" factor), and warned against for hidden/deniable volumes.
             if (canBio && activity != null && volumeId != null && !enrolled && keyfiles.isEmpty()) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = enrollBio, onCheckedChange = { enrollBio = it })
                     Text(
                         "Enable biometric unlock on this device",
@@ -209,14 +232,14 @@ fun UnlockScreen(
                 }
             }
 
+            Spacer(Modifier.height(4.dp))
             if (busy) {
                 CircularProgressIndicator()
-                // Per-PRF progress so a wrong password on an old phone
-                // doesn't look like a hang (doc §6).
                 progress?.let {
                     Text(
                         "Trying ${it.prf} (${it.step + 1u}/${it.total})…",
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             } else {
@@ -242,8 +265,6 @@ fun UnlockScreen(
                                 keyfiles.forEach { it.fill(0) }
                                 keyfiles = emptyList()
                                 if (enrollNow) {
-                                    // Enroll shows its own prompt; navigate from
-                                    // its callback so we don't dismiss it.
                                     BiometricUnlock.enroll(activity!!, volumeId!!, pass, pimV) {
                                         onUnlocked(session)
                                     }
@@ -256,10 +277,9 @@ fun UnlockScreen(
                             }
                         }
                     },
-                    // A container may be keyfile-only, so either input unlocks.
                     enabled = passphrase.isNotEmpty() || keyfiles.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Unlock") }
+                ) { Text("Open vault") }
             }
 
             error?.let {

@@ -134,6 +134,8 @@ dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
     implementation("androidx.compose.material3:material3")
+    // Icon set (folder/file/lock/fingerprint…). R8 tree-shakes unused icons.
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.activity:activity-compose:1.9.3")
     // ContextCompat.registerReceiver (screen-off auto-lock, API-safe flag).

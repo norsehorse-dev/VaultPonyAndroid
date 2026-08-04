@@ -1,12 +1,11 @@
 package dev.norsehorse.vaultpony.ui
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,55 +14,85 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import dev.norsehorse.vaultpony.SessionRegistry
+import dev.norsehorse.vaultpony.VaultStore
+import dev.norsehorse.vaultpony.ui.theme.VaultPonyTheme
 import uniffi.vault_ffi.VaultSession
 
-/** App shell: pick → unlock → browse. Read-only for P3 (doc §12). */
+private sealed interface Screen {
+    data object Home : Screen
+    data object Settings : Screen
+    data object Create : Screen
+    data class Unlock(val uri: Uri) : Screen
+}
+
+/** App shell: home → unlock → browse, plus create and settings. */
 @Composable
 fun VaultPonyRoot(
     pickedContainer: Uri?,
     onPickContainer: () -> Unit,
+    onContainerConsumed: () -> Unit,
 ) {
+    val context = LocalContext.current
     var session by remember { mutableStateOf<VaultSession?>(null) }
-    var creating by remember { mutableStateOf(false) }
-    // A container we just created flows back here so it can be opened with the
-    // password just set; it takes precedence over the externally-picked one.
-    var created by remember { mutableStateOf<Uri?>(null) }
-    val container = created ?: pickedContainer
+    var screen by remember { mutableStateOf<Screen>(Screen.Home) }
 
-    // Auto-lock: when the app is backgrounded/screen-off, SessionRegistry
-    // locks every session and bumps this counter — drop our reference so the
-    // unlock screen (and biometric re-prompt) comes back.
-    val lockGeneration by SessionRegistry.lockGeneration.collectAsState()
-    LaunchedEffect(lockGeneration) {
-        if (lockGeneration > 0) session = null
+    // A container opened via the SAF picker or an intent goes straight to
+    // unlock; consume it so re-opening the same file routes again.
+    LaunchedEffect(pickedContainer) {
+        if (pickedContainer != null) {
+            screen = Screen.Unlock(pickedContainer)
+            onContainerConsumed()
+        }
     }
 
-    MaterialTheme(colorScheme = darkColorScheme()) {
+    // Auto-lock: drop the session and return home when the app is backgrounded.
+    val lockGeneration by SessionRegistry.lockGeneration.collectAsState()
+    LaunchedEffect(lockGeneration) {
+        if (lockGeneration > 0) {
+            session = null
+            screen = Screen.Home
+        }
+    }
+
+    VaultPonyTheme {
         Scaffold { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                val current = session
-                when {
-                    current != null -> BrowserScreen(
-                        session = current,
+                val s = session
+                if (s != null) {
+                    BrowserScreen(
+                        session = s,
                         onLock = {
-                            current.lock()
+                            s.lock()
                             session = null
+                            screen = Screen.Home
                         },
                     )
-                    creating -> CreateContainerScreen(
-                        onCreated = { uri ->
-                            created = uri
-                            creating = false
-                        },
-                        onCancel = { creating = false },
-                    )
-                    else -> UnlockScreen(
-                        container = container,
-                        onPickContainer = onPickContainer,
-                        onCreateNew = { creating = true },
-                        onUnlocked = { session = it },
-                    )
+                } else {
+                    BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
+                    when (val sc = screen) {
+                        Screen.Home -> HomeScreen(
+                            onOpenVault = { uri -> screen = Screen.Unlock(uri) },
+                            onPickContainer = onPickContainer,
+                            onCreateNew = { screen = Screen.Create },
+                            onSettings = { screen = Screen.Settings },
+                        )
+                        Screen.Settings -> SettingsScreen(onBack = { screen = Screen.Home })
+                        Screen.Create -> CreateContainerScreen(
+                            onCreated = { uri -> screen = Screen.Unlock(uri) },
+                            onCancel = { screen = Screen.Home },
+                        )
+                        is Screen.Unlock -> UnlockScreen(
+                            container = sc.uri,
+                            onPickContainer = onPickContainer,
+                            onCreateNew = { screen = Screen.Create },
+                            onUnlocked = { unlocked ->
+                                VaultStore.add(context, sc.uri)
+                                session = unlocked
+                            },
+                        )
+                    }
                 }
             }
         }
