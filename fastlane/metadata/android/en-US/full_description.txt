@@ -1,0 +1,24 @@
+VaultPony creates and opens encrypted containers on Android. A vault is a single
+encrypted file that holds a private filesystem, and only your password opens it.
+The containers are compatible with VeraCrypt, so you can open the same vaults on
+the desktop and back.
+
+There is no account, no cloud, and no network access. Your vaults are just files,
+kept wherever you choose.
+
+Features:
+
+* Create and open VeraCrypt-compatible containers, with a choice of cipher, hash,
+  and filesystem (FAT or exFAT).
+* Hidden volumes: conceal a second vault inside the first. Two passwords, and the
+  outer one gives no sign the hidden one exists. The outer volume can be
+  write-protected so normal use will not overwrite the hidden data.
+* Header backup and recovery, in-place password change, and keyfiles.
+* Biometric unlock, auto-lock when the app leaves the foreground, a hidden-screen
+  mode that blocks screenshots, and a no-trace mode that remembers nothing.
+* Localized in English, German, Spanish, French, Russian, and Brazilian
+  Portuguese, with live in-app switching.
+
+VaultPony is free and open source, built on a shared Rust core you can inspect.
+It is not affiliated with or endorsed by IDRIX; VeraCrypt is a registered
+trademark of IDRIX.

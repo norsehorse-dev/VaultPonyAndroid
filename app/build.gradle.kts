@@ -30,7 +30,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
@@ -63,6 +63,12 @@ android {
             if (keystorePropsFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // Do not embed git VCS metadata in the APK. F-Droid's clean-room
+            // build has no git context, so an embedded revision would break
+            // reproducible-build verification (playbook lesson).
+            vcsInfo {
+                include = false
+            }
         }
     }
 
@@ -72,6 +78,12 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    // Keep Google's dependency-metadata blob out of the APK: it is
+    // non-reproducible and unwanted for an F-Droid build (playbook lesson).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
     buildFeatures {
         compose = true
