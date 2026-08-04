@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English base strings. House convention: an apostrophe inside a string
+     VALUE is written as a backslash followed by the apostrophe. No em or en
+     dashes anywhere; use a comma, colon, or full stop instead. -->
+<resources>
+    <string name="app_name">VaultPony</string>
+
+    <!-- Common -->
+    <string name="common_back">Back</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_privacy_header">Privacy</string>
+    <string name="settings_security_header">Security</string>
+    <string name="settings_language_header">Language</string>
+
+    <string name="settings_remember_title">Remember my vaults</string>
+    <string name="settings_remember_subtitle">Show a home list of vaults you\'ve opened. Stores their locations on this device.</string>
+    <string name="settings_secure_title">Hide screen contents</string>
+    <string name="settings_secure_subtitle">Block screenshots and hide the app in Recents.</string>
+    <string name="settings_autolock_title">Auto-lock</string>
+    <string name="settings_autolock_subtitle">Locks on leaving the app or screen-off.</string>
+
+    <!-- More pony apps -->
+    <string name="settings_pony_header">More pony apps</string>
+    <string name="pony_pgpony_subtitle">OpenPGP encryption</string>
+    <string name="pony_passpony_subtitle">Password manager</string>
+    <string name="pony_burnpony_subtitle">Burn-after-reading notes</string>
+    <string name="pony_carrierpony_subtitle">Async PGP messenger</string>
+    <string name="pony_agepony_subtitle">age encryption</string>
+    <string name="pony_relaypony_subtitle">Encrypted file transfer</string>
+    <string name="pony_quorumpony_subtitle">Key backup with secret sharing</string>
+
+    <!-- Links -->
+    <string name="settings_links_header">Links</string>
+    <string name="settings_link_website">Website</string>
+    <string name="settings_link_pony_family">The Pony Family</string>
+    <string name="settings_link_source_app">Source code (VaultPonyAndroid)</string>
+    <string name="settings_link_source_core">Source code (VaultPonyCore)</string>
+    <string name="settings_link_contact">Contact</string>
+
+    <string name="settings_version">Version</string>
+    <string name="settings_family_footer">VaultPony is part of the pony family of privacy tools: encryption you can inspect instead of taking a developer\'s word for it.</string>
+
+    <!-- Help -->
+    <string name="settings_help_header">Help</string>
+    <string name="settings_replay_onboarding">Show the intro again</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_create_cta">Create a vault</string>
+    <string name="onboarding_language_title">Language</string>
+    <string name="onboarding_language_body">Choose your language. You can change it anytime in Settings.</string>
+    <string name="onboarding_welcome_title">VaultPony</string>
+    <string name="onboarding_welcome_body">Encrypted vaults you control. Open source, and compatible with VeraCrypt.</string>
+    <string name="onboarding_create_title">Create your first vault</string>
+    <string name="onboarding_create_body">A vault is a single encrypted file. Put anything inside; only your password opens it.</string>
+    <string name="onboarding_hidden_title">Hidden volumes</string>
+    <string name="onboarding_hidden_body">Hide a second vault inside the first. Two passwords, and the outer one gives no sign the hidden one exists.</string>
+    <string name="onboarding_security_title">Locked down</string>
+    <string name="onboarding_security_body">Biometric unlock, auto-lock when you leave, and a hidden screen keep your vaults yours.</string>
+
+    <!-- Vault created -->
+    <string name="vault_created_title">Vault created</string>
+    <string name="vault_created_body">Your vault is saved at the location you chose. Open it now with the password you just set. After you open it the first time, it appears on your home screen for quick access.</string>
+    <string name="vault_created_open">Open vault now</string>
+    <string name="vault_created_done">Done</string>
+    <string name="vault_created_continue">Continue setup</string>
+
+    <!-- Home -->
+    <string name="common_settings">Settings</string>
+    <string name="home_your_vaults">Your vaults</string>
+    <string name="home_add">Add</string>
+    <string name="home_new_vault_title">New vault</string>
+    <string name="home_new_vault_subtitle">Create an encrypted container</string>
+    <string name="home_open_title">Open a container…</string>
+    <string name="home_open_subtitle">Pick any file (extensionless is fine)</string>
+    <string name="home_no_trace">No-trace mode is on. Opened vaults are not remembered.</string>
+    <string name="home_opened_relative">opened %1$s</string>
+    <string name="home_recently">recently</string>
+    <string name="home_forget">Forget</string>
+
+    <!-- Viewer -->
+    <string name="viewer_binary">Binary file (%1$s). Extract it to open elsewhere.</string>
+    <string name="viewer_too_big">File is %1$s. Too large to preview in-app. Extract it instead.</string>
+    <string name="viewer_read_error">Could not read this file: %1$s</string>
+
+    <string name="common_done">Done</string>
+    <string name="common_op_failed">Operation failed</string>
+
+    <!-- Header recovery -->
+    <string name="recovery_title">Header recovery</string>
+    <string name="recovery_intro">The header holds the keys that decrypt this vault. If it\'s ever damaged the vault won\'t open. Keep a backup somewhere safe.</string>
+    <string name="recovery_backup_header">Back up</string>
+    <string name="recovery_save_backup">Save header backup…</string>
+    <string name="recovery_backup_warning">This backup keeps unlocking the vault with its current password even after you change it. Store it as securely as the vault.</string>
+    <string name="recovery_restore_header">Restore</string>
+    <string name="recovery_restore_intro">Enter the vault password. It\'s verified before anything is written, so a wrong password changes nothing.</string>
+    <string name="recovery_vault_password">Vault password</string>
+    <string name="recovery_pim_label">PIM (advanced, usually empty)</string>
+    <string name="recovery_restore_embedded">Restore from embedded backup</string>
+    <string name="recovery_restore_file">Restore from backup file…</string>
+    <string name="recovery_msg_backup_saved">Header backup saved.</string>
+    <string name="recovery_msg_restored_file">Primary header restored from file.</string>
+    <string name="recovery_msg_restored_embedded">Primary header restored from the embedded backup.</string>
+
+    <!-- Change password -->
+    <string name="change_pw_title">Change password</string>
+    <string name="change_pw_intro">Re-keys the vault\'s header under a new password. Your files are untouched, and the current password is verified before anything is written.</string>
+    <string name="change_pw_current_header">Current</string>
+    <string name="change_pw_current_label">Current password</string>
+    <string name="change_pw_current_pim">Current PIM (usually empty)</string>
+    <string name="change_pw_new_header">New</string>
+    <string name="change_pw_new_label">New password</string>
+    <string name="change_pw_confirm_label">Confirm new password</string>
+    <string name="change_pw_new_pim">New PIM (usually empty)</string>
+    <string name="change_pw_differ">The new password must differ from the current one.</string>
+    <string name="change_pw_working">Re-encrypting the header…</string>
+    <string name="change_pw_success">Password changed. Use your new password from now on.</string>
+    <string name="change_pw_error">Could not change password.</string>
+    <string name="change_pw_keyfile_note">Keyfile-protected vaults can\'t be changed here yet. Use the CLI.</string>
+
+    <!-- Unlock -->
+    <string name="unlock_title">Unlock vault</string>
+    <string name="unlock_subtitle_none">Open or create an encrypted container</string>
+    <string name="unlock_subtitle_sealed">This container is sealed</string>
+    <string name="unlock_open_container">Open container…</string>
+    <string name="unlock_create_new">Create new container…</string>
+    <string name="unlock_biometrics">Unlock with biometrics</string>
+    <string name="unlock_forget_biometrics">Forget biometric unlock</string>
+    <string name="unlock_password">Password</string>
+    <string name="unlock_outer_password">Outer volume password</string>
+    <string name="unlock_protect_hidden">This vault has a hidden volume; protect it</string>
+    <string name="unlock_hidden_password">Hidden volume password</string>
+    <string name="unlock_protect_note">Both passwords are needed. Writes that would hit the hidden volume are blocked and the vault turns read-only.</string>
+    <string name="unlock_add_keyfiles">Add keyfiles</string>
+    <string name="unlock_keyfiles_count">%1$d keyfile(s), change</string>
+    <string name="unlock_pim_button">PIM</string>
+    <string name="unlock_clear_keyfiles">Clear keyfiles</string>
+    <string name="unlock_pim_label">PIM (advanced, usually empty)</string>
+    <string name="unlock_enroll_bio">Enable biometric unlock on this device</string>
+    <string name="unlock_enroll_note">Stores this password on the device behind your biometrics. Don\'t enable this for a hidden volume.</string>
+    <string name="unlock_progress">Trying %1$s (%2$d/%3$d)…</string>
+    <string name="unlock_open_outer">Open outer (protected)</string>
+    <string name="unlock_open_vault">Open vault</string>
+    <string name="unlock_failed">Unlock failed</string>
+    <string name="unlock_recovery_link">Header backup and recovery</string>
+
+    <!-- Create container -->
+    <string name="common_cancel">Cancel</string>
+    <string name="create_confirm_password">Confirm password</string>
+    <string name="create_size">Size</string>
+    <string name="create_custom_size">Custom size</string>
+    <string name="create_min">Use at least 1 MB.</string>
+    <string name="create_min_hidden">Use at least 4 MB for a hidden vault.</string>
+    <string name="create_encryption">Encryption</string>
+    <string name="create_hash">Hash</string>
+    <string name="create_filesystem">Filesystem</string>
+    <string name="create_exfat_note">exFAT supports files larger than 4 GB. FAT is more universally compatible for small vaults.</string>
+    <string name="create_hidden_volume">Hidden volume</string>
+    <string name="create_hidden_subtitle">A concealed second vault with its own password.</string>
+    <string name="create_hidden_password">Hidden password</string>
+    <string name="create_confirm_hidden">Confirm hidden password</string>
+    <string name="create_hidden_differ">The hidden password must differ from the outer one.</string>
+    <string name="create_hidden_size">Hidden size</string>
+    <string name="create_fraction_of_vault">%1$s of vault</string>
+    <string name="create_hidden_warning">Writing to the outer volume can overwrite the hidden one. Keep the outer vault light, and only ever fill it when you unlock with the outer password alone.</string>
+    <string name="create_working">Creating and formatting…</string>
+    <string name="create_action">Choose location and create</string>
+    <string name="create_invalid_size">Enter a valid size</string>
+    <string name="create_error">Could not create container.</string>
+
+    <!-- Browser -->
+    <string name="browser_title">Vault</string>
+    <string name="browser_rw">read/write</string>
+    <string name="browser_ro">read-only</string>
+    <string name="browser_lock">Lock</string>
+    <string name="browser_new_folder">New folder</string>
+    <string name="browser_import">Import</string>
+    <string name="browser_open">Open</string>
+    <string name="browser_export_copy">Export a copy</string>
+    <string name="browser_rename">Rename</string>
+    <string name="common_delete">Delete</string>
+    <string name="browser_create">Create</string>
+    <string name="browser_name">Name</string>
+    <string name="browser_delete_title">Delete %1$s?</string>
+    <string name="browser_delete_folder_empty">The folder must be empty.</string>
+    <string name="browser_delete_file_warning">This permanently removes the file from the volume.</string>
+    <string name="browser_err_import">Import failed</string>
+    <string name="browser_err_export">Export failed</string>
+    <string name="browser_err_listing">Could not list this folder</string>
+    <string name="browser_err_mkdir">Could not create folder</string>
+    <string name="browser_err_rename">Rename failed</string>
+    <string name="browser_err_delete">Delete failed</string>
+</resources>

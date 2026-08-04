@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_back">Zurück</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_privacy_header">Privatsphäre</string>
+    <string name="settings_security_header">Sicherheit</string>
+    <string name="settings_language_header">Sprache</string>
+
+    <string name="settings_remember_title">Meine Tresore merken</string>
+    <string name="settings_remember_subtitle">Zeigt eine Startliste der geöffneten Tresore. Ihre Speicherorte werden auf diesem Gerät gespeichert.</string>
+    <string name="settings_secure_title">Bildschirminhalt verbergen</string>
+    <string name="settings_secure_subtitle">Screenshots blockieren und die App in der Übersicht ausblenden.</string>
+    <string name="settings_autolock_title">Automatische Sperre</string>
+    <string name="settings_autolock_subtitle">Sperrt beim Verlassen der App oder bei ausgeschaltetem Bildschirm.</string>
+
+    <string name="settings_pony_header">Weitere Pony-Apps</string>
+    <string name="pony_pgpony_subtitle">OpenPGP-Verschlüsselung</string>
+    <string name="pony_passpony_subtitle">Passwort-Manager</string>
+    <string name="pony_burnpony_subtitle">Notizen, die sich nach dem Lesen löschen</string>
+    <string name="pony_carrierpony_subtitle">Asynchroner PGP-Messenger</string>
+    <string name="pony_agepony_subtitle">age-Verschlüsselung</string>
+    <string name="pony_relaypony_subtitle">Verschlüsselte Dateiübertragung</string>
+    <string name="pony_quorumpony_subtitle">Schlüssel-Backup mit Secret Sharing</string>
+
+    <string name="settings_links_header">Links</string>
+    <string name="settings_link_website">Website</string>
+    <string name="settings_link_pony_family">Die Pony-Familie</string>
+    <string name="settings_link_source_app">Quellcode (VaultPonyAndroid)</string>
+    <string name="settings_link_source_core">Quellcode (VaultPonyCore)</string>
+    <string name="settings_link_contact">Kontakt</string>
+
+    <string name="settings_version">Version</string>
+    <string name="settings_family_footer">VaultPony gehört zur Pony-Familie von Datenschutz-Werkzeugen: Verschlüsselung, die man überprüfen kann, statt dem Wort eines Entwicklers zu vertrauen.</string>
+
+    <string name="settings_help_header">Hilfe</string>
+    <string name="settings_replay_onboarding">Einführung erneut anzeigen</string>
+
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_get_started">Los geht\'s</string>
+    <string name="onboarding_create_cta">Tresor erstellen</string>
+    <string name="onboarding_language_title">Sprache</string>
+    <string name="onboarding_language_body">Wähle deine Sprache. Du kannst sie jederzeit in den Einstellungen ändern.</string>
+    <string name="onboarding_welcome_title">VaultPony</string>
+    <string name="onboarding_welcome_body">Verschlüsselte Tresore, die du kontrollierst. Quelloffen und kompatibel mit VeraCrypt.</string>
+    <string name="onboarding_create_title">Erstelle deinen ersten Tresor</string>
+    <string name="onboarding_create_body">Ein Tresor ist eine einzige verschlüsselte Datei. Leg alles hinein; nur dein Passwort öffnet ihn.</string>
+    <string name="onboarding_hidden_title">Versteckte Volumes</string>
+    <string name="onboarding_hidden_body">Verstecke einen zweiten Tresor im ersten. Zwei Passwörter, und das äußere verrät nichts über das versteckte.</string>
+    <string name="onboarding_security_title">Abgeriegelt</string>
+    <string name="onboarding_security_body">Biometrische Entsperrung, automatische Sperre beim Verlassen und ein verborgener Bildschirm halten deine Tresore privat.</string>
+
+    <string name="vault_created_title">Tresor erstellt</string>
+    <string name="vault_created_body">Dein Tresor ist am gewählten Ort gespeichert. Öffne ihn jetzt mit dem gerade festgelegten Passwort. Nach dem ersten Öffnen erscheint er zum schnellen Zugriff auf deinem Startbildschirm.</string>
+    <string name="vault_created_open">Tresor jetzt öffnen</string>
+    <string name="vault_created_done">Fertig</string>
+    <string name="vault_created_continue">Einrichtung fortsetzen</string>
+
+    <string name="common_settings">Einstellungen</string>
+    <string name="home_your_vaults">Deine Tresore</string>
+    <string name="home_add">Hinzufügen</string>
+    <string name="home_new_vault_title">Neuer Tresor</string>
+    <string name="home_new_vault_subtitle">Einen verschlüsselten Container erstellen</string>
+    <string name="home_open_title">Container öffnen…</string>
+    <string name="home_open_subtitle">Beliebige Datei wählen (auch ohne Endung)</string>
+    <string name="home_no_trace">Der spurlose Modus ist aktiv. Geöffnete Tresore werden nicht gespeichert.</string>
+    <string name="home_opened_relative">geöffnet %1$s</string>
+    <string name="home_recently">kürzlich</string>
+    <string name="home_forget">Vergessen</string>
+
+    <string name="viewer_binary">Binärdatei (%1$s). Exportiere sie, um sie woanders zu öffnen.</string>
+    <string name="viewer_too_big">Datei ist %1$s. Zu groß für die Vorschau in der App. Exportiere sie stattdessen.</string>
+    <string name="viewer_read_error">Diese Datei konnte nicht gelesen werden: %1$s</string>
+
+    <string name="common_done">Fertig</string>
+    <string name="common_op_failed">Vorgang fehlgeschlagen</string>
+
+    <string name="recovery_title">Header-Wiederherstellung</string>
+    <string name="recovery_intro">Der Header enthält die Schlüssel, die diesen Tresor entschlüsseln. Wird er beschädigt, lässt sich der Tresor nicht öffnen. Bewahre eine Sicherung an einem sicheren Ort auf.</string>
+    <string name="recovery_backup_header">Sichern</string>
+    <string name="recovery_save_backup">Header-Sicherung speichern…</string>
+    <string name="recovery_backup_warning">Diese Sicherung öffnet den Tresor weiterhin mit dem aktuellen Passwort, auch nachdem du es geändert hast. Bewahre sie so sicher auf wie den Tresor selbst.</string>
+    <string name="recovery_restore_header">Wiederherstellen</string>
+    <string name="recovery_restore_intro">Gib das Tresor-Passwort ein. Es wird geprüft, bevor etwas geschrieben wird, ein falsches Passwort ändert also nichts.</string>
+    <string name="recovery_vault_password">Tresor-Passwort</string>
+    <string name="recovery_pim_label">PIM (erweitert, meist leer)</string>
+    <string name="recovery_restore_embedded">Aus eingebetteter Sicherung wiederherstellen</string>
+    <string name="recovery_restore_file">Aus Sicherungsdatei wiederherstellen…</string>
+    <string name="recovery_msg_backup_saved">Header-Sicherung gespeichert.</string>
+    <string name="recovery_msg_restored_file">Primärer Header aus Datei wiederhergestellt.</string>
+    <string name="recovery_msg_restored_embedded">Primärer Header aus der eingebetteten Sicherung wiederhergestellt.</string>
+
+    <string name="change_pw_title">Passwort ändern</string>
+    <string name="change_pw_intro">Verschlüsselt den Header des Tresors mit einem neuen Passwort neu. Deine Dateien bleiben unberührt, und das aktuelle Passwort wird geprüft, bevor etwas geschrieben wird.</string>
+    <string name="change_pw_current_header">Aktuell</string>
+    <string name="change_pw_current_label">Aktuelles Passwort</string>
+    <string name="change_pw_current_pim">Aktuelle PIM (meist leer)</string>
+    <string name="change_pw_new_header">Neu</string>
+    <string name="change_pw_new_label">Neues Passwort</string>
+    <string name="change_pw_confirm_label">Neues Passwort bestätigen</string>
+    <string name="change_pw_new_pim">Neue PIM (meist leer)</string>
+    <string name="change_pw_differ">Das neue Passwort muss sich vom aktuellen unterscheiden.</string>
+    <string name="change_pw_working">Header wird neu verschlüsselt…</string>
+    <string name="change_pw_success">Passwort geändert. Verwende ab jetzt dein neues Passwort.</string>
+    <string name="change_pw_error">Passwort konnte nicht geändert werden.</string>
+    <string name="change_pw_keyfile_note">Mit Schlüsseldateien geschützte Tresore können hier noch nicht geändert werden. Nutze die CLI.</string>
+
+    <string name="unlock_title">Tresor entsperren</string>
+    <string name="unlock_subtitle_none">Einen verschlüsselten Container öffnen oder erstellen</string>
+    <string name="unlock_subtitle_sealed">Dieser Container ist versiegelt</string>
+    <string name="unlock_open_container">Container öffnen…</string>
+    <string name="unlock_create_new">Neuen Container erstellen…</string>
+    <string name="unlock_biometrics">Mit Biometrie entsperren</string>
+    <string name="unlock_forget_biometrics">Biometrische Entsperrung vergessen</string>
+    <string name="unlock_password">Passwort</string>
+    <string name="unlock_outer_password">Passwort des äußeren Volumes</string>
+    <string name="unlock_protect_hidden">Dieser Tresor hat ein verstecktes Volume; schütze es</string>
+    <string name="unlock_hidden_password">Passwort des versteckten Volumes</string>
+    <string name="unlock_protect_note">Beide Passwörter sind nötig. Schreibvorgänge, die das versteckte Volume treffen würden, werden blockiert und der Tresor wird schreibgeschützt.</string>
+    <string name="unlock_add_keyfiles">Schlüsseldateien hinzufügen</string>
+    <string name="unlock_keyfiles_count">%1$d Schlüsseldatei(en), ändern</string>
+    <string name="unlock_pim_button">PIM</string>
+    <string name="unlock_clear_keyfiles">Schlüsseldateien entfernen</string>
+    <string name="unlock_pim_label">PIM (erweitert, meist leer)</string>
+    <string name="unlock_enroll_bio">Biometrische Entsperrung auf diesem Gerät aktivieren</string>
+    <string name="unlock_enroll_note">Speichert dieses Passwort auf dem Gerät hinter deiner Biometrie. Aktiviere dies nicht für ein verstecktes Volume.</string>
+    <string name="unlock_progress">Versuche %1$s (%2$d/%3$d)…</string>
+    <string name="unlock_open_outer">Äußeres öffnen (geschützt)</string>
+    <string name="unlock_open_vault">Tresor öffnen</string>
+    <string name="unlock_failed">Entsperren fehlgeschlagen</string>
+    <string name="unlock_recovery_link">Header-Sicherung und Wiederherstellung</string>
+
+    <string name="common_cancel">Abbrechen</string>
+    <string name="create_confirm_password">Passwort bestätigen</string>
+    <string name="create_size">Größe</string>
+    <string name="create_custom_size">Eigene Größe</string>
+    <string name="create_min">Mindestens 1 MB verwenden.</string>
+    <string name="create_min_hidden">Für einen versteckten Tresor mindestens 4 MB verwenden.</string>
+    <string name="create_encryption">Verschlüsselung</string>
+    <string name="create_hash">Hash</string>
+    <string name="create_filesystem">Dateisystem</string>
+    <string name="create_exfat_note">exFAT unterstützt Dateien über 4 GB. FAT ist für kleine Tresore breiter kompatibel.</string>
+    <string name="create_hidden_volume">Verstecktes Volume</string>
+    <string name="create_hidden_subtitle">Ein verborgener zweiter Tresor mit eigenem Passwort.</string>
+    <string name="create_hidden_password">Verstecktes Passwort</string>
+    <string name="create_confirm_hidden">Verstecktes Passwort bestätigen</string>
+    <string name="create_hidden_differ">Das versteckte Passwort muss sich vom äußeren unterscheiden.</string>
+    <string name="create_hidden_size">Versteckte Größe</string>
+    <string name="create_fraction_of_vault">%1$s des Tresors</string>
+    <string name="create_hidden_warning">Schreiben in das äußere Volume kann das versteckte überschreiben. Halte den äußeren Tresor leicht und fülle ihn nur, wenn du ausschließlich mit dem äußeren Passwort entsperrst.</string>
+    <string name="create_working">Wird erstellt und formatiert…</string>
+    <string name="create_action">Speicherort wählen und erstellen</string>
+    <string name="create_invalid_size">Gültige Größe eingeben</string>
+    <string name="create_error">Container konnte nicht erstellt werden.</string>
+
+    <string name="browser_title">Tresor</string>
+    <string name="browser_rw">Lesen/Schreiben</string>
+    <string name="browser_ro">schreibgeschützt</string>
+    <string name="browser_lock">Sperren</string>
+    <string name="browser_new_folder">Neuer Ordner</string>
+    <string name="browser_import">Importieren</string>
+    <string name="browser_open">Öffnen</string>
+    <string name="browser_export_copy">Kopie exportieren</string>
+    <string name="browser_rename">Umbenennen</string>
+    <string name="common_delete">Löschen</string>
+    <string name="browser_create">Erstellen</string>
+    <string name="browser_name">Name</string>
+    <string name="browser_delete_title">%1$s löschen?</string>
+    <string name="browser_delete_folder_empty">Der Ordner muss leer sein.</string>
+    <string name="browser_delete_file_warning">Dies entfernt die Datei dauerhaft aus dem Volume.</string>
+    <string name="browser_err_import">Import fehlgeschlagen</string>
+    <string name="browser_err_export">Export fehlgeschlagen</string>
+    <string name="browser_err_listing">Dieser Ordner konnte nicht aufgelistet werden</string>
+    <string name="browser_err_mkdir">Ordner konnte nicht erstellt werden</string>
+    <string name="browser_err_rename">Umbenennen fehlgeschlagen</string>
+    <string name="browser_err_delete">Löschen fehlgeschlagen</string>
+</resources>

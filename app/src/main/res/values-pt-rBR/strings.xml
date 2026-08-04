@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_back">Voltar</string>
+
+    <string name="settings_title">Configurações</string>
+    <string name="settings_privacy_header">Privacidade</string>
+    <string name="settings_security_header">Segurança</string>
+    <string name="settings_language_header">Idioma</string>
+
+    <string name="settings_remember_title">Lembrar meus cofres</string>
+    <string name="settings_remember_subtitle">Mostra uma lista inicial dos cofres que você abriu. Salva a localização deles neste dispositivo.</string>
+    <string name="settings_secure_title">Ocultar o conteúdo da tela</string>
+    <string name="settings_secure_subtitle">Bloqueia capturas de tela e oculta o app em Recentes.</string>
+    <string name="settings_autolock_title">Bloqueio automático</string>
+    <string name="settings_autolock_subtitle">Bloqueia ao sair do app ou quando a tela desliga.</string>
+
+    <string name="settings_pony_header">Mais apps pony</string>
+    <string name="pony_pgpony_subtitle">Criptografia OpenPGP</string>
+    <string name="pony_passpony_subtitle">Gerenciador de senhas</string>
+    <string name="pony_burnpony_subtitle">Notas que se apagam após a leitura</string>
+    <string name="pony_carrierpony_subtitle">Mensageiro PGP assíncrono</string>
+    <string name="pony_agepony_subtitle">Criptografia age</string>
+    <string name="pony_relaypony_subtitle">Transferência de arquivos criptografada</string>
+    <string name="pony_quorumpony_subtitle">Backup de chaves com compartilhamento de segredo</string>
+
+    <string name="settings_links_header">Links</string>
+    <string name="settings_link_website">Site</string>
+    <string name="settings_link_pony_family">A família pony</string>
+    <string name="settings_link_source_app">Código-fonte (VaultPonyAndroid)</string>
+    <string name="settings_link_source_core">Código-fonte (VaultPonyCore)</string>
+    <string name="settings_link_contact">Contato</string>
+
+    <string name="settings_version">Versão</string>
+    <string name="settings_family_footer">O VaultPony faz parte da família pony de ferramentas de privacidade: criptografia que você pode inspecionar em vez de confiar na palavra de um desenvolvedor.</string>
+
+    <string name="settings_help_header">Ajuda</string>
+    <string name="settings_replay_onboarding">Ver a introdução novamente</string>
+
+    <string name="onboarding_skip">Pular</string>
+    <string name="onboarding_next">Avançar</string>
+    <string name="onboarding_get_started">Começar</string>
+    <string name="onboarding_create_cta">Criar um cofre</string>
+    <string name="onboarding_language_title">Idioma</string>
+    <string name="onboarding_language_body">Escolha seu idioma. Você pode alterá-lo quando quiser nas Configurações.</string>
+    <string name="onboarding_welcome_title">VaultPony</string>
+    <string name="onboarding_welcome_body">Cofres criptografados sob seu controle. Código aberto e compatível com o VeraCrypt.</string>
+    <string name="onboarding_create_title">Crie seu primeiro cofre</string>
+    <string name="onboarding_create_body">Um cofre é um único arquivo criptografado. Guarde o que quiser dentro; só a sua senha o abre.</string>
+    <string name="onboarding_hidden_title">Volumes ocultos</string>
+    <string name="onboarding_hidden_body">Oculte um segundo cofre dentro do primeiro. Duas senhas, e a externa não dá nenhum sinal de que o oculto existe.</string>
+    <string name="onboarding_security_title">Bem protegido</string>
+    <string name="onboarding_security_body">Desbloqueio biométrico, bloqueio automático ao sair e uma tela oculta mantêm seus cofres só seus.</string>
+
+    <string name="vault_created_title">Cofre criado</string>
+    <string name="vault_created_body">Seu cofre foi salvo no local que você escolheu. Abra-o agora com a senha que você acabou de definir. Depois de abri-lo pela primeira vez, ele aparece na tela inicial para acesso rápido.</string>
+    <string name="vault_created_open">Abrir o cofre agora</string>
+    <string name="vault_created_done">Concluído</string>
+    <string name="vault_created_continue">Continuar configuração</string>
+
+    <string name="common_settings">Configurações</string>
+    <string name="home_your_vaults">Seus cofres</string>
+    <string name="home_add">Adicionar</string>
+    <string name="home_new_vault_title">Novo cofre</string>
+    <string name="home_new_vault_subtitle">Criar um contêiner criptografado</string>
+    <string name="home_open_title">Abrir um contêiner…</string>
+    <string name="home_open_subtitle">Escolha qualquer arquivo (sem extensão também serve)</string>
+    <string name="home_no_trace">O modo sem rastros está ativado. Os cofres abertos não são lembrados.</string>
+    <string name="home_opened_relative">aberto %1$s</string>
+    <string name="home_recently">recentemente</string>
+    <string name="home_forget">Esquecer</string>
+
+    <string name="viewer_binary">Arquivo binário (%1$s). Exporte-o para abrir em outro lugar.</string>
+    <string name="viewer_too_big">O arquivo tem %1$s. Grande demais para pré-visualizar no app. Exporte-o.</string>
+    <string name="viewer_read_error">Não foi possível ler este arquivo: %1$s</string>
+
+    <string name="common_done">Concluído</string>
+    <string name="common_op_failed">A operação falhou</string>
+
+    <string name="recovery_title">Recuperação de cabeçalho</string>
+    <string name="recovery_intro">O cabeçalho contém as chaves que descriptografam este cofre. Se ele for danificado, o cofre não abrirá. Guarde um backup em um lugar seguro.</string>
+    <string name="recovery_backup_header">Fazer backup</string>
+    <string name="recovery_save_backup">Salvar backup do cabeçalho…</string>
+    <string name="recovery_backup_warning">Este backup continua abrindo o cofre com a senha atual, mesmo depois de você trocá-la. Guarde-o com a mesma segurança do cofre.</string>
+    <string name="recovery_restore_header">Restaurar</string>
+    <string name="recovery_restore_intro">Digite a senha do cofre. Ela é verificada antes de qualquer gravação, então uma senha errada não muda nada.</string>
+    <string name="recovery_vault_password">Senha do cofre</string>
+    <string name="recovery_pim_label">PIM (avançado, geralmente vazio)</string>
+    <string name="recovery_restore_embedded">Restaurar do backup embutido</string>
+    <string name="recovery_restore_file">Restaurar de um arquivo de backup…</string>
+    <string name="recovery_msg_backup_saved">Backup do cabeçalho salvo.</string>
+    <string name="recovery_msg_restored_file">Cabeçalho principal restaurado do arquivo.</string>
+    <string name="recovery_msg_restored_embedded">Cabeçalho principal restaurado do backup embutido.</string>
+
+    <string name="change_pw_title">Alterar senha</string>
+    <string name="change_pw_intro">Recriptografa o cabeçalho do cofre com uma nova senha. Seus arquivos ficam intactos, e a senha atual é verificada antes de qualquer gravação.</string>
+    <string name="change_pw_current_header">Atual</string>
+    <string name="change_pw_current_label">Senha atual</string>
+    <string name="change_pw_current_pim">PIM atual (geralmente vazio)</string>
+    <string name="change_pw_new_header">Nova</string>
+    <string name="change_pw_new_label">Nova senha</string>
+    <string name="change_pw_confirm_label">Confirmar nova senha</string>
+    <string name="change_pw_new_pim">Novo PIM (geralmente vazio)</string>
+    <string name="change_pw_differ">A nova senha deve ser diferente da atual.</string>
+    <string name="change_pw_working">Recriptografando o cabeçalho…</string>
+    <string name="change_pw_success">Senha alterada. Use sua nova senha a partir de agora.</string>
+    <string name="change_pw_error">Não foi possível alterar a senha.</string>
+    <string name="change_pw_keyfile_note">Cofres protegidos por arquivo de chave ainda não podem ser alterados aqui. Use a CLI.</string>
+
+    <string name="unlock_title">Abrir o cofre</string>
+    <string name="unlock_subtitle_none">Abra ou crie um contêiner criptografado</string>
+    <string name="unlock_subtitle_sealed">Este contêiner está selado</string>
+    <string name="unlock_open_container">Abrir contêiner…</string>
+    <string name="unlock_create_new">Criar um novo contêiner…</string>
+    <string name="unlock_biometrics">Desbloquear com biometria</string>
+    <string name="unlock_forget_biometrics">Esquecer o desbloqueio biométrico</string>
+    <string name="unlock_password">Senha</string>
+    <string name="unlock_outer_password">Senha do volume externo</string>
+    <string name="unlock_protect_hidden">Este cofre tem um volume oculto; proteja-o</string>
+    <string name="unlock_hidden_password">Senha do volume oculto</string>
+    <string name="unlock_protect_note">As duas senhas são necessárias. Gravações que atingiriam o volume oculto são bloqueadas e o cofre fica somente leitura.</string>
+    <string name="unlock_add_keyfiles">Adicionar arquivos de chave</string>
+    <string name="unlock_keyfiles_count">%1$d arquivo(s) de chave, alterar</string>
+    <string name="unlock_pim_button">PIM</string>
+    <string name="unlock_clear_keyfiles">Remover arquivos de chave</string>
+    <string name="unlock_pim_label">PIM (avançado, geralmente vazio)</string>
+    <string name="unlock_enroll_bio">Ativar o desbloqueio biométrico neste dispositivo</string>
+    <string name="unlock_enroll_note">Armazena esta senha no dispositivo por trás da sua biometria. Não ative isso para um volume oculto.</string>
+    <string name="unlock_progress">Tentando %1$s (%2$d/%3$d)…</string>
+    <string name="unlock_open_outer">Abrir o externo (protegido)</string>
+    <string name="unlock_open_vault">Abrir o cofre</string>
+    <string name="unlock_failed">Falha ao desbloquear</string>
+    <string name="unlock_recovery_link">Backup e recuperação do cabeçalho</string>
+
+    <string name="common_cancel">Cancelar</string>
+    <string name="create_confirm_password">Confirmar senha</string>
+    <string name="create_size">Tamanho</string>
+    <string name="create_custom_size">Tamanho personalizado</string>
+    <string name="create_min">Use pelo menos 1 MB.</string>
+    <string name="create_min_hidden">Use pelo menos 4 MB para um cofre oculto.</string>
+    <string name="create_encryption">Criptografia</string>
+    <string name="create_hash">Hash</string>
+    <string name="create_filesystem">Sistema de arquivos</string>
+    <string name="create_exfat_note">O exFAT suporta arquivos maiores que 4 GB. O FAT é mais compatível de forma geral para cofres pequenos.</string>
+    <string name="create_hidden_volume">Volume oculto</string>
+    <string name="create_hidden_subtitle">Um segundo cofre oculto com senha própria.</string>
+    <string name="create_hidden_password">Senha oculta</string>
+    <string name="create_confirm_hidden">Confirmar senha oculta</string>
+    <string name="create_hidden_differ">A senha oculta deve ser diferente da externa.</string>
+    <string name="create_hidden_size">Tamanho oculto</string>
+    <string name="create_fraction_of_vault">%1$s do cofre</string>
+    <string name="create_hidden_warning">Gravar no volume externo pode sobrescrever o oculto. Mantenha o cofre externo leve e só o preencha quando desbloquear apenas com a senha externa.</string>
+    <string name="create_working">Criando e formatando…</string>
+    <string name="create_action">Escolher local e criar</string>
+    <string name="create_invalid_size">Insira um tamanho válido</string>
+    <string name="create_error">Não foi possível criar o contêiner.</string>
+
+    <string name="browser_title">Cofre</string>
+    <string name="browser_rw">leitura/gravação</string>
+    <string name="browser_ro">somente leitura</string>
+    <string name="browser_lock">Bloquear</string>
+    <string name="browser_new_folder">Nova pasta</string>
+    <string name="browser_import">Importar</string>
+    <string name="browser_open">Abrir</string>
+    <string name="browser_export_copy">Exportar uma cópia</string>
+    <string name="browser_rename">Renomear</string>
+    <string name="common_delete">Excluir</string>
+    <string name="browser_create">Criar</string>
+    <string name="browser_name">Nome</string>
+    <string name="browser_delete_title">Excluir %1$s?</string>
+    <string name="browser_delete_folder_empty">A pasta precisa estar vazia.</string>
+    <string name="browser_delete_file_warning">Isso remove o arquivo do volume permanentemente.</string>
+    <string name="browser_err_import">Falha ao importar</string>
+    <string name="browser_err_export">Falha ao exportar</string>
+    <string name="browser_err_listing">Não foi possível listar esta pasta</string>
+    <string name="browser_err_mkdir">Não foi possível criar a pasta</string>
+    <string name="browser_err_rename">Falha ao renomear</string>
+    <string name="browser_err_delete">Falha ao excluir</string>
+</resources>

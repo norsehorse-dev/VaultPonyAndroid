@@ -1,57 +1,40 @@
-# VaultPony
+# VaultPonyAndroid
 
-Open and edit VeraCrypt® file containers on Android, iOS, and desktop —
-zero network, FOSS, one Rust core.
+VeraCrypt-compatible encrypted vaults on Android. Create and open encrypted
+containers, including hidden volumes, backed by the shared Rust core
+(VaultPonyCore). Kotlin and Jetpack Compose over a UniFFI boundary.
 
-Not affiliated with or endorsed by IDRIX. VeraCrypt is a registered
-trademark of IDRIX.
+- Create and open VeraCrypt-compatible containers; pick cipher, hash, and
+  filesystem (FAT or exFAT).
+- Hidden volumes, with write protection for the outer volume.
+- Header backup and recovery, change password, and keyfiles.
+- Biometric unlock, auto-lock on background, hidden screen, and a no-trace mode.
+- Localized in English, German, Spanish, French, Russian, and Brazilian
+  Portuguese, with live in-app switching.
 
-**Status: pre-release scaffolding. Nothing here is public yet.**
+## Building
 
-## Layout
+Prereqs: Android Studio or the SDK with NDK r27, rustup with the toolchain
+pinned by VaultPonyCore, the Android Rust targets, and cargo-ndk:
 
-| Path | What |
-|---|---|
-| `core/vc-types` | Header layout, cipher/PRF registry (generated), geometry, errors |
-| `core/vc-format` | Header discovery, candidate search, decrypt/validate, backup headers |
-| `core/vc-crypto` | PBKDF2 header-key derivation, XTS engine incl. cascades |
-| `core/vc-io` | Block-device trait: `std::fs` file (desktop) and raw-fd (mobile) |
-| `core/vc-fs` | VFS trait + adapters: `fatfs` (RW), `norse-exfat`, `ntfs` (RO) |
-| `core/norse-exfat` | Our exFAT implementation (read first; write is its own release) |
-| `core/vault-core` | Sessions, unlock flow, mount table, auto-lock |
-| `core/vault-ffi` | UniFFI boundary → Kotlin + Swift bindings |
-| `core/vaultpony-cli` | Headless CLI; doubles as test harness and support tool |
-| `tools/gen-fixtures` | Matrix generator + fixture corpus builder (fixtures are the spec) |
+    rustup target add aarch64-linux-android x86_64-linux-android armv7-linux-androideabi
+    cargo install cargo-ndk
 
-Shells: `android/` (Kotlin + Compose, P3 read-only — see its README);
-`ios/` and `desktop/` land with their phases. `third_party/fatfs` is a
-patched vendor copy (see its VAULTPONY.md for why and when it dies).
+The Rust core is a separate repo (VaultPonyCore), resolved as a sibling checkout
+at ../VaultPonyCore when present, otherwise the git submodule at ./VaultPonyCore.
+Clone with --recursive, or after cloning run:
 
-## Build
+    git submodule update --init --recursive
 
-```
-cargo test --workspace --locked
-```
+Then build and install:
 
-Toolchain is pinned in `rust-toolchain.toml`; `Cargo.lock` is committed; CI
-and release builds always use `--locked`.
+    ./gradlew installDebug
 
-Generate mobile bindings:
-
-```
-cargo build -p vault-ffi
-cargo run -p vault-ffi --features cli --bin uniffi-bindgen -- generate --library target/debug/libvault_ffi.so --language kotlin --language swift --out-dir bindings/
-```
-
-## Design
-
-The planning doc is the source of truth for scope and phasing. Security
-posture: see `THREAT_MODEL.md`. Format compatibility matrix: generated from
-a pinned VeraCrypt source checkout by `tools/gen-fixtures/gen_matrix.py` —
-never hand-edited.
+Gradle builds the core with cargo-ndk and regenerates the UniFFI bindings on each
+build; both outputs are gitignored. Set VAULTPONY_CORE to point at a core
+checkout in a non-default location.
 
 ## License
 
-Proposed split (pending final decision): core crates Apache-2.0, apps
-GPL-3.0. Clean-room implementation from published format documentation and
-independent crates only — no VeraCrypt/TrueCrypt source is used or linked.
+Apache-2.0. See LICENSE. VaultPony is not affiliated with or endorsed by IDRIX;
+VeraCrypt is a registered trademark of IDRIX.

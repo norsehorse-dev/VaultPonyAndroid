@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_back">Retour</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_privacy_header">Confidentialité</string>
+    <string name="settings_security_header">Sécurité</string>
+    <string name="settings_language_header">Langue</string>
+
+    <string name="settings_remember_title">Mémoriser mes coffres</string>
+    <string name="settings_remember_subtitle">Affiche une liste d\'accueil des coffres que vous avez ouverts. Enregistre leurs emplacements sur cet appareil.</string>
+    <string name="settings_secure_title">Masquer le contenu de l\'écran</string>
+    <string name="settings_secure_subtitle">Bloque les captures d\'écran et masque l\'application dans les Récents.</string>
+    <string name="settings_autolock_title">Verrouillage automatique</string>
+    <string name="settings_autolock_subtitle">Se verrouille en quittant l\'application ou lorsque l\'écran s\'éteint.</string>
+
+    <string name="settings_pony_header">Autres applications pony</string>
+    <string name="pony_pgpony_subtitle">Chiffrement OpenPGP</string>
+    <string name="pony_passpony_subtitle">Gestionnaire de mots de passe</string>
+    <string name="pony_burnpony_subtitle">Notes qui s\'effacent après lecture</string>
+    <string name="pony_carrierpony_subtitle">Messagerie PGP asynchrone</string>
+    <string name="pony_agepony_subtitle">Chiffrement age</string>
+    <string name="pony_relaypony_subtitle">Transfert de fichiers chiffré</string>
+    <string name="pony_quorumpony_subtitle">Sauvegarde de clés par partage de secret</string>
+
+    <string name="settings_links_header">Liens</string>
+    <string name="settings_link_website">Site web</string>
+    <string name="settings_link_pony_family">La famille pony</string>
+    <string name="settings_link_source_app">Code source (VaultPonyAndroid)</string>
+    <string name="settings_link_source_core">Code source (VaultPonyCore)</string>
+    <string name="settings_link_contact">Contact</string>
+
+    <string name="settings_version">Version</string>
+    <string name="settings_family_footer">VaultPony fait partie de la famille pony d\'outils de confidentialité : un chiffrement que vous pouvez inspecter au lieu de croire un développeur sur parole.</string>
+
+    <string name="settings_help_header">Aide</string>
+    <string name="settings_replay_onboarding">Revoir l\'introduction</string>
+
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_next">Suivant</string>
+    <string name="onboarding_get_started">Commencer</string>
+    <string name="onboarding_create_cta">Créer un coffre</string>
+    <string name="onboarding_language_title">Langue</string>
+    <string name="onboarding_language_body">Choisissez votre langue. Vous pouvez la changer à tout moment dans les Paramètres.</string>
+    <string name="onboarding_welcome_title">VaultPony</string>
+    <string name="onboarding_welcome_body">Des coffres chiffrés que vous contrôlez. Libre et compatible avec VeraCrypt.</string>
+    <string name="onboarding_create_title">Créez votre premier coffre</string>
+    <string name="onboarding_create_body">Un coffre est un seul fichier chiffré. Mettez-y ce que vous voulez ; seul votre mot de passe l\'ouvre.</string>
+    <string name="onboarding_hidden_title">Volumes cachés</string>
+    <string name="onboarding_hidden_body">Cachez un second coffre dans le premier. Deux mots de passe, et l\'extérieur ne révèle rien du coffre caché.</string>
+    <string name="onboarding_security_title">Bien verrouillé</string>
+    <string name="onboarding_security_body">Le déverrouillage biométrique, le verrouillage automatique à la sortie et un écran masqué gardent vos coffres à vous seul.</string>
+
+    <string name="vault_created_title">Coffre créé</string>
+    <string name="vault_created_body">Votre coffre est enregistré à l\'emplacement que vous avez choisi. Ouvrez-le maintenant avec le mot de passe que vous venez de définir. Après la première ouverture, il apparaît sur votre écran d\'accueil pour un accès rapide.</string>
+    <string name="vault_created_open">Ouvrir le coffre</string>
+    <string name="vault_created_done">Terminé</string>
+    <string name="vault_created_continue">Continuer la configuration</string>
+
+    <string name="common_settings">Paramètres</string>
+    <string name="home_your_vaults">Vos coffres</string>
+    <string name="home_add">Ajouter</string>
+    <string name="home_new_vault_title">Nouveau coffre</string>
+    <string name="home_new_vault_subtitle">Créer un conteneur chiffré</string>
+    <string name="home_open_title">Ouvrir un conteneur…</string>
+    <string name="home_open_subtitle">Choisissez n\'importe quel fichier (sans extension aussi)</string>
+    <string name="home_no_trace">Le mode sans trace est activé. Les coffres ouverts ne sont pas mémorisés.</string>
+    <string name="home_opened_relative">ouvert %1$s</string>
+    <string name="home_recently">récemment</string>
+    <string name="home_forget">Oublier</string>
+
+    <string name="viewer_binary">Fichier binaire (%1$s). Exportez-le pour l\'ouvrir ailleurs.</string>
+    <string name="viewer_too_big">Le fichier fait %1$s. Trop volumineux pour un aperçu dans l\'application. Exportez-le à la place.</string>
+    <string name="viewer_read_error">Impossible de lire ce fichier : %1$s</string>
+
+    <string name="common_done">Terminé</string>
+    <string name="common_op_failed">L\'opération a échoué</string>
+
+    <string name="recovery_title">Récupération de l\'en-tête</string>
+    <string name="recovery_intro">L\'en-tête contient les clés qui déchiffrent ce coffre. S\'il est endommagé, le coffre ne s\'ouvrira pas. Conservez une sauvegarde en lieu sûr.</string>
+    <string name="recovery_backup_header">Sauvegarder</string>
+    <string name="recovery_save_backup">Enregistrer la sauvegarde de l\'en-tête…</string>
+    <string name="recovery_backup_warning">Cette sauvegarde continue d\'ouvrir le coffre avec le mot de passe actuel, même après l\'avoir changé. Conservez-la aussi précieusement que le coffre lui-même.</string>
+    <string name="recovery_restore_header">Restaurer</string>
+    <string name="recovery_restore_intro">Saisissez le mot de passe du coffre. Il est vérifié avant toute écriture, un mot de passe erroné ne change donc rien.</string>
+    <string name="recovery_vault_password">Mot de passe du coffre</string>
+    <string name="recovery_pim_label">PIM (avancé, généralement vide)</string>
+    <string name="recovery_restore_embedded">Restaurer depuis la sauvegarde intégrée</string>
+    <string name="recovery_restore_file">Restaurer depuis un fichier de sauvegarde…</string>
+    <string name="recovery_msg_backup_saved">Sauvegarde de l\'en-tête enregistrée.</string>
+    <string name="recovery_msg_restored_file">En-tête principal restauré depuis le fichier.</string>
+    <string name="recovery_msg_restored_embedded">En-tête principal restauré depuis la sauvegarde intégrée.</string>
+
+    <string name="change_pw_title">Changer le mot de passe</string>
+    <string name="change_pw_intro">Re-chiffre l\'en-tête du coffre avec un nouveau mot de passe. Vos fichiers restent intacts, et le mot de passe actuel est vérifié avant toute écriture.</string>
+    <string name="change_pw_current_header">Actuel</string>
+    <string name="change_pw_current_label">Mot de passe actuel</string>
+    <string name="change_pw_current_pim">PIM actuel (généralement vide)</string>
+    <string name="change_pw_new_header">Nouveau</string>
+    <string name="change_pw_new_label">Nouveau mot de passe</string>
+    <string name="change_pw_confirm_label">Confirmer le nouveau mot de passe</string>
+    <string name="change_pw_new_pim">Nouveau PIM (généralement vide)</string>
+    <string name="change_pw_differ">Le nouveau mot de passe doit être différent de l\'actuel.</string>
+    <string name="change_pw_working">Re-chiffrement de l\'en-tête…</string>
+    <string name="change_pw_success">Mot de passe changé. Utilisez votre nouveau mot de passe désormais.</string>
+    <string name="change_pw_error">Impossible de changer le mot de passe.</string>
+    <string name="change_pw_keyfile_note">Les coffres protégés par fichier-clé ne peuvent pas encore être modifiés ici. Utilisez la CLI.</string>
+
+    <string name="unlock_title">Déverrouiller le coffre</string>
+    <string name="unlock_subtitle_none">Ouvrez ou créez un conteneur chiffré</string>
+    <string name="unlock_subtitle_sealed">Ce conteneur est scellé</string>
+    <string name="unlock_open_container">Ouvrir un conteneur…</string>
+    <string name="unlock_create_new">Créer un nouveau conteneur…</string>
+    <string name="unlock_biometrics">Déverrouiller par biométrie</string>
+    <string name="unlock_forget_biometrics">Oublier le déverrouillage biométrique</string>
+    <string name="unlock_password">Mot de passe</string>
+    <string name="unlock_outer_password">Mot de passe du volume externe</string>
+    <string name="unlock_protect_hidden">Ce coffre a un volume caché ; protégez-le</string>
+    <string name="unlock_hidden_password">Mot de passe du volume caché</string>
+    <string name="unlock_protect_note">Les deux mots de passe sont nécessaires. Les écritures qui atteindraient le volume caché sont bloquées et le coffre passe en lecture seule.</string>
+    <string name="unlock_add_keyfiles">Ajouter des fichiers-clés</string>
+    <string name="unlock_keyfiles_count">%1$d fichier(s)-clé, modifier</string>
+    <string name="unlock_pim_button">PIM</string>
+    <string name="unlock_clear_keyfiles">Effacer les fichiers-clés</string>
+    <string name="unlock_pim_label">PIM (avancé, généralement vide)</string>
+    <string name="unlock_enroll_bio">Activer le déverrouillage biométrique sur cet appareil</string>
+    <string name="unlock_enroll_note">Stocke ce mot de passe sur l\'appareil derrière votre biométrie. Ne l\'activez pas pour un volume caché.</string>
+    <string name="unlock_progress">Essai de %1$s (%2$d/%3$d)…</string>
+    <string name="unlock_open_outer">Ouvrir l\'externe (protégé)</string>
+    <string name="unlock_open_vault">Ouvrir le coffre</string>
+    <string name="unlock_failed">Échec du déverrouillage</string>
+    <string name="unlock_recovery_link">Sauvegarde et récupération de l\'en-tête</string>
+
+    <string name="common_cancel">Annuler</string>
+    <string name="create_confirm_password">Confirmer le mot de passe</string>
+    <string name="create_size">Taille</string>
+    <string name="create_custom_size">Taille personnalisée</string>
+    <string name="create_min">Utilisez au moins 1 Mo.</string>
+    <string name="create_min_hidden">Utilisez au moins 4 Mo pour un coffre caché.</string>
+    <string name="create_encryption">Chiffrement</string>
+    <string name="create_hash">Hachage</string>
+    <string name="create_filesystem">Système de fichiers</string>
+    <string name="create_exfat_note">exFAT prend en charge les fichiers de plus de 4 Go. FAT est plus universellement compatible pour les petits coffres.</string>
+    <string name="create_hidden_volume">Volume caché</string>
+    <string name="create_hidden_subtitle">Un second coffre dissimulé avec son propre mot de passe.</string>
+    <string name="create_hidden_password">Mot de passe caché</string>
+    <string name="create_confirm_hidden">Confirmer le mot de passe caché</string>
+    <string name="create_hidden_differ">Le mot de passe caché doit être différent de celui de l\'extérieur.</string>
+    <string name="create_hidden_size">Taille cachée</string>
+    <string name="create_fraction_of_vault">%1$s du coffre</string>
+    <string name="create_hidden_warning">Écrire dans le volume externe peut écraser le volume caché. Gardez le coffre externe léger et ne le remplissez que lorsque vous déverrouillez uniquement avec le mot de passe externe.</string>
+    <string name="create_working">Création et formatage…</string>
+    <string name="create_action">Choisir l\'emplacement et créer</string>
+    <string name="create_invalid_size">Saisissez une taille valide</string>
+    <string name="create_error">Impossible de créer le conteneur.</string>
+
+    <string name="browser_title">Coffre</string>
+    <string name="browser_rw">lecture/écriture</string>
+    <string name="browser_ro">lecture seule</string>
+    <string name="browser_lock">Verrouiller</string>
+    <string name="browser_new_folder">Nouveau dossier</string>
+    <string name="browser_import">Importer</string>
+    <string name="browser_open">Ouvrir</string>
+    <string name="browser_export_copy">Exporter une copie</string>
+    <string name="browser_rename">Renommer</string>
+    <string name="common_delete">Supprimer</string>
+    <string name="browser_create">Créer</string>
+    <string name="browser_name">Nom</string>
+    <string name="browser_delete_title">Supprimer %1$s ?</string>
+    <string name="browser_delete_folder_empty">Le dossier doit être vide.</string>
+    <string name="browser_delete_file_warning">Cela supprime définitivement le fichier du volume.</string>
+    <string name="browser_err_import">Échec de l\'importation</string>
+    <string name="browser_err_export">Échec de l\'exportation</string>
+    <string name="browser_err_listing">Impossible de lister ce dossier</string>
+    <string name="browser_err_mkdir">Impossible de créer le dossier</string>
+    <string name="browser_err_rename">Échec du renommage</string>
+    <string name="browser_err_delete">Échec de la suppression</string>
+</resources>

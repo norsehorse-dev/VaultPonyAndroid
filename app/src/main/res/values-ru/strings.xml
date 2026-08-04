@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_back">Назад</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_privacy_header">Конфиденциальность</string>
+    <string name="settings_security_header">Безопасность</string>
+    <string name="settings_language_header">Язык</string>
+
+    <string name="settings_remember_title">Запоминать мои хранилища</string>
+    <string name="settings_remember_subtitle">Показывает на главном экране список открытых хранилищ. Их расположение сохраняется на этом устройстве.</string>
+    <string name="settings_secure_title">Скрывать содержимое экрана</string>
+    <string name="settings_secure_subtitle">Блокирует снимки экрана и скрывает приложение в списке недавних.</string>
+    <string name="settings_autolock_title">Автоблокировка</string>
+    <string name="settings_autolock_subtitle">Блокируется при выходе из приложения или выключении экрана.</string>
+
+    <string name="settings_pony_header">Другие приложения pony</string>
+    <string name="pony_pgpony_subtitle">Шифрование OpenPGP</string>
+    <string name="pony_passpony_subtitle">Менеджер паролей</string>
+    <string name="pony_burnpony_subtitle">Заметки, удаляемые после прочтения</string>
+    <string name="pony_carrierpony_subtitle">Асинхронный PGP-мессенджер</string>
+    <string name="pony_agepony_subtitle">Шифрование age</string>
+    <string name="pony_relaypony_subtitle">Зашифрованная передача файлов</string>
+    <string name="pony_quorumpony_subtitle">Резервное копирование ключей с разделением секрета</string>
+
+    <string name="settings_links_header">Ссылки</string>
+    <string name="settings_link_website">Веб-сайт</string>
+    <string name="settings_link_pony_family">Семейство pony</string>
+    <string name="settings_link_source_app">Исходный код (VaultPonyAndroid)</string>
+    <string name="settings_link_source_core">Исходный код (VaultPonyCore)</string>
+    <string name="settings_link_contact">Контакт</string>
+
+    <string name="settings_version">Версия</string>
+    <string name="settings_family_footer">VaultPony входит в семейство pony инструментов приватности: шифрование, которое можно проверить, а не верить разработчику на слово.</string>
+
+    <string name="settings_help_header">Помощь</string>
+    <string name="settings_replay_onboarding">Показать введение снова</string>
+
+    <string name="onboarding_skip">Пропустить</string>
+    <string name="onboarding_next">Далее</string>
+    <string name="onboarding_get_started">Начать</string>
+    <string name="onboarding_create_cta">Создать хранилище</string>
+    <string name="onboarding_language_title">Язык</string>
+    <string name="onboarding_language_body">Выберите язык. Его можно изменить в любой момент в настройках.</string>
+    <string name="onboarding_welcome_title">VaultPony</string>
+    <string name="onboarding_welcome_body">Зашифрованные хранилища под вашим контролем. Открытый код и совместимость с VeraCrypt.</string>
+    <string name="onboarding_create_title">Создайте первое хранилище</string>
+    <string name="onboarding_create_body">Хранилище представляет собой один зашифрованный файл. Положите в него что угодно; открывает его только ваш пароль.</string>
+    <string name="onboarding_hidden_title">Скрытые тома</string>
+    <string name="onboarding_hidden_body">Спрячьте второе хранилище внутри первого. Два пароля, и внешний не выдаёт существования скрытого.</string>
+    <string name="onboarding_security_title">Под замком</string>
+    <string name="onboarding_security_body">Биометрическая разблокировка, автоблокировка при выходе и скрытие экрана делают ваши хранилища только вашими.</string>
+
+    <string name="vault_created_title">Хранилище создано</string>
+    <string name="vault_created_body">Ваше хранилище сохранено в выбранном месте. Откройте его сейчас с паролем, который вы только что задали. После первого открытия оно появится на главном экране для быстрого доступа.</string>
+    <string name="vault_created_open">Открыть хранилище</string>
+    <string name="vault_created_done">Готово</string>
+    <string name="vault_created_continue">Продолжить настройку</string>
+
+    <string name="common_settings">Настройки</string>
+    <string name="home_your_vaults">Ваши хранилища</string>
+    <string name="home_add">Добавить</string>
+    <string name="home_new_vault_title">Новое хранилище</string>
+    <string name="home_new_vault_subtitle">Создать зашифрованный контейнер</string>
+    <string name="home_open_title">Открыть контейнер…</string>
+    <string name="home_open_subtitle">Выберите любой файл (можно без расширения)</string>
+    <string name="home_no_trace">Режим без следов включён. Открытые хранилища не запоминаются.</string>
+    <string name="home_opened_relative">открыто %1$s</string>
+    <string name="home_recently">недавно</string>
+    <string name="home_forget">Забыть</string>
+
+    <string name="viewer_binary">Двоичный файл (%1$s). Экспортируйте его, чтобы открыть в другом приложении.</string>
+    <string name="viewer_too_big">Размер файла %1$s. Слишком большой для предпросмотра в приложении. Экспортируйте его.</string>
+    <string name="viewer_read_error">Не удалось прочитать этот файл: %1$s</string>
+
+    <string name="common_done">Готово</string>
+    <string name="common_op_failed">Не удалось выполнить операцию</string>
+
+    <string name="recovery_title">Восстановление заголовка</string>
+    <string name="recovery_intro">Заголовок содержит ключи для расшифровки этого хранилища. Если он повреждён, хранилище не откроется. Храните резервную копию в надёжном месте.</string>
+    <string name="recovery_backup_header">Резервная копия</string>
+    <string name="recovery_save_backup">Сохранить копию заголовка…</string>
+    <string name="recovery_backup_warning">Эта копия по-прежнему открывает хранилище текущим паролем, даже после его смены. Храните её так же надёжно, как само хранилище.</string>
+    <string name="recovery_restore_header">Восстановить</string>
+    <string name="recovery_restore_intro">Введите пароль хранилища. Он проверяется до любой записи, поэтому неверный пароль ничего не изменит.</string>
+    <string name="recovery_vault_password">Пароль хранилища</string>
+    <string name="recovery_pim_label">PIM (для опытных, обычно пусто)</string>
+    <string name="recovery_restore_embedded">Восстановить из встроенной копии</string>
+    <string name="recovery_restore_file">Восстановить из файла копии…</string>
+    <string name="recovery_msg_backup_saved">Копия заголовка сохранена.</string>
+    <string name="recovery_msg_restored_file">Основной заголовок восстановлен из файла.</string>
+    <string name="recovery_msg_restored_embedded">Основной заголовок восстановлен из встроенной копии.</string>
+
+    <string name="change_pw_title">Сменить пароль</string>
+    <string name="change_pw_intro">Перешифровывает заголовок хранилища новым паролем. Ваши файлы не затрагиваются, а текущий пароль проверяется до любой записи.</string>
+    <string name="change_pw_current_header">Текущий</string>
+    <string name="change_pw_current_label">Текущий пароль</string>
+    <string name="change_pw_current_pim">Текущий PIM (обычно пусто)</string>
+    <string name="change_pw_new_header">Новый</string>
+    <string name="change_pw_new_label">Новый пароль</string>
+    <string name="change_pw_confirm_label">Подтвердите новый пароль</string>
+    <string name="change_pw_new_pim">Новый PIM (обычно пусто)</string>
+    <string name="change_pw_differ">Новый пароль должен отличаться от текущего.</string>
+    <string name="change_pw_working">Перешифрование заголовка…</string>
+    <string name="change_pw_success">Пароль изменён. Теперь используйте новый пароль.</string>
+    <string name="change_pw_error">Не удалось сменить пароль.</string>
+    <string name="change_pw_keyfile_note">Хранилища, защищённые файлами-ключами, пока нельзя изменить здесь. Используйте CLI.</string>
+
+    <string name="unlock_title">Открыть хранилище</string>
+    <string name="unlock_subtitle_none">Откройте или создайте зашифрованный контейнер</string>
+    <string name="unlock_subtitle_sealed">Этот контейнер запечатан</string>
+    <string name="unlock_open_container">Открыть контейнер…</string>
+    <string name="unlock_create_new">Создать новый контейнер…</string>
+    <string name="unlock_biometrics">Разблокировать биометрией</string>
+    <string name="unlock_forget_biometrics">Забыть биометрическую разблокировку</string>
+    <string name="unlock_password">Пароль</string>
+    <string name="unlock_outer_password">Пароль внешнего тома</string>
+    <string name="unlock_protect_hidden">В этом хранилище есть скрытый том; защитите его</string>
+    <string name="unlock_hidden_password">Пароль скрытого тома</string>
+    <string name="unlock_protect_note">Нужны оба пароля. Запись, которая затронула бы скрытый том, блокируется, и хранилище становится доступным только для чтения.</string>
+    <string name="unlock_add_keyfiles">Добавить файлы-ключи</string>
+    <string name="unlock_keyfiles_count">Файлов-ключей: %1$d, изменить</string>
+    <string name="unlock_pim_button">PIM</string>
+    <string name="unlock_clear_keyfiles">Убрать файлы-ключи</string>
+    <string name="unlock_pim_label">PIM (для опытных, обычно пусто)</string>
+    <string name="unlock_enroll_bio">Включить биометрическую разблокировку на этом устройстве</string>
+    <string name="unlock_enroll_note">Сохраняет этот пароль на устройстве за вашей биометрией. Не включайте это для скрытого тома.</string>
+    <string name="unlock_progress">Проверка %1$s (%2$d/%3$d)…</string>
+    <string name="unlock_open_outer">Открыть внешний (защищённо)</string>
+    <string name="unlock_open_vault">Открыть хранилище</string>
+    <string name="unlock_failed">Не удалось разблокировать</string>
+    <string name="unlock_recovery_link">Резервная копия и восстановление заголовка</string>
+
+    <string name="common_cancel">Отмена</string>
+    <string name="create_confirm_password">Подтвердите пароль</string>
+    <string name="create_size">Размер</string>
+    <string name="create_custom_size">Свой размер</string>
+    <string name="create_min">Используйте не менее 1 МБ.</string>
+    <string name="create_min_hidden">Для скрытого хранилища используйте не менее 4 МБ.</string>
+    <string name="create_encryption">Шифрование</string>
+    <string name="create_hash">Хеш</string>
+    <string name="create_filesystem">Файловая система</string>
+    <string name="create_exfat_note">exFAT поддерживает файлы больше 4 ГБ. FAT более универсально совместима для небольших хранилищ.</string>
+    <string name="create_hidden_volume">Скрытый том</string>
+    <string name="create_hidden_subtitle">Скрытое второе хранилище с собственным паролем.</string>
+    <string name="create_hidden_password">Скрытый пароль</string>
+    <string name="create_confirm_hidden">Подтвердите скрытый пароль</string>
+    <string name="create_hidden_differ">Скрытый пароль должен отличаться от внешнего.</string>
+    <string name="create_hidden_size">Размер скрытого</string>
+    <string name="create_fraction_of_vault">%1$s хранилища</string>
+    <string name="create_hidden_warning">Запись во внешний том может перезаписать скрытый. Держите внешнее хранилище незаполненным и наполняйте его только при разблокировке одним внешним паролем.</string>
+    <string name="create_working">Создание и форматирование…</string>
+    <string name="create_action">Выбрать место и создать</string>
+    <string name="create_invalid_size">Введите корректный размер</string>
+    <string name="create_error">Не удалось создать контейнер.</string>
+
+    <string name="browser_title">Хранилище</string>
+    <string name="browser_rw">чтение/запись</string>
+    <string name="browser_ro">только чтение</string>
+    <string name="browser_lock">Заблокировать</string>
+    <string name="browser_new_folder">Новая папка</string>
+    <string name="browser_import">Импорт</string>
+    <string name="browser_open">Открыть</string>
+    <string name="browser_export_copy">Экспортировать копию</string>
+    <string name="browser_rename">Переименовать</string>
+    <string name="common_delete">Удалить</string>
+    <string name="browser_create">Создать</string>
+    <string name="browser_name">Имя</string>
+    <string name="browser_delete_title">Удалить %1$s?</string>
+    <string name="browser_delete_folder_empty">Папка должна быть пустой.</string>
+    <string name="browser_delete_file_warning">Это навсегда удалит файл из тома.</string>
+    <string name="browser_err_import">Не удалось импортировать</string>
+    <string name="browser_err_export">Не удалось экспортировать</string>
+    <string name="browser_err_listing">Не удалось показать содержимое папки</string>
+    <string name="browser_err_mkdir">Не удалось создать папку</string>
+    <string name="browser_err_rename">Не удалось переименовать</string>
+    <string name="browser_err_delete">Не удалось удалить</string>
+</resources>

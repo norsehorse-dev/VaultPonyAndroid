@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_back">Atrás</string>
+
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_privacy_header">Privacidad</string>
+    <string name="settings_security_header">Seguridad</string>
+    <string name="settings_language_header">Idioma</string>
+
+    <string name="settings_remember_title">Recordar mis bóvedas</string>
+    <string name="settings_remember_subtitle">Muestra una lista de inicio de las bóvedas que has abierto. Guarda sus ubicaciones en este dispositivo.</string>
+    <string name="settings_secure_title">Ocultar el contenido de la pantalla</string>
+    <string name="settings_secure_subtitle">Bloquea las capturas de pantalla y oculta la app en Recientes.</string>
+    <string name="settings_autolock_title">Bloqueo automático</string>
+    <string name="settings_autolock_subtitle">Se bloquea al salir de la app o al apagarse la pantalla.</string>
+
+    <string name="settings_pony_header">Más apps pony</string>
+    <string name="pony_pgpony_subtitle">Cifrado OpenPGP</string>
+    <string name="pony_passpony_subtitle">Gestor de contraseñas</string>
+    <string name="pony_burnpony_subtitle">Notas que se destruyen tras leerse</string>
+    <string name="pony_carrierpony_subtitle">Mensajería PGP asíncrona</string>
+    <string name="pony_agepony_subtitle">Cifrado age</string>
+    <string name="pony_relaypony_subtitle">Transferencia de archivos cifrada</string>
+    <string name="pony_quorumpony_subtitle">Copia de claves con reparto de secretos</string>
+
+    <string name="settings_links_header">Enlaces</string>
+    <string name="settings_link_website">Sitio web</string>
+    <string name="settings_link_pony_family">La familia pony</string>
+    <string name="settings_link_source_app">Código fuente (VaultPonyAndroid)</string>
+    <string name="settings_link_source_core">Código fuente (VaultPonyCore)</string>
+    <string name="settings_link_contact">Contacto</string>
+
+    <string name="settings_version">Versión</string>
+    <string name="settings_family_footer">VaultPony forma parte de la familia pony de herramientas de privacidad: cifrado que puedes inspeccionar en lugar de fiarte de la palabra de un desarrollador.</string>
+
+    <string name="settings_help_header">Ayuda</string>
+    <string name="settings_replay_onboarding">Ver la introducción de nuevo</string>
+
+    <string name="onboarding_skip">Omitir</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_get_started">Empezar</string>
+    <string name="onboarding_create_cta">Crear una bóveda</string>
+    <string name="onboarding_language_title">Idioma</string>
+    <string name="onboarding_language_body">Elige tu idioma. Puedes cambiarlo cuando quieras en Ajustes.</string>
+    <string name="onboarding_welcome_title">VaultPony</string>
+    <string name="onboarding_welcome_body">Bóvedas cifradas que tú controlas. De código abierto y compatible con VeraCrypt.</string>
+    <string name="onboarding_create_title">Crea tu primera bóveda</string>
+    <string name="onboarding_create_body">Una bóveda es un único archivo cifrado. Guarda lo que quieras dentro; solo tu contraseña la abre.</string>
+    <string name="onboarding_hidden_title">Volúmenes ocultos</string>
+    <string name="onboarding_hidden_body">Oculta una segunda bóveda dentro de la primera. Dos contraseñas, y la exterior no da ninguna señal de que exista la oculta.</string>
+    <string name="onboarding_security_title">Bien protegido</string>
+    <string name="onboarding_security_body">El desbloqueo biométrico, el bloqueo automático al salir y la pantalla oculta mantienen tus bóvedas solo tuyas.</string>
+
+    <string name="vault_created_title">Bóveda creada</string>
+    <string name="vault_created_body">Tu bóveda se guardó en la ubicación que elegiste. Ábrela ahora con la contraseña que acabas de establecer. La primera vez que la abras, aparecerá en tu pantalla de inicio para acceder rápidamente.</string>
+    <string name="vault_created_open">Abrir la bóveda ahora</string>
+    <string name="vault_created_done">Listo</string>
+    <string name="vault_created_continue">Continuar configuración</string>
+
+    <string name="common_settings">Ajustes</string>
+    <string name="home_your_vaults">Tus bóvedas</string>
+    <string name="home_add">Añadir</string>
+    <string name="home_new_vault_title">Nueva bóveda</string>
+    <string name="home_new_vault_subtitle">Crear un contenedor cifrado</string>
+    <string name="home_open_title">Abrir un contenedor…</string>
+    <string name="home_open_subtitle">Elige cualquier archivo (sin extensión también vale)</string>
+    <string name="home_no_trace">El modo sin rastro está activado. Las bóvedas abiertas no se recuerdan.</string>
+    <string name="home_opened_relative">abierta %1$s</string>
+    <string name="home_recently">hace poco</string>
+    <string name="home_forget">Olvidar</string>
+
+    <string name="viewer_binary">Archivo binario (%1$s). Expórtalo para abrirlo en otra parte.</string>
+    <string name="viewer_too_big">El archivo mide %1$s. Demasiado grande para previsualizar en la app. Expórtalo en su lugar.</string>
+    <string name="viewer_read_error">No se pudo leer este archivo: %1$s</string>
+
+    <string name="common_done">Listo</string>
+    <string name="common_op_failed">La operación falló</string>
+
+    <string name="recovery_title">Recuperación de encabezado</string>
+    <string name="recovery_intro">El encabezado contiene las claves que descifran esta bóveda. Si se daña, la bóveda no se abrirá. Guarda una copia en un lugar seguro.</string>
+    <string name="recovery_backup_header">Copia de seguridad</string>
+    <string name="recovery_save_backup">Guardar copia del encabezado…</string>
+    <string name="recovery_backup_warning">Esta copia sigue abriendo la bóveda con la contraseña actual, incluso después de cambiarla. Guárdala tan segura como la propia bóveda.</string>
+    <string name="recovery_restore_header">Restaurar</string>
+    <string name="recovery_restore_intro">Introduce la contraseña de la bóveda. Se verifica antes de escribir nada, así que una contraseña incorrecta no cambia nada.</string>
+    <string name="recovery_vault_password">Contraseña de la bóveda</string>
+    <string name="recovery_pim_label">PIM (avanzado, normalmente vacío)</string>
+    <string name="recovery_restore_embedded">Restaurar desde la copia integrada</string>
+    <string name="recovery_restore_file">Restaurar desde un archivo de copia…</string>
+    <string name="recovery_msg_backup_saved">Copia del encabezado guardada.</string>
+    <string name="recovery_msg_restored_file">Encabezado principal restaurado desde el archivo.</string>
+    <string name="recovery_msg_restored_embedded">Encabezado principal restaurado desde la copia integrada.</string>
+
+    <string name="change_pw_title">Cambiar contraseña</string>
+    <string name="change_pw_intro">Vuelve a cifrar el encabezado de la bóveda con una nueva contraseña. Tus archivos quedan intactos, y la contraseña actual se verifica antes de escribir nada.</string>
+    <string name="change_pw_current_header">Actual</string>
+    <string name="change_pw_current_label">Contraseña actual</string>
+    <string name="change_pw_current_pim">PIM actual (normalmente vacío)</string>
+    <string name="change_pw_new_header">Nueva</string>
+    <string name="change_pw_new_label">Nueva contraseña</string>
+    <string name="change_pw_confirm_label">Confirmar nueva contraseña</string>
+    <string name="change_pw_new_pim">Nueva PIM (normalmente vacío)</string>
+    <string name="change_pw_differ">La nueva contraseña debe ser distinta de la actual.</string>
+    <string name="change_pw_working">Volviendo a cifrar el encabezado…</string>
+    <string name="change_pw_success">Contraseña cambiada. Usa tu nueva contraseña a partir de ahora.</string>
+    <string name="change_pw_error">No se pudo cambiar la contraseña.</string>
+    <string name="change_pw_keyfile_note">Las bóvedas protegidas con archivos de clave aún no se pueden cambiar aquí. Usa la CLI.</string>
+
+    <string name="unlock_title">Abrir la bóveda</string>
+    <string name="unlock_subtitle_none">Abre o crea un contenedor cifrado</string>
+    <string name="unlock_subtitle_sealed">Este contenedor está sellado</string>
+    <string name="unlock_open_container">Abrir contenedor…</string>
+    <string name="unlock_create_new">Crear un contenedor nuevo…</string>
+    <string name="unlock_biometrics">Desbloquear con biometría</string>
+    <string name="unlock_forget_biometrics">Olvidar el desbloqueo biométrico</string>
+    <string name="unlock_password">Contraseña</string>
+    <string name="unlock_outer_password">Contraseña del volumen externo</string>
+    <string name="unlock_protect_hidden">Esta bóveda tiene un volumen oculto; protégelo</string>
+    <string name="unlock_hidden_password">Contraseña del volumen oculto</string>
+    <string name="unlock_protect_note">Se necesitan ambas contraseñas. Las escrituras que afectarían al volumen oculto se bloquean y la bóveda pasa a solo lectura.</string>
+    <string name="unlock_add_keyfiles">Añadir archivos de clave</string>
+    <string name="unlock_keyfiles_count">%1$d archivo(s) de clave, cambiar</string>
+    <string name="unlock_pim_button">PIM</string>
+    <string name="unlock_clear_keyfiles">Quitar archivos de clave</string>
+    <string name="unlock_pim_label">PIM (avanzado, normalmente vacío)</string>
+    <string name="unlock_enroll_bio">Activar el desbloqueo biométrico en este dispositivo</string>
+    <string name="unlock_enroll_note">Guarda esta contraseña en el dispositivo tras tu biometría. No lo actives para un volumen oculto.</string>
+    <string name="unlock_progress">Probando %1$s (%2$d/%3$d)…</string>
+    <string name="unlock_open_outer">Abrir el externo (protegido)</string>
+    <string name="unlock_open_vault">Abrir la bóveda</string>
+    <string name="unlock_failed">Fallo al desbloquear</string>
+    <string name="unlock_recovery_link">Copia y recuperación del encabezado</string>
+
+    <string name="common_cancel">Cancelar</string>
+    <string name="create_confirm_password">Confirmar contraseña</string>
+    <string name="create_size">Tamaño</string>
+    <string name="create_custom_size">Tamaño personalizado</string>
+    <string name="create_min">Usa al menos 1 MB.</string>
+    <string name="create_min_hidden">Usa al menos 4 MB para una bóveda oculta.</string>
+    <string name="create_encryption">Cifrado</string>
+    <string name="create_hash">Hash</string>
+    <string name="create_filesystem">Sistema de archivos</string>
+    <string name="create_exfat_note">exFAT admite archivos de más de 4 GB. FAT es más compatible en general para bóvedas pequeñas.</string>
+    <string name="create_hidden_volume">Volumen oculto</string>
+    <string name="create_hidden_subtitle">Una segunda bóveda oculta con su propia contraseña.</string>
+    <string name="create_hidden_password">Contraseña oculta</string>
+    <string name="create_confirm_hidden">Confirmar contraseña oculta</string>
+    <string name="create_hidden_differ">La contraseña oculta debe ser distinta de la externa.</string>
+    <string name="create_hidden_size">Tamaño oculto</string>
+    <string name="create_fraction_of_vault">%1$s de la bóveda</string>
+    <string name="create_hidden_warning">Escribir en el volumen externo puede sobrescribir el oculto. Mantén ligera la bóveda externa y llénala solo cuando desbloquees únicamente con la contraseña externa.</string>
+    <string name="create_working">Creando y formateando…</string>
+    <string name="create_action">Elegir ubicación y crear</string>
+    <string name="create_invalid_size">Introduce un tamaño válido</string>
+    <string name="create_error">No se pudo crear el contenedor.</string>
+
+    <string name="browser_title">Bóveda</string>
+    <string name="browser_rw">lectura/escritura</string>
+    <string name="browser_ro">solo lectura</string>
+    <string name="browser_lock">Bloquear</string>
+    <string name="browser_new_folder">Nueva carpeta</string>
+    <string name="browser_import">Importar</string>
+    <string name="browser_open">Abrir</string>
+    <string name="browser_export_copy">Exportar una copia</string>
+    <string name="browser_rename">Renombrar</string>
+    <string name="common_delete">Eliminar</string>
+    <string name="browser_create">Crear</string>
+    <string name="browser_name">Nombre</string>
+    <string name="browser_delete_title">¿Eliminar %1$s?</string>
+    <string name="browser_delete_folder_empty">La carpeta debe estar vacía.</string>
+    <string name="browser_delete_file_warning">Esto elimina el archivo del volumen de forma permanente.</string>
+    <string name="browser_err_import">Error al importar</string>
+    <string name="browser_err_export">Error al exportar</string>
+    <string name="browser_err_listing">No se pudo listar esta carpeta</string>
+    <string name="browser_err_mkdir">No se pudo crear la carpeta</string>
+    <string name="browser_err_rename">Error al renombrar</string>
+    <string name="browser_err_delete">Error al eliminar</string>
+</resources>

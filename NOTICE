@@ -1,0 +1,9 @@
+VaultPony
+Copyright 2026 NorseHorse
+
+This product includes software from the VaultPony project
+(https://github.com/norsehorse-dev/VaultPonyCore), the shared Rust core,
+licensed under the Apache License, Version 2.0.
+
+It also bundles fatfs (https://github.com/rafalh/rust-fatfs), Copyright 2017
+Rafal Harabien, under the MIT License.
