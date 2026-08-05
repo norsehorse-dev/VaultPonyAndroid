@@ -1,0 +1,47 @@
+# Builds the unsigned release APK on a Linux runner so the resulting Rust
+# libraries byte-match F-Droid's Linux buildserver. Building the reference
+# APK on macOS cannot work: the same rustc version emits differently
+# ordered symbols on macOS vs Linux, so a Mac-built libvault_ffi.so never
+# matches F-Droid's clean-room build. Download the artifact, sign it with
+# apksigner locally, and upload it as the release asset.
+name: fdroid-reference
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag to build (must match the F-Droid recipe commit)
+        required: true
+        default: v1.0.2
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install NDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018" > /dev/null
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal
+          rustup default 1.95.0
+          rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+          cargo install cargo-ndk@4.1.2 --locked
+
+      - name: Build unsigned release APK
+        run: ./gradlew assembleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fdroid-reference-apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
