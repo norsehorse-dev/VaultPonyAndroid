@@ -29,8 +29,8 @@ android {
         // minSdk 26: openProxyFileDescriptor (planning doc §8).
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
@@ -125,7 +125,20 @@ val vaultPonyCore: File = run {
 
 val cargoBuild by tasks.registering(Exec::class) {
     workingDir = vaultPonyCore
-    environment("RUSTFLAGS", "-C link-arg=-Wl,-z,max-page-size=16384")
+    // --remap-path-prefix rewrites the absolute source and registry paths
+    // that rustc embeds in the library (panic locations, debug info) to
+    // fixed values, so the same bytes come out no matter which machine or
+    // directory the build ran in. Without this, F-Droid's clean-room build
+    // can never match the released APK: their /home/vagrant/build tree and
+    // a developer's home directory produce different embedded strings.
+    val cargoHome = System.getenv("CARGO_HOME")
+        ?: "${System.getProperty("user.home")}/.cargo"
+    environment(
+        "RUSTFLAGS",
+        "-C link-arg=-Wl,-z,max-page-size=16384 " +
+            "--remap-path-prefix=${vaultPonyCore.absolutePath}=/build/core " +
+            "--remap-path-prefix=$cargoHome=/build/cargo",
+    )
     // Point cargo-ndk at the exact NDK AGP resolved, so the Rust build finds
     // it without any ANDROID_NDK_HOME in the user's shell environment.
     environment("ANDROID_NDK_HOME", android.ndkDirectory.absolutePath)

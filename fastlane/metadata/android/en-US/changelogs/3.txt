@@ -1,0 +1,7 @@
+First F-Droid release.
+
+Create and open VeraCrypt-compatible encrypted vaults on Android, including
+hidden volumes with outer-volume write protection. Choose cipher, hash, and
+filesystem (FAT or exFAT). Header backup and recovery, password change, and
+keyfiles. Biometric unlock, auto-lock, hidden-screen mode, and a no-trace mode.
+Localized in six languages with live switching.
