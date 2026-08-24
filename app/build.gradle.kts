@@ -29,8 +29,8 @@ android {
         // minSdk 26: openProxyFileDescriptor (planning doc §8).
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
@@ -123,6 +123,13 @@ val vaultPonyCore: File = run {
     }
 }
 
+// cargo and its subcommands (notably cargo-ndk) live in CARGO_HOME/bin. Put it
+// on each Rust task's own PATH so the Gradle-driven build finds them even when
+// the invoking shell does not have it on PATH: F-Droid runs Gradle itself
+// (gradle: in the recipe) rather than through our prebuild shell.
+val cargoBinDir: String =
+    (System.getenv("CARGO_HOME") ?: "${System.getProperty("user.home")}/.cargo") + "/bin"
+
 val cargoBuild by tasks.registering(Exec::class) {
     workingDir = vaultPonyCore
     // --remap-path-prefix rewrites the absolute source and registry paths
@@ -142,6 +149,7 @@ val cargoBuild by tasks.registering(Exec::class) {
     // Point cargo-ndk at the exact NDK AGP resolved, so the Rust build finds
     // it without any ANDROID_NDK_HOME in the user's shell environment.
     environment("ANDROID_NDK_HOME", android.ndkDirectory.absolutePath)
+    environment("PATH", "$cargoBinDir${File.pathSeparator}${System.getenv("PATH") ?: ""}")
     commandLine(
         "cargo", "ndk",
         "-t", "arm64-v8a", "-t", "x86_64", "-t", "armeabi-v7a",
@@ -153,6 +161,7 @@ val cargoBuild by tasks.registering(Exec::class) {
 val generateBindings by tasks.registering(Exec::class) {
     dependsOn(cargoBuild)
     workingDir = vaultPonyCore
+    environment("PATH", "$cargoBinDir${File.pathSeparator}${System.getenv("PATH") ?: ""}")
     // Bindgen reads metadata from any one of the built libraries.
     commandLine(
         "cargo", "run", "-p", "vault-ffi", "--features", "cli",
