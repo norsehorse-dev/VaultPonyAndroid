@@ -29,8 +29,8 @@ android {
         // minSdk 26: openProxyFileDescriptor (planning doc §8).
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
@@ -184,6 +184,17 @@ tasks.named("preBuild") {
 // before compileDebugKotlin, which caused "Unresolved reference: uniffi".
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     dependsOn(generateBindings)
+}
+
+// F-Droid reproducible builds: AGP serializes the ART baseline profile
+// (assets/dexopt/baseline.prof and baseline.profm) from unordered collections,
+// so it is not byte-reproducible across builds and fails F-Droid's clean-room
+// comparison even when the DEX and native code are identical. Disabling its
+// compilation drops both files; this only affects first-run startup speed.
+tasks.configureEach {
+    if (name.matches(Regex("compile.*ArtProfile"))) {
+        enabled = false
+    }
 }
 
 dependencies {
