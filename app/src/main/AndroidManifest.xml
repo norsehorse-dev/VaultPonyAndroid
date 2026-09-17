@@ -3,15 +3,20 @@
      The absence list is a headline feature; adding any permission is a
      THREAT_MODEL.md review event.
 
-     USE_BIOMETRIC is the one deliberate exception: it backs the opt-in,
-     off-by-default biometric unlock (BiometricUnlock.kt). It is a "normal"
-     permission (no runtime prompt) and is required by any biometric use. It is
-     declared here explicitly — rather than left to merge silently from the
-     androidx.biometric dependency — so the app's own manifest remains a
-     complete, auditable record of what it can do. -->
+     Biometric unlock is the one deliberate exception: it backs the opt-in,
+     off-by-default biometric unlock (BiometricUnlock.kt). USE_BIOMETRIC is a
+     "normal" permission (no runtime prompt) and is required by any biometric
+     use. USE_FINGERPRINT is the legacy companion the androidx.biometric
+     dependency pulls in for the pre-API-28 fingerprint path; it would
+     otherwise merge in silently at build time. Both are declared here
+     explicitly — so the app's own manifest stays a complete, auditable record
+     of what it can do rather than deferring part of that record to a library
+     manifest. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- suppress DeprecatedClassUsageInspection -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <application
         android:name=".VaultPonyApp"

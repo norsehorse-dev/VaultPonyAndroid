@@ -8,6 +8,7 @@ import android.os.HandlerThread
 import android.os.ParcelFileDescriptor
 import android.os.ProxyFileDescriptorCallback
 import android.os.storage.StorageManager
+import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
@@ -49,6 +50,14 @@ class VaultDocumentsProvider : DocumentsProvider() {
                 add(Root.COLUMN_ICON, android.R.drawable.ic_lock_lock)
             }
         }
+        // Register the roots URI so DocumentsUI observes lock/unlock and
+        // re-queries: on lock the session is gone, this cursor returns no
+        // rows, and the stale "Unlocked container" root drops instead of
+        // lingering in Files (doc §8 — roots track the mount table exactly).
+        c.setNotificationUri(
+            requireContext().contentResolver,
+            DocumentsContract.buildRootsUri(SessionRegistry.AUTHORITY),
+        )
         return c
     }
 
@@ -78,6 +87,15 @@ class VaultDocumentsProvider : DocumentsProvider() {
                 entry.mtimeMs,
             )
         }
+        // Same observer path for the open volume's contents: locking mid-view
+        // notifies this URI, DocumentsUI re-queries, and the listing empties.
+        c.setNotificationUri(
+            requireContext().contentResolver,
+            DocumentsContract.buildChildDocumentsUri(
+                SessionRegistry.AUTHORITY,
+                parentDocumentId,
+            ),
+        )
         return c
     }
 

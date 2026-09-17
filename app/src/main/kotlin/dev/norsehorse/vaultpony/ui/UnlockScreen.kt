@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -199,11 +201,20 @@ fun UnlockScreen(
             // Protect a hidden volume: open the outer/decoy volume read-write
             // while shielding the hidden region, so adding files here can't
             // overwrite the hidden volume (doc §9).
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = protectHidden, onCheckedChange = {
-                    protectHidden = it
-                    if (!it) hiddenPassphrase = ""
-                })
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = protectHidden,
+                        role = Role.Checkbox,
+                        onValueChange = {
+                            protectHidden = it
+                            if (!it) hiddenPassphrase = ""
+                        },
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(checked = protectHidden, onCheckedChange = null)
                 Text(
                     stringResource(R.string.unlock_protect_hidden),
                     style = MaterialTheme.typography.bodyMedium,
@@ -266,8 +277,17 @@ fun UnlockScreen(
             }
 
             if (canBio && activity != null && volumeId != null && !enrolled && keyfiles.isEmpty() && !protectHidden) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = enrollBio, onCheckedChange = { enrollBio = it })
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(
+                            value = enrollBio,
+                            role = Role.Checkbox,
+                            onValueChange = { enrollBio = it },
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = enrollBio, onCheckedChange = null)
                     Text(
                         stringResource(R.string.unlock_enroll_bio),
                         style = MaterialTheme.typography.bodyMedium,
