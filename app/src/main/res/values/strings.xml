@@ -212,4 +212,6 @@
     <string name="change_pw_kdf_label">Key derivation (KDF)</string>
     <string name="change_pw_kdf_keep">Keep current</string>
     <string name="change_pw_kdf_note">Only the header is re-encrypted with the new KDF. Leave the new PIM empty to use its default.</string>
+    <string name="password_show">Show password</string>
+    <string name="password_hide">Hide password</string>
 </resources>

@@ -193,4 +193,6 @@
     <string name="change_pw_kdf_label">Dérivation de clé (KDF)</string>
     <string name="change_pw_kdf_keep">Conserver l’actuelle</string>
     <string name="change_pw_kdf_note">Seul l’en-tête est rechiffré avec la nouvelle KDF. Laissez le nouveau PIM vide pour utiliser sa valeur par défaut.</string>
+    <string name="password_show">Afficher le mot de passe</string>
+    <string name="password_hide">Masquer le mot de passe</string>
 </resources>

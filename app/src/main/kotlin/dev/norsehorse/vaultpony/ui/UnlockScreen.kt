@@ -1,6 +1,7 @@
 package dev.norsehorse.vaultpony.ui
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -41,12 +42,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import dev.norsehorse.vaultpony.BiometricUnlock
 import dev.norsehorse.vaultpony.MemoryCheck
 import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.i18n.findActivity
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.UnlockProgress
@@ -72,6 +74,7 @@ fun UnlockScreen(
     onRecovery: () -> Unit,
     onChangePassword: () -> Unit,
     onUnlocked: (VaultSession) -> Unit,
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val activity = context.findActivity() as? FragmentActivity
@@ -83,8 +86,10 @@ fun UnlockScreen(
     val unlockFailed = stringResource(R.string.unlock_failed)
 
     var passphrase by remember { mutableStateOf("") }
+    var passphraseShown by remember { mutableStateOf(false) }
     var protectHidden by remember { mutableStateOf(false) }
     var hiddenPassphrase by remember { mutableStateOf("") }
+    var hiddenPassphraseShown by remember { mutableStateOf(false) }
     var pim by remember { mutableStateOf("") }
     var showPim by remember { mutableStateOf(false) }
     var keyfiles by remember { mutableStateOf<List<ByteArray>>(emptyList()) }
@@ -186,6 +191,11 @@ fun UnlockScreen(
         }
     }
 
+    // While an unlock is running, system back cancels it instead of leaving:
+    // leaving would abandon a search whose session could still open behind
+    // the user's back.
+    BackHandler(enabled = busy) { cancelHandle?.cancel() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -194,6 +204,11 @@ fun UnlockScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (!busy) {
+            TextButton(onClick = onBack, modifier = Modifier.align(Alignment.Start)) {
+                Text("‹ " + stringResource(R.string.common_back))
+            }
+        }
         Spacer(Modifier.height(8.dp))
         VaultSeal()
         Text(
@@ -275,7 +290,8 @@ fun UnlockScreen(
                     )
                 },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = revealTransformation(passphraseShown),
+                trailingIcon = { RevealToggle(passphraseShown) { passphraseShown = it } },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = if (protectHidden) ImeAction.Next else ImeAction.Done,
@@ -311,7 +327,8 @@ fun UnlockScreen(
                     onValueChange = { hiddenPassphrase = it },
                     label = { Text(stringResource(R.string.unlock_hidden_password)) },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = revealTransformation(hiddenPassphraseShown),
+                    trailingIcon = { RevealToggle(hiddenPassphraseShown) { hiddenPassphraseShown = it } },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,

@@ -193,4 +193,6 @@
     <string name="change_pw_kdf_label">Формирование ключа (KDF)</string>
     <string name="change_pw_kdf_keep">Оставить текущую</string>
     <string name="change_pw_kdf_note">Новой KDF перешифровывается только заголовок. Оставьте новый PIM пустым, чтобы использовать её значение по умолчанию.</string>
+    <string name="password_show">Показать пароль</string>
+    <string name="password_hide">Скрыть пароль</string>
 </resources>

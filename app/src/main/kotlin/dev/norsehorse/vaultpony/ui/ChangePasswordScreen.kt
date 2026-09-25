@@ -27,9 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.ui.components.SectionLabel
 import kotlinx.coroutines.launch
@@ -50,9 +51,12 @@ fun ChangePasswordScreen(
     val scope = rememberCoroutineScope()
 
     var current by remember { mutableStateOf("") }
+    var currentShown by remember { mutableStateOf(false) }
     var currentPim by remember { mutableStateOf("") }
     var next by remember { mutableStateOf("") }
+    var nextShown by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
+    var confirmShown by remember { mutableStateOf(false) }
     var nextPim by remember { mutableStateOf("") }
     // Target KDF: "keep" (null) or a core registry name. Switching clears the
     // new PIM so the new KDF's own default applies, as VeraCrypt does.
@@ -90,7 +94,8 @@ fun ChangePasswordScreen(
             onValueChange = { current = it },
             label = { Text(stringResource(R.string.change_pw_current_label)) },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = revealTransformation(currentShown),
+            trailingIcon = { RevealToggle(currentShown) { currentShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -109,7 +114,8 @@ fun ChangePasswordScreen(
             onValueChange = { next = it },
             label = { Text(stringResource(R.string.change_pw_new_label)) },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = revealTransformation(nextShown),
+            trailingIcon = { RevealToggle(nextShown) { nextShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -118,7 +124,8 @@ fun ChangePasswordScreen(
             onValueChange = { confirm = it },
             label = { Text(stringResource(R.string.change_pw_confirm_label)) },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = revealTransformation(confirmShown),
+            trailingIcon = { RevealToggle(confirmShown) { confirmShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             isError = confirm.isNotEmpty() && confirm != next,
             modifier = Modifier.fillMaxWidth(),

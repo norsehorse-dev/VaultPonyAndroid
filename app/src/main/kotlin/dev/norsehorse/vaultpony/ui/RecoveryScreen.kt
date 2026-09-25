@@ -32,9 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.ui.components.SectionLabel
@@ -58,6 +59,7 @@ fun RecoveryScreen(
     val scope = rememberCoroutineScope()
 
     var password by remember { mutableStateOf("") }
+    var passwordShown by remember { mutableStateOf(false) }
     var pim by remember { mutableStateOf("") }
     var keyfiles by remember { mutableStateOf<List<ByteArray>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
@@ -172,7 +174,8 @@ fun RecoveryScreen(
             onValueChange = { password = it },
             label = { Text(stringResource(R.string.recovery_vault_password)) },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = revealTransformation(passwordShown),
+            trailingIcon = { RevealToggle(passwordShown) { passwordShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
         )

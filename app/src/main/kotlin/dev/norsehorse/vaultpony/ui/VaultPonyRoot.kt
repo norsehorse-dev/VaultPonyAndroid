@@ -162,6 +162,7 @@ fun VaultPonyRoot(
                                 VaultStore.add(context, sc.uri)
                                 session = unlocked
                             },
+                            onBack = { screen = Screen.Home },
                         )
                         is Screen.Recovery -> RecoveryScreen(
                             container = sc.uri,

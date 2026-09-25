@@ -42,9 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.ui.components.ChipTone
@@ -172,7 +173,9 @@ fun CreateContainerScreen(
     val scope = rememberCoroutineScope()
 
     var password by remember { mutableStateOf("") }
+    var passwordShown by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
+    var confirmShown by remember { mutableStateOf(false) }
     var sizeAmount by remember { mutableStateOf("1") }
     var sizeUnit by remember { mutableStateOf("GB") }
     var busy by remember { mutableStateOf(false) }
@@ -192,7 +195,9 @@ fun CreateContainerScreen(
 
     var hiddenEnabled by remember { mutableStateOf(false) }
     var hiddenPassword by remember { mutableStateOf("") }
+    var hiddenPasswordShown by remember { mutableStateOf(false) }
     var hiddenConfirm by remember { mutableStateOf("") }
+    var hiddenConfirmShown by remember { mutableStateOf(false) }
     var hiddenFracIndex by remember { mutableStateOf(0) }
 
     val createDoc = rememberLauncherForActivityResult(
@@ -264,7 +269,8 @@ fun CreateContainerScreen(
             onValueChange = { password = it },
             label = { Text(stringResource(R.string.unlock_password)) },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = revealTransformation(passwordShown),
+            trailingIcon = { RevealToggle(passwordShown) { passwordShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -273,7 +279,8 @@ fun CreateContainerScreen(
             onValueChange = { confirm = it },
             label = { Text(stringResource(R.string.create_confirm_password)) },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = revealTransformation(confirmShown),
+            trailingIcon = { RevealToggle(confirmShown) { confirmShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             isError = confirm.isNotEmpty() && confirm != password,
             modifier = Modifier.fillMaxWidth(),
@@ -369,7 +376,8 @@ fun CreateContainerScreen(
                 onValueChange = { hiddenPassword = it },
                 label = { Text(stringResource(R.string.create_hidden_password)) },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = revealTransformation(hiddenPasswordShown),
+                trailingIcon = { RevealToggle(hiddenPasswordShown) { hiddenPasswordShown = it } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 isError = hiddenPassword.isNotEmpty() && hiddenPassword == password,
                 modifier = Modifier.fillMaxWidth(),
@@ -379,7 +387,8 @@ fun CreateContainerScreen(
                 onValueChange = { hiddenConfirm = it },
                 label = { Text(stringResource(R.string.create_confirm_hidden)) },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = revealTransformation(hiddenConfirmShown),
+                trailingIcon = { RevealToggle(hiddenConfirmShown) { hiddenConfirmShown = it } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 isError = hiddenConfirm.isNotEmpty() && hiddenConfirm != hiddenPassword,
                 modifier = Modifier.fillMaxWidth(),

@@ -193,4 +193,6 @@
     <string name="change_pw_kdf_label">Schlüsselableitung (KDF)</string>
     <string name="change_pw_kdf_keep">Beibehalten</string>
     <string name="change_pw_kdf_note">Nur der Header wird mit der neuen KDF neu verschlüsselt. Lass die neue PIM leer, um deren Standardwert zu verwenden.</string>
+    <string name="password_show">Passwort anzeigen</string>
+    <string name="password_hide">Passwort verbergen</string>
 </resources>

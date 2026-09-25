@@ -193,4 +193,6 @@
     <string name="change_pw_kdf_label">Derivación de clave (KDF)</string>
     <string name="change_pw_kdf_keep">Mantener la actual</string>
     <string name="change_pw_kdf_note">Solo se vuelve a cifrar el encabezado con la nueva KDF. Deja el nuevo PIM vacío para usar su valor predeterminado.</string>
+    <string name="password_show">Mostrar contraseña</string>
+    <string name="password_hide">Ocultar contraseña</string>
 </resources>
