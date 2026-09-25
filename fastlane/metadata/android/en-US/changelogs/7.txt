@@ -1,0 +1,4 @@
+Argon2id support: vaults made with VeraCrypt 1.26.29 or later using Argon2id now open, and new vaults can use it (issue #1).
+Unlock has a key derivation choice (Auto, PBKDF2, Argon2id), a Cancel button and a free-memory check. Biometric unlock remembers a vault's KDF.
+Password change can switch the KDF. A PIM below the default now needs a password of 20+ characters, as in VeraCrypt.
+Password fields have a show/hide button, and the unlock screen has a Back button.
