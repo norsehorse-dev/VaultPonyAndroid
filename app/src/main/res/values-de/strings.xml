@@ -175,4 +175,22 @@
     <string name="browser_err_mkdir">Ordner konnte nicht erstellt werden</string>
     <string name="browser_err_rename">Umbenennen fehlgeschlagen</string>
     <string name="browser_err_delete">Löschen fehlgeschlagen</string>
+
+    <!-- Argon2id (1.1.0) -->
+    <string name="unlock_kdf_button">Schlüsselableitung</string>
+    <string name="unlock_kdf_label">Schlüsselableitung (KDF)</string>
+    <string name="kdf_auto">Automatisch</string>
+    <string name="kdf_pbkdf2">PBKDF2</string>
+    <string name="kdf_argon2id">Argon2id</string>
+    <string name="unlock_kdf_note">Automatisch probiert jede KDF, wie VeraCrypt. Wenn du weißt, welche dein Tresor nutzt, entsperrt er mit dieser Auswahl schneller.</string>
+    <string name="unlock_cancel">Abbrechen</string>
+    <string name="unlock_memory_warning">Argon2id braucht bei dieser PIM etwa %1$d MB Speicher, auf diesem Gerät sind etwa %2$d MB frei. Das Entsperren kann fehlschlagen.</string>
+    <string name="unlock_memory_try">Trotzdem versuchen</string>
+    <string name="unlock_memory_pbkdf2">Argon2id überspringen</string>
+    <string name="error_kdf_memory">Nicht genug freier Speicher für Argon2id (%1$d MB nötig). Schließe andere Apps und versuche es erneut, oder wähle PBKDF2, falls dieser Tresor kein Argon2id nutzt.</string>
+    <string name="error_short_password_pim">Eine PIM unter %1$d erfordert ein Passwort mit mindestens %2$d Zeichen.</string>
+    <string name="create_argon2_note">Argon2id ist speicherintensiv: Zum Öffnen dieses Tresors werden etwa 416 MB freier Speicher benötigt, und es dauert einige Sekunden. VeraCrypt auf dem Desktop öffnet ihn ab Version 1.26.29.</string>
+    <string name="change_pw_kdf_label">Schlüsselableitung (KDF)</string>
+    <string name="change_pw_kdf_keep">Beibehalten</string>
+    <string name="change_pw_kdf_note">Nur der Header wird mit der neuen KDF neu verschlüsselt. Lass die neue PIM leer, um deren Standardwert zu verwenden.</string>
 </resources>

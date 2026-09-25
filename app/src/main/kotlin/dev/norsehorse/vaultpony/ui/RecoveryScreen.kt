@@ -79,7 +79,7 @@ fun RecoveryScreen(
                 message = label
                 isError = false
             } catch (e: Exception) {
-                message = e.message ?: opFailed
+                message = vaultErrorText(context, e, opFailed)
                 isError = true
             }
             busy = false

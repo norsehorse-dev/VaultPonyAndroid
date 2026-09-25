@@ -194,4 +194,22 @@
     <string name="browser_err_mkdir">Could not create folder</string>
     <string name="browser_err_rename">Rename failed</string>
     <string name="browser_err_delete">Delete failed</string>
+
+    <!-- Argon2id (1.1.0) -->
+    <string name="unlock_kdf_button">Key derivation</string>
+    <string name="unlock_kdf_label">Key derivation (KDF)</string>
+    <string name="kdf_auto">Auto</string>
+    <string name="kdf_pbkdf2">PBKDF2</string>
+    <string name="kdf_argon2id">Argon2id</string>
+    <string name="unlock_kdf_note">Auto tries every KDF, like VeraCrypt. If you know which one your vault uses, picking it makes unlocking faster.</string>
+    <string name="unlock_cancel">Cancel</string>
+    <string name="unlock_memory_warning">Argon2id at this PIM needs about %1$d MB of memory, and this device has about %2$d MB free. Unlocking may fail.</string>
+    <string name="unlock_memory_try">Try anyway</string>
+    <string name="unlock_memory_pbkdf2">Skip Argon2id</string>
+    <string name="error_kdf_memory">Not enough free memory for Argon2id (%1$d MB needed). Close other apps and try again, or choose PBKDF2 if this vault doesn\'t use Argon2id.</string>
+    <string name="error_short_password_pim">A PIM below %1$d needs a password of at least %2$d characters.</string>
+    <string name="create_argon2_note">Argon2id is memory-hard: opening this vault needs about 416 MB of free memory and takes a few seconds. Desktop VeraCrypt opens it from version 1.26.29.</string>
+    <string name="change_pw_kdf_label">Key derivation (KDF)</string>
+    <string name="change_pw_kdf_keep">Keep current</string>
+    <string name="change_pw_kdf_note">Only the header is re-encrypted with the new KDF. Leave the new PIM empty to use its default.</string>
 </resources>

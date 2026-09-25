@@ -175,4 +175,22 @@
     <string name="browser_err_mkdir">Не удалось создать папку</string>
     <string name="browser_err_rename">Не удалось переименовать</string>
     <string name="browser_err_delete">Не удалось удалить</string>
+
+    <!-- Argon2id (1.1.0) -->
+    <string name="unlock_kdf_button">Формирование ключа</string>
+    <string name="unlock_kdf_label">Формирование ключа (KDF)</string>
+    <string name="kdf_auto">Авто</string>
+    <string name="kdf_pbkdf2">PBKDF2</string>
+    <string name="kdf_argon2id">Argon2id</string>
+    <string name="unlock_kdf_note">«Авто» пробует все KDF, как VeraCrypt. Если вы знаете, какую использует ваше хранилище, выберите её, и разблокировка пройдёт быстрее.</string>
+    <string name="unlock_cancel">Отмена</string>
+    <string name="unlock_memory_warning">Argon2id с этим PIM требует около %1$d МБ памяти, а на устройстве свободно около %2$d МБ. Разблокировка может не удаться.</string>
+    <string name="unlock_memory_try">Всё равно попробовать</string>
+    <string name="unlock_memory_pbkdf2">Пропустить Argon2id</string>
+    <string name="error_kdf_memory">Недостаточно свободной памяти для Argon2id (нужно %1$d МБ). Закройте другие приложения и попробуйте снова или выберите PBKDF2, если это хранилище не использует Argon2id.</string>
+    <string name="error_short_password_pim">PIM меньше %1$d требует пароль длиной не менее %2$d символов.</string>
+    <string name="create_argon2_note">Argon2id требует много памяти: для открытия этого хранилища нужно около 416 МБ свободной памяти и несколько секунд. VeraCrypt на компьютере открывает его начиная с версии 1.26.29.</string>
+    <string name="change_pw_kdf_label">Формирование ключа (KDF)</string>
+    <string name="change_pw_kdf_keep">Оставить текущую</string>
+    <string name="change_pw_kdf_note">Новой KDF перешифровывается только заголовок. Оставьте новый PIM пустым, чтобы использовать её значение по умолчанию.</string>
 </resources>

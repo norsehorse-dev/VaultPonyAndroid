@@ -175,4 +175,22 @@
     <string name="browser_err_mkdir">Impossible de créer le dossier</string>
     <string name="browser_err_rename">Échec du renommage</string>
     <string name="browser_err_delete">Échec de la suppression</string>
+
+    <!-- Argon2id (1.1.0) -->
+    <string name="unlock_kdf_button">Dérivation de clé</string>
+    <string name="unlock_kdf_label">Dérivation de clé (KDF)</string>
+    <string name="kdf_auto">Auto</string>
+    <string name="kdf_pbkdf2">PBKDF2</string>
+    <string name="kdf_argon2id">Argon2id</string>
+    <string name="unlock_kdf_note">Auto essaie chaque KDF, comme VeraCrypt. Si vous savez laquelle votre coffre utilise, la choisir accélère le déverrouillage.</string>
+    <string name="unlock_cancel">Annuler</string>
+    <string name="unlock_memory_warning">Argon2id avec ce PIM demande environ %1$d Mo de mémoire, et cet appareil en a environ %2$d Mo de libres. Le déverrouillage peut échouer.</string>
+    <string name="unlock_memory_try">Essayer quand même</string>
+    <string name="unlock_memory_pbkdf2">Ignorer Argon2id</string>
+    <string name="error_kdf_memory">Pas assez de mémoire libre pour Argon2id (%1$d Mo nécessaires). Fermez d’autres applications et réessayez, ou choisissez PBKDF2 si ce coffre n’utilise pas Argon2id.</string>
+    <string name="error_short_password_pim">Un PIM inférieur à %1$d exige un mot de passe d’au moins %2$d caractères.</string>
+    <string name="create_argon2_note">Argon2id sollicite beaucoup la mémoire : ouvrir ce coffre demande environ 416 Mo de mémoire libre et prend quelques secondes. VeraCrypt sur ordinateur l’ouvre à partir de la version 1.26.29.</string>
+    <string name="change_pw_kdf_label">Dérivation de clé (KDF)</string>
+    <string name="change_pw_kdf_keep">Conserver l’actuelle</string>
+    <string name="change_pw_kdf_note">Seul l’en-tête est rechiffré avec la nouvelle KDF. Laissez le nouveau PIM vide pour utiliser sa valeur par défaut.</string>
 </resources>

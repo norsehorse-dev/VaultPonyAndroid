@@ -175,4 +175,22 @@
     <string name="browser_err_mkdir">No se pudo crear la carpeta</string>
     <string name="browser_err_rename">Error al renombrar</string>
     <string name="browser_err_delete">Error al eliminar</string>
+
+    <!-- Argon2id (1.1.0) -->
+    <string name="unlock_kdf_button">Derivación de clave</string>
+    <string name="unlock_kdf_label">Derivación de clave (KDF)</string>
+    <string name="kdf_auto">Automático</string>
+    <string name="kdf_pbkdf2">PBKDF2</string>
+    <string name="kdf_argon2id">Argon2id</string>
+    <string name="unlock_kdf_note">Automático prueba todas las KDF, como VeraCrypt. Si sabes cuál usa tu bóveda, elegirla hace que se desbloquee más rápido.</string>
+    <string name="unlock_cancel">Cancelar</string>
+    <string name="unlock_memory_warning">Argon2id con este PIM necesita unos %1$d MB de memoria y este dispositivo tiene unos %2$d MB libres. El desbloqueo puede fallar.</string>
+    <string name="unlock_memory_try">Intentar de todos modos</string>
+    <string name="unlock_memory_pbkdf2">Omitir Argon2id</string>
+    <string name="error_kdf_memory">No hay suficiente memoria libre para Argon2id (se necesitan %1$d MB). Cierra otras apps e inténtalo de nuevo, o elige PBKDF2 si esta bóveda no usa Argon2id.</string>
+    <string name="error_short_password_pim">Un PIM menor que %1$d requiere una contraseña de al menos %2$d caracteres.</string>
+    <string name="create_argon2_note">Argon2id usa mucha memoria: abrir esta bóveda requiere unos 416 MB libres y tarda unos segundos. VeraCrypt de escritorio la abre desde la versión 1.26.29.</string>
+    <string name="change_pw_kdf_label">Derivación de clave (KDF)</string>
+    <string name="change_pw_kdf_keep">Mantener la actual</string>
+    <string name="change_pw_kdf_note">Solo se vuelve a cifrar el encabezado con la nueva KDF. Deja el nuevo PIM vacío para usar su valor predeterminado.</string>
 </resources>

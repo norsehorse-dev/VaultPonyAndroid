@@ -56,7 +56,7 @@ import kotlinx.coroutines.launch
 /** A labelled dropdown backed by [options]; stable Material3 only (no
  *  experimental menu-anchor APIs). */
 @Composable
-private fun ChoiceDropdown(
+internal fun ChoiceDropdown(
     label: String,
     options: List<String>,
     selected: String,
@@ -226,7 +226,7 @@ fun CreateContainerScreen(
                 }
                 onCreated(uri)
             } catch (e: Exception) {
-                error = e.message ?: createError
+                error = vaultErrorText(context, e, createError)
                 busy = false
             }
         }
@@ -325,6 +325,14 @@ fun CreateContainerScreen(
         // the picker can never offer something creation would reject.
         ChoiceDropdown(stringResource(R.string.create_encryption), schemes, scheme) { scheme = it }
         ChoiceDropdown(stringResource(R.string.create_hash), hashList, hash) { hash = it }
+        if (hash == "Argon2id") {
+            Text(
+                stringResource(R.string.create_argon2_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         ChoiceDropdown(stringResource(R.string.create_filesystem), filesystems, filesystem) { filesystem = it }
         if (filesystem == "exFAT") {
             Text(

@@ -15,10 +15,11 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import uniffi.vault_ffi.KdfFilter
 
 /**
  * Optional, opt-in biometric unlock, per container (doc §8/§11). The secret
- * ({pim, passphrase}) is encrypted under a biometric-gated AndroidKeyStore key
+ * ({kdf, pim, passphrase}) is encrypted under a biometric-gated AndroidKeyStore key
  * — StrongBox-backed when the device has it — and every use requires a fresh
  * BiometricPrompt with a CryptoObject, so the key material never leaves secure
  * hardware in usable form.
@@ -52,12 +53,16 @@ object BiometricUnlock {
         prefs(context).edit().remove("$volumeId.ct").remove("$volumeId.iv").apply()
     }
 
-    /** Authenticate, then store the secret encrypted. [onDone] receives success. */
+    /** Authenticate, then store the secret encrypted. [kdf] is the KDF family
+     *  the container turned out to use, so a biometric unlock can skip the
+     *  other family's work (for Argon2id, the whole PBKDF2 sweep). [onDone]
+     *  receives success. */
     fun enroll(
         activity: FragmentActivity,
         volumeId: String,
         passphrase: String,
         pim: UInt,
+        kdf: KdfFilter = KdfFilter.AUTO,
         onDone: (Boolean) -> Unit,
     ) {
         val cipher = try {
@@ -72,7 +77,7 @@ object BiometricUnlock {
                 return@authenticate
             }
             try {
-                val plain = "$pim\n$passphrase".toByteArray(Charsets.UTF_8)
+                val plain = encodeSecret(kdf, pim, passphrase).toByteArray(Charsets.UTF_8)
                 val ct = c.doFinal(plain)
                 prefs(activity).edit()
                     .putString("$volumeId.iv", b64(c.iv))
@@ -85,11 +90,11 @@ object BiometricUnlock {
         }
     }
 
-    /** Authenticate, decrypt, and hand back (pim, passphrase). */
+    /** Authenticate, decrypt, and hand back (pim, passphrase, kdf). */
     fun retrieve(
         activity: FragmentActivity,
         volumeId: String,
-        onSecret: (UInt, String) -> Unit,
+        onSecret: (UInt, String, KdfFilter) -> Unit,
         onError: (String) -> Unit,
     ) {
         val p = prefs(activity)
@@ -123,15 +128,36 @@ object BiometricUnlock {
             }
             try {
                 val plain = c.doFinal(unb64(ctB64)).toString(Charsets.UTF_8)
-                val nl = plain.indexOf('\n')
-                val pim = plain.substring(0, nl).toUIntOrNull() ?: 0u
-                val pass = plain.substring(nl + 1)
-                onSecret(pim, pass)
+                val (kdf, pim, pass) = decodeSecret(plain)
+                onSecret(pim, pass, kdf)
             } catch (e: Exception) {
                 onError("could not decrypt stored secret")
             }
         }
     }
+
+    /** Current format: "v2\n<kdf>\n<pim>\n<passphrase>". The passphrase goes
+     *  last so any character in it survives. */
+    private fun encodeSecret(kdf: KdfFilter, pim: UInt, passphrase: String): String =
+        "$SECRET_V2\n${kdf.name}\n$pim\n$passphrase"
+
+    /** Reads both the current format and the original "<pim>\n<passphrase>"
+     *  that enrollments made before 1.1.0 carry (those unlock with Auto). */
+    private fun decodeSecret(plain: String): Triple<KdfFilter, UInt, String> {
+        val nl = plain.indexOf('\n')
+        if (plain.substring(0, nl) == SECRET_V2) {
+            val kdfEnd = plain.indexOf('\n', nl + 1)
+            val pimEnd = plain.indexOf('\n', kdfEnd + 1)
+            val kdfName = plain.substring(nl + 1, kdfEnd)
+            val kdf = KdfFilter.entries.firstOrNull { it.name == kdfName } ?: KdfFilter.AUTO
+            val pim = plain.substring(kdfEnd + 1, pimEnd).toUIntOrNull() ?: 0u
+            return Triple(kdf, pim, plain.substring(pimEnd + 1))
+        }
+        val pim = plain.substring(0, nl).toUIntOrNull() ?: 0u
+        return Triple(KdfFilter.AUTO, pim, plain.substring(nl + 1))
+    }
+
+    private const val SECRET_V2 = "v2"
 
     private fun authenticate(
         activity: FragmentActivity,

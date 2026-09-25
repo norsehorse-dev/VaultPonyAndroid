@@ -1,16 +1,30 @@
 package dev.norsehorse.vaultpony
 
+import android.app.ActivityManager
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uniffi.vault_ffi.DirEntry
+import uniffi.vault_ffi.KdfFilter
+import uniffi.vault_ffi.UnlockCancel
 import uniffi.vault_ffi.UnlockProgressListener
 import uniffi.vault_ffi.VaultSession
 
 /** Progress snapshot for the unlock UI (per-PRF, doc §6). */
 data class UnlockProgress(val step: UInt, val total: UInt, val prf: String)
+
+/** Argon2id memory check before an unlock: what one derivation at the PIM
+ *  needs and what the system reports free, both in MiB. */
+data class MemoryCheck(val neededMib: Long, val freeMib: Long) {
+    /** Leaves headroom for the app itself and the rest of the unlock. */
+    val enough: Boolean get() = freeMib >= neededMib + HEADROOM_MIB
+
+    private companion object {
+        const val HEADROOM_MIB = 64L
+    }
+}
 
 /**
  * The one place the app touches the FFI. The fd contract: dup via
@@ -24,6 +38,8 @@ class VaultRepository(private val context: Context) {
         passphrase: String,
         pim: UInt,
         keyfiles: List<ByteArray> = emptyList(),
+        kdf: KdfFilter = KdfFilter.AUTO,
+        cancel: UnlockCancel? = null,
         onProgress: (UnlockProgress) -> Unit,
     ): VaultSession = withContext(Dispatchers.IO) {
         // Open read-write so the volume can be modified; fall back to
@@ -38,7 +54,7 @@ class VaultRepository(private val context: Context) {
                 onProgress(UnlockProgress(step, total, prf))
             }
         }
-        val session = VaultSession.unlockFd(fd, passphrase, pim, keyfiles, listener)
+        val session = VaultSession.unlockFd(fd, passphrase, pim, keyfiles, kdf, cancel, listener)
         SessionRegistry.put(volumeId(uri), session)
         session
     }
@@ -54,6 +70,8 @@ class VaultRepository(private val context: Context) {
         outerPassphrase: String,
         hiddenPassphrase: String,
         pim: UInt,
+        kdf: KdfFilter = KdfFilter.AUTO,
+        cancel: UnlockCancel? = null,
         onProgress: (UnlockProgress) -> Unit,
     ): VaultSession = withContext(Dispatchers.IO) {
         val pfd = context.contentResolver.openFileDescriptor(uri, "rw")
@@ -65,7 +83,7 @@ class VaultRepository(private val context: Context) {
             }
         }
         val session = VaultSession.unlockOuterProtectedFd(
-            fd, outerPassphrase, hiddenPassphrase, pim, listener,
+            fd, outerPassphrase, hiddenPassphrase, pim, kdf, cancel, listener,
         )
         SessionRegistry.put(volumeId(uri), session)
         session
@@ -96,6 +114,17 @@ class VaultRepository(private val context: Context) {
     fun encryptionSchemes(): List<String> = uniffi.vault_ffi.encryptionSchemes()
     fun hashes(): List<String> = uniffi.vault_ffi.hashes()
     fun filesystems(): List<String> = uniffi.vault_ffi.filesystems()
+
+    /** Compare what one Argon2id derivation at [pim] needs (PIM 0 = the
+     *  default, 416 MiB) with the memory the system reports available.
+     *  Argon2id's working memory is allocated natively, outside the Java heap,
+     *  so the whole-device figure is the one that matters. */
+    fun argon2MemoryCheck(pim: UInt): MemoryCheck {
+        val needed = uniffi.vault_ffi.argon2MemoryMib(pim).toLong()
+        val info = ActivityManager.MemoryInfo()
+        (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(info)
+        return MemoryCheck(neededMib = needed, freeMib = info.availMem / (1024L * 1024L))
+    }
 
     /** Create a container that conceals a hidden volume inside the outer one
      *  (doc §9). The outer volume records no trace of the hidden one, so the
@@ -143,27 +172,38 @@ class VaultRepository(private val context: Context) {
         password: String,
         pim: UInt,
         keyfiles: List<ByteArray> = emptyList(),
+        kdf: KdfFilter = KdfFilter.AUTO,
+        cancel: UnlockCancel? = null,
     ) =
         withContext(Dispatchers.IO) {
             val pfd = context.contentResolver.openFileDescriptor(uri, "rw")
                 ?: throw IllegalStateException("this container must be opened read-write to restore")
-            uniffi.vault_ffi.restoreHeaderFromEmbedded(pfd.detachFd(), password, pim, keyfiles)
+            uniffi.vault_ffi.restoreHeaderFromEmbedded(
+                pfd.detachFd(), password, pim, keyfiles, kdf, cancel,
+            )
         }
 
     /** Change [uri]'s password/PIM in place — the data is untouched, only the
      *  header is re-encrypted under the new password. The old password selects
-     *  the volume and is verified before anything is written. */
+     *  the volume and is verified before anything is written. [newPrf] moves
+     *  the header to another KDF/hash (a core registry name such as
+     *  "Argon2id"); null keeps the current one. [newPim] is read under the
+     *  KDF the header ends up with, so 0 means that KDF's default. */
     suspend fun changePassword(
         uri: Uri,
         oldPassword: String,
         oldPim: UInt,
         newPassword: String,
         newPim: UInt,
+        newPrf: String? = null,
+        kdf: KdfFilter = KdfFilter.AUTO,
+        cancel: UnlockCancel? = null,
     ) = withContext(Dispatchers.IO) {
         val pfd = context.contentResolver.openFileDescriptor(uri, "rw")
             ?: throw IllegalStateException("this container must be opened read-write to change its password")
         uniffi.vault_ffi.changePassword(
             pfd.detachFd(), oldPassword, oldPim, emptyList(), newPassword, newPim, emptyList(),
+            newPrf, kdf, cancel,
         )
     }
 
@@ -175,6 +215,8 @@ class VaultRepository(private val context: Context) {
         password: String,
         pim: UInt,
         keyfiles: List<ByteArray> = emptyList(),
+        kdf: KdfFilter = KdfFilter.AUTO,
+        cancel: UnlockCancel? = null,
     ) =
         withContext(Dispatchers.IO) {
             // A valid backup is exactly 128 KiB; read a little more so a wrong
@@ -191,7 +233,9 @@ class VaultRepository(private val context: Context) {
             } ?: throw IllegalStateException("could not read the backup file")
             val pfd = context.contentResolver.openFileDescriptor(uri, "rw")
                 ?: throw IllegalStateException("this container must be opened read-write to restore")
-            uniffi.vault_ffi.restoreHeaderFromFile(pfd.detachFd(), backup, password, pim, keyfiles)
+            uniffi.vault_ffi.restoreHeaderFromFile(
+                pfd.detachFd(), backup, password, pim, keyfiles, kdf, cancel,
+            )
         }
 
     suspend fun list(session: VaultSession, path: String): List<DirEntry> =

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import dev.norsehorse.vaultpony.BiometricUnlock
+import dev.norsehorse.vaultpony.MemoryCheck
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.i18n.findActivity
 import dev.norsehorse.vaultpony.SessionRegistry
@@ -53,6 +55,8 @@ import dev.norsehorse.vaultpony.ui.components.VaultSeal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uniffi.vault_ffi.KdfFilter
+import uniffi.vault_ffi.UnlockCancel
 import uniffi.vault_ffi.VaultException
 import uniffi.vault_ffi.VaultSession
 
@@ -91,6 +95,12 @@ fun UnlockScreen(
     var busy by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf<UnlockProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Which KDFs to try (Argon2id support, VeraCrypt 1.26.29+). Auto matches
+    // VeraCrypt; narrowing skips the other family's cost.
+    var kdf by remember { mutableStateOf(KdfFilter.AUTO) }
+    var showKdf by remember { mutableStateOf(false) }
+    var cancelHandle by remember { mutableStateOf<UnlockCancel?>(null) }
+    var memoryWarning by remember { mutableStateOf<MemoryCheck?>(null) }
 
     val keyfilePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
@@ -103,6 +113,75 @@ fun UnlockScreen(
                     }
                 }
                 keyfiles = read
+            }
+        }
+    }
+
+    /** Run the typed-password unlock with [kdfChoice]. Called straight from
+     *  the button, or after the user answers the memory warning. */
+    fun startUnlock(kdfChoice: KdfFilter) {
+        val uri = container ?: return
+        val pass = passphrase
+        val hiddenPass = hiddenPassphrase
+        val protect = protectHidden
+        val pimV = pim.toUIntOrNull() ?: 0u
+        val kf = keyfiles
+        val enrollNow = !protect &&
+            enrollBio && kf.isEmpty() && activity != null && volumeId != null
+        val handle = UnlockCancel()
+        cancelHandle = handle
+        memoryWarning = null
+        busy = true
+        error = null
+        scope.launch {
+            try {
+                val session = if (protect) {
+                    repo.unlockOuterProtected(
+                        uri = uri,
+                        outerPassphrase = pass,
+                        hiddenPassphrase = hiddenPass,
+                        pim = pimV,
+                        kdf = kdfChoice,
+                        cancel = handle,
+                        onProgress = { progress = it },
+                    )
+                } else {
+                    repo.unlock(
+                        uri = uri,
+                        passphrase = pass,
+                        pim = pimV,
+                        keyfiles = kf,
+                        kdf = kdfChoice,
+                        cancel = handle,
+                        onProgress = { progress = it },
+                    )
+                }
+                passphrase = ""
+                hiddenPassphrase = ""
+                keyfiles.forEach { it.fill(0) }
+                keyfiles = emptyList()
+                if (enrollNow) {
+                    // Remember which KDF family opened it, so the biometric
+                    // unlock goes straight there next time.
+                    val found = if (runCatching { session.facts().prf }.getOrNull() == "Argon2id") {
+                        KdfFilter.ARGON2ID_ONLY
+                    } else {
+                        KdfFilter.PBKDF2_ONLY
+                    }
+                    BiometricUnlock.enroll(activity!!, volumeId!!, pass, pimV, found) {
+                        onUnlocked(session)
+                    }
+                } else {
+                    onUnlocked(session)
+                }
+            } catch (e: VaultException) {
+                error = vaultErrorText(context, e, unlockFailed)
+                busy = false
+            } finally {
+                // Not destroyed here: a Cancel tap from a frame that still
+                // shows the button must not hit a freed handle. The UniFFI
+                // cleaner frees it once nothing references it.
+                cancelHandle = null
             }
         }
     }
@@ -146,19 +225,25 @@ fun UnlockScreen(
                         busy = true
                         BiometricUnlock.retrieve(
                             activity, volumeId,
-                            onSecret = { pimV, pass ->
+                            onSecret = { pimV, pass, kdfV ->
+                                val handle = UnlockCancel()
+                                cancelHandle = handle
                                 scope.launch {
                                     try {
                                         val session = repo.unlock(
                                             uri = container,
                                             passphrase = pass,
                                             pim = pimV,
+                                            kdf = kdfV,
+                                            cancel = handle,
                                             onProgress = { progress = it },
                                         )
                                         onUnlocked(session)
                                     } catch (e: VaultException) {
-                                        error = e.message ?: unlockFailed
+                                        error = vaultErrorText(context, e, unlockFailed)
                                         busy = false
+                                    } finally {
+                                        cancelHandle = null
                                     }
                                 }
                             },
@@ -275,6 +360,13 @@ fun UnlockScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+            if (!showKdf) {
+                TextButton(onClick = { showKdf = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.unlock_kdf_button))
+                }
+            } else {
+                KdfChoice(selected = kdf, onSelect = { kdf = it })
+            }
 
             if (canBio && activity != null && volumeId != null && !enrolled && keyfiles.isEmpty() && !protectHidden) {
                 Row(
@@ -317,52 +409,48 @@ fun UnlockScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                cancelHandle?.let { handle ->
+                    // Takes effect before the next key derivation (up to a few
+                    // seconds for one Argon2id pass set).
+                    OutlinedButton(onClick = { handle.cancel() }) {
+                        Text(stringResource(R.string.unlock_cancel))
+                    }
+                }
+            } else if (memoryWarning != null) {
+                val w = memoryWarning!!
+                Text(
+                    stringResource(R.string.unlock_memory_warning, w.neededMib.toInt(), w.freeMib.toInt()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { startUnlock(kdf) }, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.unlock_memory_try))
+                    }
+                    Button(
+                        onClick = {
+                            kdf = KdfFilter.PBKDF2_ONLY
+                            showKdf = true
+                            startUnlock(KdfFilter.PBKDF2_ONLY)
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.unlock_memory_pbkdf2)) }
+                }
             } else {
                 Button(
                     onClick = {
-                        val pass = passphrase
-                        val hiddenPass = hiddenPassphrase
-                        val protect = protectHidden
-                        val pimV = pim.toUIntOrNull() ?: 0u
-                        val kf = keyfiles
-                        val enrollNow = !protect &&
-                            enrollBio && kf.isEmpty() && activity != null && volumeId != null
-                        busy = true
                         error = null
-                        scope.launch {
-                            try {
-                                val session = if (protect) {
-                                    repo.unlockOuterProtected(
-                                        uri = container,
-                                        outerPassphrase = pass,
-                                        hiddenPassphrase = hiddenPass,
-                                        pim = pimV,
-                                        onProgress = { progress = it },
-                                    )
-                                } else {
-                                    repo.unlock(
-                                        uri = container,
-                                        passphrase = pass,
-                                        pim = pimV,
-                                        keyfiles = kf,
-                                        onProgress = { progress = it },
-                                    )
-                                }
-                                passphrase = ""
-                                hiddenPassphrase = ""
-                                keyfiles.forEach { it.fill(0) }
-                                keyfiles = emptyList()
-                                if (enrollNow) {
-                                    BiometricUnlock.enroll(activity!!, volumeId!!, pass, pimV) {
-                                        onUnlocked(session)
-                                    }
-                                } else {
-                                    onUnlocked(session)
-                                }
-                            } catch (e: VaultException) {
-                                error = e.message ?: unlockFailed
-                                busy = false
-                            }
+                        memoryWarning = null
+                        val pimV = pim.toUIntOrNull() ?: 0u
+                        // Argon2id needs hundreds of MiB for a moment. Check
+                        // before starting rather than let the system kill the
+                        // app mid-unlock.
+                        val check = if (kdf != KdfFilter.PBKDF2_ONLY) repo.argon2MemoryCheck(pimV) else null
+                        if (check != null && !check.enough) {
+                            memoryWarning = check
+                        } else {
+                            startUnlock(kdf)
                         }
                     },
                     enabled = if (protectHidden) {
@@ -392,6 +480,37 @@ fun UnlockScreen(
                 }
             }
         }
+    }
+}
+
+/** The unlock screen's KDF picker: Auto (like VeraCrypt), PBKDF2 only, or
+ *  Argon2id only, with a one-line explanation. */
+@Composable
+private fun KdfChoice(selected: KdfFilter, onSelect: (KdfFilter) -> Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            stringResource(R.string.unlock_kdf_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                KdfFilter.AUTO to R.string.kdf_auto,
+                KdfFilter.PBKDF2_ONLY to R.string.kdf_pbkdf2,
+                KdfFilter.ARGON2ID_ONLY to R.string.kdf_argon2id,
+            ).forEach { (value, label) ->
+                FilterChip(
+                    selected = selected == value,
+                    onClick = { onSelect(value) },
+                    label = { Text(stringResource(label)) },
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.unlock_kdf_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

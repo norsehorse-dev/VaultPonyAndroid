@@ -54,6 +54,11 @@ fun ChangePasswordScreen(
     var next by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
     var nextPim by remember { mutableStateOf("") }
+    // Target KDF: "keep" (null) or a core registry name. Switching clears the
+    // new PIM so the new KDF's own default applies, as VeraCrypt does.
+    val keepLabel = stringResource(R.string.change_pw_kdf_keep)
+    val kdfOptions = remember { runCatching { repo.hashes() }.getOrDefault(emptyList()) }
+    var newKdf by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var isError by remember { mutableStateOf(false) }
@@ -126,6 +131,24 @@ fun ChangePasswordScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
         )
+        if (kdfOptions.isNotEmpty()) {
+            ChoiceDropdown(
+                stringResource(R.string.change_pw_kdf_label),
+                listOf(keepLabel) + kdfOptions,
+                newKdf ?: keepLabel,
+            ) { picked ->
+                val target = picked.takeUnless { it == keepLabel }
+                if (target != newKdf) nextPim = ""
+                newKdf = target
+            }
+            if (newKdf != null) {
+                Text(
+                    stringResource(R.string.change_pw_kdf_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         if (next.isNotEmpty() && next == current) {
             Text(
                 stringResource(R.string.change_pw_differ),
@@ -155,13 +178,14 @@ fun ChangePasswordScreen(
                                 currentPim.toUIntOrNull() ?: 0u,
                                 next,
                                 nextPim.toUIntOrNull() ?: 0u,
+                                newPrf = newKdf,
                             )
                             current = ""; next = ""; confirm = ""
                             message = successMsg
                             isError = false
                             done = true
                         } catch (e: Exception) {
-                            message = e.message ?: errorMsg
+                            message = vaultErrorText(context, e, errorMsg)
                             isError = true
                         }
                         busy = false
