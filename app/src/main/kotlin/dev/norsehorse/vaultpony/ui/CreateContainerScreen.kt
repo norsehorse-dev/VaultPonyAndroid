@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.passwordAutofill
 import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.VaultRepository
@@ -272,7 +273,7 @@ fun CreateContainerScreen(
             visualTransformation = revealTransformation(passwordShown),
             trailingIcon = { RevealToggle(passwordShown) { passwordShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().passwordAutofill(new = true),
         )
         OutlinedTextField(
             value = confirm,
@@ -283,7 +284,7 @@ fun CreateContainerScreen(
             trailingIcon = { RevealToggle(confirmShown) { confirmShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             isError = confirm.isNotEmpty() && confirm != password,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().passwordAutofill(new = true),
         )
 
         SectionLabel(stringResource(R.string.create_size), Modifier.fillMaxWidth())
@@ -370,6 +371,20 @@ fun CreateContainerScreen(
         }
 
         if (hiddenEnabled) {
+            // How the two passwords behave later (issue #3: users didn't know
+            // the hidden password goes in the normal field).
+            Text(
+                stringResource(R.string.create_hidden_help_open),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                stringResource(R.string.create_hidden_help_both),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
             SectionLabel(stringResource(R.string.create_hidden_password), Modifier.fillMaxWidth())
             OutlinedTextField(
                 value = hiddenPassword,
@@ -380,7 +395,7 @@ fun CreateContainerScreen(
                 trailingIcon = { RevealToggle(hiddenPasswordShown) { hiddenPasswordShown = it } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 isError = hiddenPassword.isNotEmpty() && hiddenPassword == password,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().passwordAutofill(new = true),
             )
             OutlinedTextField(
                 value = hiddenConfirm,
@@ -391,7 +406,7 @@ fun CreateContainerScreen(
                 trailingIcon = { RevealToggle(hiddenConfirmShown) { hiddenConfirmShown = it } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 isError = hiddenConfirm.isNotEmpty() && hiddenConfirm != hiddenPassword,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().passwordAutofill(new = true),
             )
             if (hiddenPassword.isNotEmpty() && hiddenPassword == password) {
                 Text(

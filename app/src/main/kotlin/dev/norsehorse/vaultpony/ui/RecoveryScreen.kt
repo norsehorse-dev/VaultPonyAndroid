@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.passwordAutofill
 import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.VaultRepository
@@ -177,7 +178,7 @@ fun RecoveryScreen(
             visualTransformation = revealTransformation(passwordShown),
             trailingIcon = { RevealToggle(passwordShown) { passwordShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().passwordAutofill(),
         )
         OutlinedTextField(
             value = pim,

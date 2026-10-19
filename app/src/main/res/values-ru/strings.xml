@@ -12,7 +12,14 @@
     <string name="settings_secure_title">Скрывать содержимое экрана</string>
     <string name="settings_secure_subtitle">Блокирует снимки экрана и скрывает приложение в списке недавних.</string>
     <string name="settings_autolock_title">Автоблокировка</string>
-    <string name="settings_autolock_subtitle">Блокируется при выходе из приложения или выключении экрана.</string>
+    <string name="settings_autolock_subtitle">Как долго хранилища остаются разблокированными после выхода из приложения или выключения экрана.</string>
+    <string name="settings_autolock_note">При большей задержке ключ хранилища остаётся в памяти, пока приложение работает в фоне.</string>
+    <string name="settings_autolock_immediately">Сразу</string>
+    <string name="settings_autolock_30s">Через 30 секунд</string>
+    <string name="settings_autolock_1m">Через 1 минуту</string>
+    <string name="settings_autolock_5m">Через 5 минут</string>
+    <string name="settings_autolock_15m">Через 15 минут</string>
+    <string name="settings_autolock_1h">Через 1 час</string>
 
     <string name="settings_pony_header">Другие приложения pony</string>
     <string name="pony_pgpony_subtitle">Шифрование OpenPGP</string>
@@ -47,7 +54,7 @@
     <string name="onboarding_create_title">Создайте первое хранилище</string>
     <string name="onboarding_create_body">Хранилище представляет собой один зашифрованный файл. Положите в него что угодно; открывает его только ваш пароль.</string>
     <string name="onboarding_hidden_title">Скрытые тома</string>
-    <string name="onboarding_hidden_body">Спрячьте второе хранилище внутри первого. Два пароля, и внешний не выдаёт существования скрытого.</string>
+    <string name="onboarding_hidden_body">Спрячьте второе хранилище внутри первого. Чтобы открыть его, введите только его пароль. Внешний пароль не выдаёт его существования.</string>
     <string name="onboarding_security_title">Под замком</string>
     <string name="onboarding_security_body">Биометрическая разблокировка, автоблокировка при выходе и скрытие экрана делают ваши хранилища только вашими.</string>
 
@@ -115,7 +122,8 @@
     <string name="unlock_forget_biometrics">Забыть биометрическую разблокировку</string>
     <string name="unlock_password">Пароль</string>
     <string name="unlock_outer_password">Пароль внешнего тома</string>
-    <string name="unlock_protect_hidden">В этом хранилище есть скрытый том; защитите его</string>
+    <string name="unlock_protect_hidden">Открыть внешний том и защитить скрытый</string>
+    <string name="unlock_hidden_note">Скрытый том открывается, если ввести его пароль в поле пароля.</string>
     <string name="unlock_hidden_password">Пароль скрытого тома</string>
     <string name="unlock_protect_note">Нужны оба пароля. Запись, которая затронула бы скрытый том, блокируется, и хранилище становится доступным только для чтения.</string>
     <string name="unlock_add_keyfiles">Добавить файлы-ключи</string>
@@ -143,12 +151,14 @@
     <string name="create_exfat_note">exFAT поддерживает файлы больше 4 ГБ. FAT более универсально совместима для небольших хранилищ.</string>
     <string name="create_hidden_volume">Скрытый том</string>
     <string name="create_hidden_subtitle">Скрытое второе хранилище с собственным паролем.</string>
+    <string name="create_hidden_help_open">Чтобы потом открыть скрытое хранилище, введите только скрытый пароль в обычное поле пароля.</string>
+    <string name="create_hidden_help_both">Если ввести оба пароля вместе, откроется внешнее хранилище с защищённой скрытой областью, и в него можно безопасно добавить файлы-приманки.</string>
     <string name="create_hidden_password">Скрытый пароль</string>
     <string name="create_confirm_hidden">Подтвердите скрытый пароль</string>
     <string name="create_hidden_differ">Скрытый пароль должен отличаться от внешнего.</string>
     <string name="create_hidden_size">Размер скрытого</string>
     <string name="create_fraction_of_vault">%1$s хранилища</string>
-    <string name="create_hidden_warning">Запись во внешний том может перезаписать скрытый. Держите внешнее хранилище незаполненным и наполняйте его только при разблокировке одним внешним паролем.</string>
+    <string name="create_hidden_warning">Запись во внешнее хранилище может перезаписать скрытое. Чтобы добавить файлы во внешнее хранилище, разблокируйте его обоими паролями: тогда скрытая область будет защищена.</string>
     <string name="create_working">Создание и форматирование…</string>
     <string name="create_action">Выбрать место и создать</string>
     <string name="create_invalid_size">Введите корректный размер</string>
@@ -175,6 +185,76 @@
     <string name="browser_err_mkdir">Не удалось создать папку</string>
     <string name="browser_err_rename">Не удалось переименовать</string>
     <string name="browser_err_delete">Не удалось удалить</string>
+
+    <!-- Browser: volume facts (2.0.0) -->
+    <string name="browser_label_hidden">Скрытый том</string>
+    <string name="browser_label_protected">Скрытая область защищена</string>
+    <string name="browser_space_free">Свободно %1$s из %2$s</string>
+    <string name="browser_volume_info">Сведения о томе</string>
+    <string name="info_encryption">Шифрование</string>
+    <string name="info_hash">Хеш</string>
+    <string name="info_filesystem">Файловая система</string>
+    <string name="info_size">Размер</string>
+    <string name="info_free">Свободно</string>
+    <string name="info_access">Доступ</string>
+    <string name="info_access_rw">Чтение и запись</string>
+    <string name="info_access_ro">Только чтение</string>
+    <string name="info_fat_limit">FAT хранит файлы размером не более 4 ГБ каждый.</string>
+    <string name="common_ok">ОК</string>
+    <string name="common_continue">Продолжить</string>
+
+    <!-- Browser: bulk import and export (2.0.0) -->
+    <string name="browser_import_files">Импортировать файлы</string>
+    <string name="browser_import_folder">Импортировать папку</string>
+    <string name="browser_export_folder">Экспортировать папку</string>
+    <string name="transfer_preparing">Проверка файлов…</string>
+    <string name="transfer_collision_title">Некоторые файлы уже существуют</string>
+    <string name="transfer_keep_both">Оставить оба</string>
+    <string name="transfer_skip">Пропустить</string>
+    <string name="transfer_replace">Заменить</string>
+    <string name="transfer_progress">Копирование %1$d из %2$d</string>
+    <string name="transfer_no_space_title">Недостаточно места</string>
+    <string name="transfer_no_space_body">Для этих файлов нужно %1$s, а в хранилище свободно %2$s.</string>
+    <plurals name="transfer_oversize">
+        <item quantity="one">%d файл больше 4 ГБ и будет пропущен: FAT не может хранить такие файлы.</item>
+        <item quantity="few">%d файла больше 4 ГБ и будут пропущены: FAT не может хранить такие файлы.</item>
+        <item quantity="many">%d файлов больше 4 ГБ и будут пропущены: FAT не может хранить такие файлы.</item>
+        <item quantity="other">%d файла больше 4 ГБ и будут пропущены: FAT не может хранить такие файлы.</item>
+    </plurals>
+    <plurals name="transfer_imported">
+        <item quantity="one">Импортирован %d файл.</item>
+        <item quantity="few">Импортировано %d файла.</item>
+        <item quantity="many">Импортировано %d файлов.</item>
+        <item quantity="other">Импортировано %d файла.</item>
+    </plurals>
+    <plurals name="transfer_exported">
+        <item quantity="one">Экспортирован %d файл.</item>
+        <item quantity="few">Экспортировано %d файла.</item>
+        <item quantity="many">Экспортировано %d файлов.</item>
+        <item quantity="other">Экспортировано %d файла.</item>
+    </plurals>
+    <plurals name="transfer_skipped">
+        <item quantity="one">Пропущено: %d.</item>
+        <item quantity="few">Пропущено: %d.</item>
+        <item quantity="many">Пропущено: %d.</item>
+        <item quantity="other">Пропущено: %d.</item>
+    </plurals>
+    <plurals name="transfer_renamed">
+        <item quantity="one">Переименовано для файловой системы хранилища: %d.</item>
+        <item quantity="few">Переименовано для файловой системы хранилища: %d.</item>
+        <item quantity="many">Переименовано для файловой системы хранилища: %d.</item>
+        <item quantity="other">Переименовано для файловой системы хранилища: %d.</item>
+    </plurals>
+    <plurals name="transfer_kept_both">
+        <item quantity="one">Сохранены обе копии: %d.</item>
+        <item quantity="few">Сохранены обе копии: %d.</item>
+        <item quantity="many">Сохранены обе копии: %d.</item>
+        <item quantity="other">Сохранены обе копии: %d.</item>
+    </plurals>
+    <string name="transfer_import_stopped">Импорт остановлен. Скопировано файлов: %1$d из %2$d.</string>
+    <string name="transfer_export_stopped">Экспорт остановлен. Скопировано файлов: %1$d из %2$d.</string>
+    <string name="transfer_err_create">Не удалось создать %1$s</string>
+    <string name="transfer_err_write">Не удалось записать %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
     <string name="unlock_kdf_button">Формирование ключа</string>

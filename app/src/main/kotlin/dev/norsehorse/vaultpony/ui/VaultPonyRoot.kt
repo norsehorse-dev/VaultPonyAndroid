@@ -13,11 +13,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.TransferJobs
 import dev.norsehorse.vaultpony.AppPrefs
 import dev.norsehorse.vaultpony.SessionRegistry
+import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.VaultStore
 import dev.norsehorse.vaultpony.ui.theme.VaultPonyTheme
 import uniffi.vault_ffi.VaultSession
@@ -45,7 +50,14 @@ fun VaultPonyRoot(
     onContainerConsumed: () -> Unit,
 ) {
     val context = LocalContext.current
-    var session by remember { mutableStateOf<VaultSession?>(null) }
+    // The open vault's registry id survives activity recreation (rotation);
+    // the session itself lives in SessionRegistry, so the browser, and any
+    // bulk copy running in it, come back instead of dropping to home while
+    // the vault stays unlocked behind it.
+    var openVolumeId by rememberSaveable { mutableStateOf<String?>(null) }
+    var session by remember {
+        mutableStateOf<VaultSession?>(openVolumeId?.let { SessionRegistry.get(it) })
+    }
     var screen by remember {
         mutableStateOf<Screen>(
             if (AppPrefs.onboardingDone(context)) Screen.Home else Screen.Onboarding(),
@@ -61,25 +73,51 @@ fun VaultPonyRoot(
         }
     }
 
-    // Auto-lock: drop the session and return home when the app is backgrounded.
+    // Auto-lock: drop the session and return home when a lock closed one.
+    // Compared against the generation at first composition so a recreated
+    // activity doesn't treat an old lock as new.
     val lockGeneration by SessionRegistry.lockGeneration.collectAsState()
+    val baseGeneration = remember { SessionRegistry.lockGeneration.value }
     LaunchedEffect(lockGeneration) {
-        if (lockGeneration > 0) {
+        if (lockGeneration != baseGeneration) {
             session = null
+            openVolumeId = null
             screen = Screen.Home
         }
     }
+    // Re-checked whenever this recomposes (a lockGeneration change does it),
+    // so a session locked while backgrounded never draws a frame, even before
+    // the effect above clears it.
+    val visibleSession = session?.takeIf { SessionRegistry.isOpen(it) }
+    // A batch summary whose vault isn't on screen any more (backgrounding
+    // stopped the batch and the vault locked): show it wherever the user is.
+    // The browser shows its own session's batch itself.
+    val transferState by TransferJobs.state.collectAsState()
+    val orphanSummary = (transferState as? TransferJobs.State.Done)
+        ?.takeIf { TransferJobs.owner !== visibleSession }
+        ?.result
 
     VaultPonyTheme {
+        if (orphanSummary != null) {
+            TransferSummaryDialog(
+                orphanSummary,
+                fallbackError = stringResource(
+                    if (orphanSummary.export) R.string.browser_err_export else R.string.browser_err_import,
+                ),
+            )
+        }
         Scaffold { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                val s = session
+                val s = visibleSession
                 if (s != null) {
                     BrowserScreen(
                         session = s,
                         onLock = {
+                            // Through the registry, so the Files root goes too.
+                            openVolumeId?.let { SessionRegistry.lock(it) }
                             s.lock()
                             session = null
+                            openVolumeId = null
                             screen = Screen.Home
                         },
                     )
@@ -160,7 +198,14 @@ fun VaultPonyRoot(
                             onChangePassword = { screen = Screen.ChangePassword(sc.uri) },
                             onUnlocked = { unlocked ->
                                 VaultStore.add(context, sc.uri)
-                                session = unlocked
+                                // An unlock that finished in the background past
+                                // the auto-lock deadline was locked on arrival.
+                                if (SessionRegistry.isOpen(unlocked)) {
+                                    openVolumeId = VaultRepository.volumeId(sc.uri)
+                                    session = unlocked
+                                } else {
+                                    screen = Screen.Home
+                                }
                             },
                             onBack = { screen = Screen.Home },
                         )

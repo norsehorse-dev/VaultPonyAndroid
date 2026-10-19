@@ -12,7 +12,14 @@
     <string name="settings_secure_title">Bildschirminhalt verbergen</string>
     <string name="settings_secure_subtitle">Screenshots blockieren und die App in der Übersicht ausblenden.</string>
     <string name="settings_autolock_title">Automatische Sperre</string>
-    <string name="settings_autolock_subtitle">Sperrt beim Verlassen der App oder bei ausgeschaltetem Bildschirm.</string>
+    <string name="settings_autolock_subtitle">Wie lange Tresore entsperrt bleiben, nachdem du die App verlässt oder den Bildschirm ausschaltest.</string>
+    <string name="settings_autolock_note">Eine längere Verzögerung hält den Schlüssel des Tresors im Speicher, während die App im Hintergrund läuft.</string>
+    <string name="settings_autolock_immediately">Sofort</string>
+    <string name="settings_autolock_30s">Nach 30 Sekunden</string>
+    <string name="settings_autolock_1m">Nach 1 Minute</string>
+    <string name="settings_autolock_5m">Nach 5 Minuten</string>
+    <string name="settings_autolock_15m">Nach 15 Minuten</string>
+    <string name="settings_autolock_1h">Nach 1 Stunde</string>
 
     <string name="settings_pony_header">Weitere Pony-Apps</string>
     <string name="pony_pgpony_subtitle">OpenPGP-Verschlüsselung</string>
@@ -47,7 +54,7 @@
     <string name="onboarding_create_title">Erstelle deinen ersten Tresor</string>
     <string name="onboarding_create_body">Ein Tresor ist eine einzige verschlüsselte Datei. Leg alles hinein; nur dein Passwort öffnet ihn.</string>
     <string name="onboarding_hidden_title">Versteckte Volumes</string>
-    <string name="onboarding_hidden_body">Verstecke einen zweiten Tresor im ersten. Zwei Passwörter, und das äußere verrät nichts über das versteckte.</string>
+    <string name="onboarding_hidden_body">Verstecke einen zweiten Tresor im ersten. Gib sein Passwort allein ein, um ihn zu öffnen. Das äußere Passwort verrät nicht, dass er existiert.</string>
     <string name="onboarding_security_title">Abgeriegelt</string>
     <string name="onboarding_security_body">Biometrische Entsperrung, automatische Sperre beim Verlassen und ein verborgener Bildschirm halten deine Tresore privat.</string>
 
@@ -115,7 +122,8 @@
     <string name="unlock_forget_biometrics">Biometrische Entsperrung vergessen</string>
     <string name="unlock_password">Passwort</string>
     <string name="unlock_outer_password">Passwort des äußeren Volumes</string>
-    <string name="unlock_protect_hidden">Dieser Tresor hat ein verstecktes Volume; schütze es</string>
+    <string name="unlock_protect_hidden">Äußeres Volume öffnen und ein verstecktes schützen</string>
+    <string name="unlock_hidden_note">Ein verstecktes Volume öffnet sich, wenn du sein Passwort in das Passwortfeld eingibst.</string>
     <string name="unlock_hidden_password">Passwort des versteckten Volumes</string>
     <string name="unlock_protect_note">Beide Passwörter sind nötig. Schreibvorgänge, die das versteckte Volume treffen würden, werden blockiert und der Tresor wird schreibgeschützt.</string>
     <string name="unlock_add_keyfiles">Schlüsseldateien hinzufügen</string>
@@ -143,12 +151,14 @@
     <string name="create_exfat_note">exFAT unterstützt Dateien über 4 GB. FAT ist für kleine Tresore breiter kompatibel.</string>
     <string name="create_hidden_volume">Verstecktes Volume</string>
     <string name="create_hidden_subtitle">Ein verborgener zweiter Tresor mit eigenem Passwort.</string>
+    <string name="create_hidden_help_open">Um den versteckten Tresor später zu öffnen, gib nur das versteckte Passwort in das normale Passwortfeld ein.</string>
+    <string name="create_hidden_help_both">Gibst du beide Passwörter zusammen ein, öffnet sich der äußere Tresor und der versteckte Bereich bleibt geschützt. So kannst du gefahrlos Tarndateien hinzufügen.</string>
     <string name="create_hidden_password">Verstecktes Passwort</string>
     <string name="create_confirm_hidden">Verstecktes Passwort bestätigen</string>
     <string name="create_hidden_differ">Das versteckte Passwort muss sich vom äußeren unterscheiden.</string>
     <string name="create_hidden_size">Versteckte Größe</string>
     <string name="create_fraction_of_vault">%1$s des Tresors</string>
-    <string name="create_hidden_warning">Schreiben in das äußere Volume kann das versteckte überschreiben. Halte den äußeren Tresor leicht und fülle ihn nur, wenn du ausschließlich mit dem äußeren Passwort entsperrst.</string>
+    <string name="create_hidden_warning">Schreiben in den äußeren Tresor kann den versteckten überschreiben. Um Dateien zum äußeren Tresor hinzuzufügen, entsperre ihn mit beiden Passwörtern, damit der versteckte Bereich geschützt ist.</string>
     <string name="create_working">Wird erstellt und formatiert…</string>
     <string name="create_action">Speicherort wählen und erstellen</string>
     <string name="create_invalid_size">Gültige Größe eingeben</string>
@@ -175,6 +185,64 @@
     <string name="browser_err_mkdir">Ordner konnte nicht erstellt werden</string>
     <string name="browser_err_rename">Umbenennen fehlgeschlagen</string>
     <string name="browser_err_delete">Löschen fehlgeschlagen</string>
+
+    <!-- Browser: volume facts (2.0.0) -->
+    <string name="browser_label_hidden">Verstecktes Volume</string>
+    <string name="browser_label_protected">Versteckter Bereich geschützt</string>
+    <string name="browser_space_free">%1$s von %2$s frei</string>
+    <string name="browser_volume_info">Volume-Info</string>
+    <string name="info_encryption">Verschlüsselung</string>
+    <string name="info_hash">Hash</string>
+    <string name="info_filesystem">Dateisystem</string>
+    <string name="info_size">Größe</string>
+    <string name="info_free">Frei</string>
+    <string name="info_access">Zugriff</string>
+    <string name="info_access_rw">Lesen und Schreiben</string>
+    <string name="info_access_ro">Schreibgeschützt</string>
+    <string name="info_fat_limit">FAT speichert Dateien bis maximal 4 GB pro Datei.</string>
+    <string name="common_ok">OK</string>
+    <string name="common_continue">Weiter</string>
+
+    <!-- Browser: bulk import and export (2.0.0) -->
+    <string name="browser_import_files">Dateien importieren</string>
+    <string name="browser_import_folder">Ordner importieren</string>
+    <string name="browser_export_folder">Ordner exportieren</string>
+    <string name="transfer_preparing">Dateien werden geprüft…</string>
+    <string name="transfer_collision_title">Einige Dateien existieren bereits</string>
+    <string name="transfer_keep_both">Beide behalten</string>
+    <string name="transfer_skip">Überspringen</string>
+    <string name="transfer_replace">Ersetzen</string>
+    <string name="transfer_progress">Kopiere %1$d von %2$d</string>
+    <string name="transfer_no_space_title">Nicht genug Speicherplatz</string>
+    <string name="transfer_no_space_body">Diese Dateien benötigen %1$s, im Tresor sind aber nur %2$s frei.</string>
+    <plurals name="transfer_oversize">
+        <item quantity="one">%d Datei ist größer als 4 GB und kann von FAT nicht gespeichert werden. Sie wird übersprungen.</item>
+        <item quantity="other">%d Dateien sind größer als 4 GB und können von FAT nicht gespeichert werden. Sie werden übersprungen.</item>
+    </plurals>
+    <plurals name="transfer_imported">
+        <item quantity="one">%d Datei importiert.</item>
+        <item quantity="other">%d Dateien importiert.</item>
+    </plurals>
+    <plurals name="transfer_exported">
+        <item quantity="one">%d Datei exportiert.</item>
+        <item quantity="other">%d Dateien exportiert.</item>
+    </plurals>
+    <plurals name="transfer_skipped">
+        <item quantity="one">%d übersprungen.</item>
+        <item quantity="other">%d übersprungen.</item>
+    </plurals>
+    <plurals name="transfer_renamed">
+        <item quantity="one">%d umbenannt, passend zum Dateisystem des Tresors.</item>
+        <item quantity="other">%d umbenannt, passend zum Dateisystem des Tresors.</item>
+    </plurals>
+    <plurals name="transfer_kept_both">
+        <item quantity="one">Bei %d beide Kopien behalten.</item>
+        <item quantity="other">Bei %d beide Kopien behalten.</item>
+    </plurals>
+    <string name="transfer_import_stopped">Import abgebrochen. %1$d von %2$d Dateien wurden kopiert.</string>
+    <string name="transfer_export_stopped">Export abgebrochen. %1$d von %2$d Dateien wurden kopiert.</string>
+    <string name="transfer_err_create">%1$s konnte nicht erstellt werden</string>
+    <string name="transfer_err_write">%1$s konnte nicht geschrieben werden</string>
 
     <!-- Argon2id (1.1.0) -->
     <string name="unlock_kdf_button">Schlüsselableitung</string>

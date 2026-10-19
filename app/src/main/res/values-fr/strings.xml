@@ -12,7 +12,14 @@
     <string name="settings_secure_title">Masquer le contenu de l\'écran</string>
     <string name="settings_secure_subtitle">Bloque les captures d\'écran et masque l\'application dans les Récents.</string>
     <string name="settings_autolock_title">Verrouillage automatique</string>
-    <string name="settings_autolock_subtitle">Se verrouille en quittant l\'application ou lorsque l\'écran s\'éteint.</string>
+    <string name="settings_autolock_subtitle">Durée pendant laquelle les coffres restent déverrouillés une fois l\'application quittée ou l\'écran éteint.</string>
+    <string name="settings_autolock_note">Un délai plus long conserve la clé du coffre en mémoire pendant que l\'application est en arrière-plan.</string>
+    <string name="settings_autolock_immediately">Immédiatement</string>
+    <string name="settings_autolock_30s">Après 30 secondes</string>
+    <string name="settings_autolock_1m">Après 1 minute</string>
+    <string name="settings_autolock_5m">Après 5 minutes</string>
+    <string name="settings_autolock_15m">Après 15 minutes</string>
+    <string name="settings_autolock_1h">Après 1 heure</string>
 
     <string name="settings_pony_header">Autres applications pony</string>
     <string name="pony_pgpony_subtitle">Chiffrement OpenPGP</string>
@@ -47,7 +54,7 @@
     <string name="onboarding_create_title">Créez votre premier coffre</string>
     <string name="onboarding_create_body">Un coffre est un seul fichier chiffré. Mettez-y ce que vous voulez ; seul votre mot de passe l\'ouvre.</string>
     <string name="onboarding_hidden_title">Volumes cachés</string>
-    <string name="onboarding_hidden_body">Cachez un second coffre dans le premier. Deux mots de passe, et l\'extérieur ne révèle rien du coffre caché.</string>
+    <string name="onboarding_hidden_body">Cachez un second coffre dans le premier. Saisissez son mot de passe seul pour l\'ouvrir. Le mot de passe externe ne révèle rien de son existence.</string>
     <string name="onboarding_security_title">Bien verrouillé</string>
     <string name="onboarding_security_body">Le déverrouillage biométrique, le verrouillage automatique à la sortie et un écran masqué gardent vos coffres à vous seul.</string>
 
@@ -115,7 +122,8 @@
     <string name="unlock_forget_biometrics">Oublier le déverrouillage biométrique</string>
     <string name="unlock_password">Mot de passe</string>
     <string name="unlock_outer_password">Mot de passe du volume externe</string>
-    <string name="unlock_protect_hidden">Ce coffre a un volume caché ; protégez-le</string>
+    <string name="unlock_protect_hidden">Ouvrir le volume externe et protéger un volume caché</string>
+    <string name="unlock_hidden_note">Un volume caché s\'ouvre lorsque vous saisissez son mot de passe dans le champ du mot de passe.</string>
     <string name="unlock_hidden_password">Mot de passe du volume caché</string>
     <string name="unlock_protect_note">Les deux mots de passe sont nécessaires. Les écritures qui atteindraient le volume caché sont bloquées et le coffre passe en lecture seule.</string>
     <string name="unlock_add_keyfiles">Ajouter des fichiers-clés</string>
@@ -143,12 +151,14 @@
     <string name="create_exfat_note">exFAT prend en charge les fichiers de plus de 4 Go. FAT est plus universellement compatible pour les petits coffres.</string>
     <string name="create_hidden_volume">Volume caché</string>
     <string name="create_hidden_subtitle">Un second coffre dissimulé avec son propre mot de passe.</string>
+    <string name="create_hidden_help_open">Pour ouvrir le coffre caché plus tard, saisissez le mot de passe caché seul dans le champ de mot de passe habituel.</string>
+    <string name="create_hidden_help_both">Saisir les deux mots de passe ensemble ouvre le coffre externe avec la zone cachée protégée, pour que vous puissiez y ajouter des fichiers leurres en toute sécurité.</string>
     <string name="create_hidden_password">Mot de passe caché</string>
     <string name="create_confirm_hidden">Confirmer le mot de passe caché</string>
     <string name="create_hidden_differ">Le mot de passe caché doit être différent de celui de l\'extérieur.</string>
     <string name="create_hidden_size">Taille cachée</string>
     <string name="create_fraction_of_vault">%1$s du coffre</string>
-    <string name="create_hidden_warning">Écrire dans le volume externe peut écraser le volume caché. Gardez le coffre externe léger et ne le remplissez que lorsque vous déverrouillez uniquement avec le mot de passe externe.</string>
+    <string name="create_hidden_warning">Écrire dans le coffre externe peut écraser le coffre caché. Pour ajouter des fichiers au coffre externe, déverrouillez-le avec les deux mots de passe afin que la zone cachée soit protégée.</string>
     <string name="create_working">Création et formatage…</string>
     <string name="create_action">Choisir l\'emplacement et créer</string>
     <string name="create_invalid_size">Saisissez une taille valide</string>
@@ -175,6 +185,64 @@
     <string name="browser_err_mkdir">Impossible de créer le dossier</string>
     <string name="browser_err_rename">Échec du renommage</string>
     <string name="browser_err_delete">Échec de la suppression</string>
+
+    <!-- Browser: volume facts (2.0.0) -->
+    <string name="browser_label_hidden">Volume caché</string>
+    <string name="browser_label_protected">Zone cachée protégée</string>
+    <string name="browser_space_free">%1$s libres sur %2$s</string>
+    <string name="browser_volume_info">Infos du volume</string>
+    <string name="info_encryption">Chiffrement</string>
+    <string name="info_hash">Hachage</string>
+    <string name="info_filesystem">Système de fichiers</string>
+    <string name="info_size">Taille</string>
+    <string name="info_free">Libre</string>
+    <string name="info_access">Accès</string>
+    <string name="info_access_rw">Lecture et écriture</string>
+    <string name="info_access_ro">Lecture seule</string>
+    <string name="info_fat_limit">FAT limite chaque fichier à 4 Go.</string>
+    <string name="common_ok">OK</string>
+    <string name="common_continue">Continuer</string>
+
+    <!-- Browser: bulk import and export (2.0.0) -->
+    <string name="browser_import_files">Importer des fichiers</string>
+    <string name="browser_import_folder">Importer un dossier</string>
+    <string name="browser_export_folder">Exporter le dossier</string>
+    <string name="transfer_preparing">Vérification des fichiers…</string>
+    <string name="transfer_collision_title">Certains fichiers existent déjà</string>
+    <string name="transfer_keep_both">Conserver les deux</string>
+    <string name="transfer_skip">Ignorer</string>
+    <string name="transfer_replace">Remplacer</string>
+    <string name="transfer_progress">Copie de %1$d sur %2$d</string>
+    <string name="transfer_no_space_title">Espace insuffisant</string>
+    <string name="transfer_no_space_body">Ces fichiers nécessitent %1$s, mais le coffre n\'a que %2$s d\'espace libre.</string>
+    <plurals name="transfer_oversize">
+        <item quantity="one">%d fichier dépasse 4 Go, la limite de FAT. Il sera ignoré.</item>
+        <item quantity="other">%d fichiers dépassent 4 Go, la limite de FAT. Ils seront ignorés.</item>
+    </plurals>
+    <plurals name="transfer_imported">
+        <item quantity="one">%d fichier importé.</item>
+        <item quantity="other">%d fichiers importés.</item>
+    </plurals>
+    <plurals name="transfer_exported">
+        <item quantity="one">%d fichier exporté.</item>
+        <item quantity="other">%d fichiers exportés.</item>
+    </plurals>
+    <plurals name="transfer_skipped">
+        <item quantity="one">%d fichier ignoré.</item>
+        <item quantity="other">%d fichiers ignorés.</item>
+    </plurals>
+    <plurals name="transfer_renamed">
+        <item quantity="one">%d fichier renommé pour s\'adapter au système de fichiers du coffre.</item>
+        <item quantity="other">%d fichiers renommés pour s\'adapter au système de fichiers du coffre.</item>
+    </plurals>
+    <plurals name="transfer_kept_both">
+        <item quantity="one">Deux copies conservées pour %d fichier.</item>
+        <item quantity="other">Deux copies conservées pour %d fichiers.</item>
+    </plurals>
+    <string name="transfer_import_stopped">Importation interrompue. Fichiers copiés : %1$d sur %2$d.</string>
+    <string name="transfer_export_stopped">Exportation interrompue. Fichiers copiés : %1$d sur %2$d.</string>
+    <string name="transfer_err_create">Impossible de créer %1$s</string>
+    <string name="transfer_err_write">Impossible d\'écrire %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
     <string name="unlock_kdf_button">Dérivation de clé</string>

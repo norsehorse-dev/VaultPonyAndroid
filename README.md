@@ -8,7 +8,9 @@ containers, including hidden volumes, backed by the shared Rust core
   filesystem (FAT or exFAT).
 - Hidden volumes, with write protection for the outer volume.
 - Header backup and recovery, change password, and keyfiles.
-- Biometric unlock, auto-lock on background, hidden screen, and a no-trace mode.
+- Biometric unlock, auto-lock when you leave the app or turn off the screen
+  (at once by default, or after a delay you choose), hidden screen, and a
+  no-trace mode.
 - Localized in English, German, Spanish, French, Russian, and Brazilian
   Portuguese, with live in-app switching.
 

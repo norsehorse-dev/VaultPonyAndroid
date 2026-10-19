@@ -12,7 +12,14 @@
     <string name="settings_secure_title">Ocultar o conteúdo da tela</string>
     <string name="settings_secure_subtitle">Bloqueia capturas de tela e oculta o app em Recentes.</string>
     <string name="settings_autolock_title">Bloqueio automático</string>
-    <string name="settings_autolock_subtitle">Bloqueia ao sair do app ou quando a tela desliga.</string>
+    <string name="settings_autolock_subtitle">Por quanto tempo os cofres ficam desbloqueados depois que você sai do app ou desliga a tela.</string>
+    <string name="settings_autolock_note">Um intervalo maior mantém a chave do cofre na memória enquanto o app está em segundo plano.</string>
+    <string name="settings_autolock_immediately">Imediatamente</string>
+    <string name="settings_autolock_30s">Após 30 segundos</string>
+    <string name="settings_autolock_1m">Após 1 minuto</string>
+    <string name="settings_autolock_5m">Após 5 minutos</string>
+    <string name="settings_autolock_15m">Após 15 minutos</string>
+    <string name="settings_autolock_1h">Após 1 hora</string>
 
     <string name="settings_pony_header">Mais apps pony</string>
     <string name="pony_pgpony_subtitle">Criptografia OpenPGP</string>
@@ -47,7 +54,7 @@
     <string name="onboarding_create_title">Crie seu primeiro cofre</string>
     <string name="onboarding_create_body">Um cofre é um único arquivo criptografado. Guarde o que quiser dentro; só a sua senha o abre.</string>
     <string name="onboarding_hidden_title">Volumes ocultos</string>
-    <string name="onboarding_hidden_body">Oculte um segundo cofre dentro do primeiro. Duas senhas, e a externa não dá nenhum sinal de que o oculto existe.</string>
+    <string name="onboarding_hidden_body">Oculte um segundo cofre dentro do primeiro. Digite só a senha dele para abri-lo. A senha externa não dá nenhum sinal de que ele existe.</string>
     <string name="onboarding_security_title">Bem protegido</string>
     <string name="onboarding_security_body">Desbloqueio biométrico, bloqueio automático ao sair e uma tela oculta mantêm seus cofres só seus.</string>
 
@@ -115,7 +122,8 @@
     <string name="unlock_forget_biometrics">Esquecer o desbloqueio biométrico</string>
     <string name="unlock_password">Senha</string>
     <string name="unlock_outer_password">Senha do volume externo</string>
-    <string name="unlock_protect_hidden">Este cofre tem um volume oculto; proteja-o</string>
+    <string name="unlock_protect_hidden">Abrir o volume externo e proteger um volume oculto</string>
+    <string name="unlock_hidden_note">Um volume oculto abre quando você digita a senha dele no campo de senha.</string>
     <string name="unlock_hidden_password">Senha do volume oculto</string>
     <string name="unlock_protect_note">As duas senhas são necessárias. Gravações que atingiriam o volume oculto são bloqueadas e o cofre fica somente leitura.</string>
     <string name="unlock_add_keyfiles">Adicionar arquivos de chave</string>
@@ -143,12 +151,14 @@
     <string name="create_exfat_note">O exFAT suporta arquivos maiores que 4 GB. O FAT é mais compatível de forma geral para cofres pequenos.</string>
     <string name="create_hidden_volume">Volume oculto</string>
     <string name="create_hidden_subtitle">Um segundo cofre oculto com senha própria.</string>
+    <string name="create_hidden_help_open">Para abrir o cofre oculto depois, digite só a senha oculta no campo de senha normal.</string>
+    <string name="create_hidden_help_both">Digitar as duas senhas juntas abre o cofre externo com a área oculta protegida, para você adicionar arquivos-isca com segurança.</string>
     <string name="create_hidden_password">Senha oculta</string>
     <string name="create_confirm_hidden">Confirmar senha oculta</string>
     <string name="create_hidden_differ">A senha oculta deve ser diferente da externa.</string>
     <string name="create_hidden_size">Tamanho oculto</string>
     <string name="create_fraction_of_vault">%1$s do cofre</string>
-    <string name="create_hidden_warning">Gravar no volume externo pode sobrescrever o oculto. Mantenha o cofre externo leve e só o preencha quando desbloquear apenas com a senha externa.</string>
+    <string name="create_hidden_warning">Gravar no cofre externo pode sobrescrever o oculto. Para adicionar arquivos ao cofre externo, desbloqueie-o com as duas senhas para que a área oculta fique protegida.</string>
     <string name="create_working">Criando e formatando…</string>
     <string name="create_action">Escolher local e criar</string>
     <string name="create_invalid_size">Insira um tamanho válido</string>
@@ -175,6 +185,64 @@
     <string name="browser_err_mkdir">Não foi possível criar a pasta</string>
     <string name="browser_err_rename">Falha ao renomear</string>
     <string name="browser_err_delete">Falha ao excluir</string>
+
+    <!-- Browser: volume facts (2.0.0) -->
+    <string name="browser_label_hidden">Volume oculto</string>
+    <string name="browser_label_protected">Área oculta protegida</string>
+    <string name="browser_space_free">%1$s livres de %2$s</string>
+    <string name="browser_volume_info">Informações do volume</string>
+    <string name="info_encryption">Criptografia</string>
+    <string name="info_hash">Hash</string>
+    <string name="info_filesystem">Sistema de arquivos</string>
+    <string name="info_size">Tamanho</string>
+    <string name="info_free">Livre</string>
+    <string name="info_access">Acesso</string>
+    <string name="info_access_rw">Leitura e gravação</string>
+    <string name="info_access_ro">Somente leitura</string>
+    <string name="info_fat_limit">O FAT aceita arquivos de até 4 GB cada.</string>
+    <string name="common_ok">OK</string>
+    <string name="common_continue">Continuar</string>
+
+    <!-- Browser: bulk import and export (2.0.0) -->
+    <string name="browser_import_files">Importar arquivos</string>
+    <string name="browser_import_folder">Importar pasta</string>
+    <string name="browser_export_folder">Exportar pasta</string>
+    <string name="transfer_preparing">Verificando arquivos…</string>
+    <string name="transfer_collision_title">Alguns arquivos já existem</string>
+    <string name="transfer_keep_both">Manter ambos</string>
+    <string name="transfer_skip">Pular</string>
+    <string name="transfer_replace">Substituir</string>
+    <string name="transfer_progress">Copiando %1$d de %2$d</string>
+    <string name="transfer_no_space_title">Espaço insuficiente</string>
+    <string name="transfer_no_space_body">Estes arquivos precisam de %1$s, mas o cofre tem %2$s livres.</string>
+    <plurals name="transfer_oversize">
+        <item quantity="one">%d arquivo tem mais de 4 GB, o que o FAT não consegue armazenar. Ele será pulado.</item>
+        <item quantity="other">%d arquivos têm mais de 4 GB, o que o FAT não consegue armazenar. Eles serão pulados.</item>
+    </plurals>
+    <plurals name="transfer_imported">
+        <item quantity="one">%d arquivo importado.</item>
+        <item quantity="other">%d arquivos importados.</item>
+    </plurals>
+    <plurals name="transfer_exported">
+        <item quantity="one">%d arquivo exportado.</item>
+        <item quantity="other">%d arquivos exportados.</item>
+    </plurals>
+    <plurals name="transfer_skipped">
+        <item quantity="one">%d arquivo pulado.</item>
+        <item quantity="other">%d arquivos pulados.</item>
+    </plurals>
+    <plurals name="transfer_renamed">
+        <item quantity="one">%d arquivo renomeado para se adequar ao sistema de arquivos do cofre.</item>
+        <item quantity="other">%d arquivos renomeados para se adequar ao sistema de arquivos do cofre.</item>
+    </plurals>
+    <plurals name="transfer_kept_both">
+        <item quantity="one">As duas cópias foram mantidas para %d arquivo.</item>
+        <item quantity="other">As duas cópias foram mantidas para %d arquivos.</item>
+    </plurals>
+    <string name="transfer_import_stopped">Importação interrompida. %1$d de %2$d arquivos foram copiados.</string>
+    <string name="transfer_export_stopped">Exportação interrompida. %1$d de %2$d arquivos foram copiados.</string>
+    <string name="transfer_err_create">Não foi possível criar %1$s</string>
+    <string name="transfer_err_write">Não foi possível gravar %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
     <string name="unlock_kdf_button">Derivação de chave</string>

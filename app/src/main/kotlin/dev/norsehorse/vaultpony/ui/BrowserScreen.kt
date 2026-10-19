@@ -1,5 +1,6 @@
 package dev.norsehorse.vaultpony.ui
 
+import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -29,35 +32,49 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
+import dev.norsehorse.vaultpony.CollisionPolicy
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.SessionRegistry
+import dev.norsehorse.vaultpony.TransferJobs
+import dev.norsehorse.vaultpony.TransferResult
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.ui.components.ChipTone
 import dev.norsehorse.vaultpony.ui.components.MonoChip
@@ -67,6 +84,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.vault_ffi.DirEntry
 import uniffi.vault_ffi.VaultSession
+import uniffi.vault_ffi.VolumeFacts
+import uniffi.vault_ffi.VolumeSpace
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -84,32 +103,49 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
     val errDelete = stringResource(R.string.browser_err_delete)
     val rootLabel = stringResource(R.string.browser_title)
 
-    var path by remember { mutableStateOf("/") }
+    // Saveable so a rotation (which now keeps the vault open) keeps the folder.
+    var path by rememberSaveable { mutableStateOf("/") }
     var entries by remember { mutableStateOf<List<DirEntry>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
-    var writable by remember { mutableStateOf(false) }
+    var facts by remember { mutableStateOf<VolumeFacts?>(null) }
+    var space by remember { mutableStateOf<VolumeSpace?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var viewing by remember { mutableStateOf<DirEntry?>(null) }
+    val writable = facts?.writable ?: false
 
     var showNewFolder by remember { mutableStateOf(false) }
+    var showInfo by remember { mutableStateOf(false) }
     var actionFor by remember { mutableStateOf<DirEntry?>(null) }
     var renaming by remember { mutableStateOf<DirEntry?>(null) }
     var deleting by remember { mutableStateOf<DirEntry?>(null) }
     var exporting by remember { mutableStateOf<DirEntry?>(null) }
+    // Vault folder waiting for the export destination picker. Saveable: the
+    // activity can be recreated while the picker is up.
+    var exportDir by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val importPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument(),
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                try {
-                    repo.importFile(session, path, uri)
-                    refresh++
-                } catch (e: Exception) {
-                    error = e.message ?: errImport
-                }
-            }
-        }
+    // Bulk import/export runs in TransferJobs, outside this composable, so a
+    // rotation or recomposition can't kill it. Only this session's batch shows.
+    val transferAll by TransferJobs.state.collectAsState()
+    val transfer = if (TransferJobs.owner === session) transferAll else TransferJobs.State.Idle
+
+    val importFilesPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments(),
+    ) { uris ->
+        if (uris.isNotEmpty()) TransferJobs.importFiles(context, session, path, uris)
+    }
+
+    val importFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { tree ->
+        if (tree != null) TransferJobs.importTree(context, session, path, tree)
+    }
+
+    val exportFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { tree ->
+        val dir = exportDir
+        exportDir = null
+        if (tree != null && dir != null) TransferJobs.exportFolder(context, session, dir, tree)
     }
 
     val exportPicker = rememberLauncherForActivityResult(
@@ -121,11 +157,18 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
             scope.launch {
                 try {
                     repo.exportFile(session, child(path, entry.name), entry.size, uri)
+                    refresh++
                 } catch (e: Exception) {
                     error = e.message ?: errExport
                 }
             }
         }
+    }
+
+    fun startFolderExport(dir: String) {
+        exportDir = dir
+        SessionRegistry.expectPicker()
+        exportFolderPicker.launch(null)
     }
 
     BackHandler(enabled = viewing != null || path != "/") {
@@ -135,12 +178,38 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
         }
     }
 
-    LaunchedEffect(session) {
-        writable = try {
-            withContext(Dispatchers.IO) { session.facts().writable }
+    // The folder first, then facts and free space. Space is re-read after
+    // every change (import, delete, export, mkdir...); the first call per
+    // session counts every free FAT cluster under the session's lock, so it
+    // goes last and never delays the listing. Later calls are cached and
+    // cheap. Filesystems that can't report it (NTFS) throw, and the figure is
+    // simply not shown.
+    LaunchedEffect(session, path, refresh) {
+        try {
+            entries = withContext(Dispatchers.IO) {
+                session.list(path).sortedWith(
+                    compareByDescending<DirEntry> { it.isDir }.thenBy { it.name.lowercase() },
+                )
+            }
+            error = null
         } catch (e: Exception) {
-            false
+            error = e.message ?: errListing
         }
+        facts = try {
+            withContext(Dispatchers.IO) { session.facts() }
+        } catch (e: Exception) {
+            null
+        }
+        space = try {
+            withContext(Dispatchers.IO) { session.space() }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // A finished batch changed the folder (or, on export, nothing), refresh both.
+    LaunchedEffect(transfer) {
+        if (transfer is TransferJobs.State.Done) refresh++
     }
 
     val current = viewing
@@ -154,18 +223,8 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
         return
     }
 
-    LaunchedEffect(path, refresh) {
-        try {
-            entries = withContext(Dispatchers.IO) {
-                session.list(path).sortedWith(
-                    compareByDescending<DirEntry> { it.isDir }.thenBy { it.name.lowercase() },
-                )
-            }
-            error = null
-        } catch (e: Exception) {
-            error = e.message ?: errListing
-        }
-    }
+
+    val volumeLabel = facts?.let { volumeLabelRes(it) }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -186,7 +245,38 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                     if (writable) stringResource(R.string.browser_rw) else stringResource(R.string.browser_ro),
                     ChipTone.Accent,
                 )
+                IconButton(onClick = { showInfo = true }) {
+                    Icon(
+                        Icons.Outlined.Info,
+                        contentDescription = stringResource(R.string.browser_volume_info),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 TextButton(onClick = onLock) { Text(stringResource(R.string.browser_lock)) }
+            }
+
+            // Which volume is open, and free space (plan §2.1, §2.2). A plain
+            // outer unlock gets no label.
+            val sp = space
+            if (volumeLabel != null || sp != null) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    volumeLabel?.let { MonoChip(stringResource(it), ChipTone.Hidden) }
+                    if (sp != null) {
+                        Text(
+                            stringResource(
+                                R.string.browser_space_free,
+                                Formatter.formatFileSize(context, sp.freeBytes.toLong()),
+                                Formatter.formatFileSize(context, sp.totalBytes.toLong()),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
 
             // Breadcrumb
@@ -220,16 +310,30 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                 }
             }
 
-            if (writable) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
+            // Actions. Scrolls sideways: four pills don't fit a narrow phone.
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (writable) {
                     ActionPill(Icons.Filled.CreateNewFolder, stringResource(R.string.browser_new_folder), accent = true) {
                         showNewFolder = true
                     }
-                    Spacer(Modifier.size(8.dp))
-                    ActionPill(Icons.Filled.FileUpload, stringResource(R.string.browser_import)) {
+                    ActionPill(Icons.Filled.FileUpload, stringResource(R.string.browser_import_files)) {
                         SessionRegistry.expectPicker()
-                        importPicker.launch(arrayOf("*/*"))
+                        importFilesPicker.launch(arrayOf("*/*"))
                     }
+                    ActionPill(Icons.Filled.Folder, stringResource(R.string.browser_import_folder)) {
+                        SessionRegistry.expectPicker()
+                        importFolderPicker.launch(null)
+                    }
+                }
+                // Reading out works on a read-only vault too.
+                ActionPill(Icons.Filled.FileDownload, stringResource(R.string.browser_export_folder)) {
+                    startFolderExport(path)
                 }
             }
             HorizontalDivider(Modifier.padding(top = 6.dp))
@@ -252,7 +356,9 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                                 onClick = {
                                     if (entry.isDir) path = child(path, entry.name) else viewing = entry
                                 },
-                                onLongClick = { if (writable) actionFor = entry },
+                                // The sheet's export actions work read-only;
+                                // rename and delete only show when writable.
+                                onLongClick = { actionFor = entry },
                             )
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -321,14 +427,21 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                         SessionRegistry.expectPicker()
                         exportPicker.launch(entry.name)
                     }
+                } else {
+                    SheetRow(Icons.Filled.FileDownload, stringResource(R.string.browser_export_folder)) {
+                        actionFor = null
+                        startFolderExport(child(path, entry.name))
+                    }
                 }
-                SheetRow(Icons.Filled.Edit, stringResource(R.string.browser_rename)) {
-                    renaming = entry
-                    actionFor = null
-                }
-                SheetRow(Icons.Filled.Delete, stringResource(R.string.common_delete), danger = true) {
-                    deleting = entry
-                    actionFor = null
+                if (writable) {
+                    SheetRow(Icons.Filled.Edit, stringResource(R.string.browser_rename)) {
+                        renaming = entry
+                        actionFor = null
+                    }
+                    SheetRow(Icons.Filled.Delete, stringResource(R.string.common_delete), danger = true) {
+                        deleting = entry
+                        actionFor = null
+                    }
                 }
             }
         }
@@ -386,6 +499,269 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
             dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
+
+    if (showInfo) {
+        VolumeInfoDialog(
+            facts = facts,
+            space = space,
+            labelRes = volumeLabel,
+            writable = writable,
+            onDismiss = { showInfo = false },
+        )
+    }
+
+    TransferDialogs(transfer, fallbackError = if (transferIsExport(transfer)) errExport else errImport)
+}
+
+/** "Hidden volume" / "Hidden area protected", or nothing for a plain outer
+ *  unlock. Never a control: switching volumes means lock and unlock. */
+private fun volumeLabelRes(f: VolumeFacts): Int? = when {
+    f.hidden -> R.string.browser_label_hidden
+    f.outerProtected -> R.string.browser_label_protected
+    else -> null
+}
+
+private fun transferIsExport(t: TransferJobs.State): Boolean = when (t) {
+    is TransferJobs.State.Preparing -> t.export
+    is TransferJobs.State.Running -> t.export
+    is TransferJobs.State.Done -> t.result.export
+    else -> false
+}
+
+@Composable
+private fun VolumeInfoDialog(
+    facts: VolumeFacts?,
+    space: VolumeSpace?,
+    labelRes: Int?,
+    writable: Boolean,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.browser_volume_info)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                labelRes?.let { MonoChip(stringResource(it), ChipTone.Hidden) }
+                if (facts != null) {
+                    InfoRow(stringResource(R.string.info_encryption), facts.scheme)
+                    InfoRow(stringResource(R.string.info_hash), facts.prf)
+                    InfoRow(stringResource(R.string.info_filesystem), facts.filesystem)
+                }
+                if (space != null) {
+                    InfoRow(
+                        stringResource(R.string.info_size),
+                        Formatter.formatFileSize(context, space.totalBytes.toLong()),
+                    )
+                    InfoRow(
+                        stringResource(R.string.info_free),
+                        Formatter.formatFileSize(context, space.freeBytes.toLong()),
+                    )
+                }
+                InfoRow(
+                    stringResource(R.string.info_access),
+                    stringResource(if (writable) R.string.info_access_rw else R.string.info_access_ro),
+                )
+                if (facts?.maxFileBytes != null) {
+                    Text(
+                        stringResource(R.string.info_fat_limit),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) } },
+    )
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
+    }
+}
+
+// Dialogs of a bulk batch never close on back or an outside tap: each state
+// has its own way out (Cancel, Continue, OK) so a long copy can't be lost by
+// a stray touch.
+private val TRANSFER_DIALOG = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+
+@Composable
+private fun TransferDialogs(state: TransferJobs.State, fallbackError: String) {
+    val context = LocalContext.current
+    when (state) {
+        TransferJobs.State.Idle -> Unit
+
+        is TransferJobs.State.Preparing -> AlertDialog(
+            onDismissRequest = {},
+            properties = TRANSFER_DIALOG,
+            text = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.size(12.dp))
+                    Text(stringResource(R.string.transfer_preparing))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { TransferJobs.cancel() }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+
+        is TransferJobs.State.AskCollision -> {
+            var choice by remember { mutableStateOf(CollisionPolicy.KEEP_BOTH) }
+            AlertDialog(
+                onDismissRequest = {},
+                properties = TRANSFER_DIALOG,
+                title = { Text(stringResource(R.string.transfer_collision_title)) },
+                text = {
+                    Column(Modifier.selectableGroup()) {
+                        listOf(
+                            CollisionPolicy.KEEP_BOTH to R.string.transfer_keep_both,
+                            CollisionPolicy.SKIP to R.string.transfer_skip,
+                            CollisionPolicy.REPLACE to R.string.transfer_replace,
+                        ).forEach { (policy, label) ->
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = choice == policy,
+                                        role = Role.RadioButton,
+                                        onClick = { choice = policy },
+                                    )
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(selected = choice == policy, onClick = null)
+                                Spacer(Modifier.size(8.dp))
+                                Text(stringResource(label))
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { TransferJobs.answerCollision(choice) }) {
+                        Text(stringResource(R.string.common_continue))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { TransferJobs.cancel() }) { Text(stringResource(R.string.common_cancel)) }
+                },
+            )
+        }
+
+        is TransferJobs.State.NoSpace -> AlertDialog(
+            onDismissRequest = {},
+            properties = TRANSFER_DIALOG,
+            title = { Text(stringResource(R.string.transfer_no_space_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.transfer_no_space_body,
+                        Formatter.formatFileSize(context, state.needed),
+                        Formatter.formatFileSize(context, state.free),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { TransferJobs.dismiss() }) { Text(stringResource(R.string.common_ok)) }
+            },
+        )
+
+        is TransferJobs.State.Oversize -> AlertDialog(
+            onDismissRequest = {},
+            properties = TRANSFER_DIALOG,
+            text = {
+                Text(context.resources.getQuantityString(R.plurals.transfer_oversize, state.count, state.count))
+            },
+            confirmButton = {
+                TextButton(onClick = { TransferJobs.answerOversize(true) }) {
+                    Text(stringResource(R.string.common_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { TransferJobs.cancel() }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+
+        is TransferJobs.State.Running -> AlertDialog(
+            onDismissRequest = {},
+            properties = TRANSFER_DIALOG,
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.transfer_progress, state.index, state.total))
+                    Text(
+                        state.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // By bytes when known, so one big file still moves the bar.
+                    val fraction = if (state.bytesTotal > 0) {
+                        state.bytesDone.toFloat() / state.bytesTotal
+                    } else {
+                        (state.index - 1).toFloat() / state.total.coerceAtLeast(1)
+                    }
+                    LinearProgressIndicator(
+                        progress = { fraction.coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { TransferJobs.cancel() }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+
+        is TransferJobs.State.Done -> TransferSummaryDialog(state.result, fallbackError)
+    }
+}
+
+/** A finished batch's summary. Also shown by VaultPonyRoot when the batch's
+ *  vault is no longer on screen (it was stopped and locked because the app
+ *  went to the background), so the user still learns how far it got. */
+@Composable
+internal fun TransferSummaryDialog(result: TransferResult, fallbackError: String) {
+    AlertDialog(
+        onDismissRequest = {},
+        properties = TRANSFER_DIALOG,
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                summaryLines(result, fallbackError).forEach { Text(it) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { TransferJobs.dismiss() }) { Text(stringResource(R.string.common_ok)) }
+        },
+    )
+}
+
+/** Summary of a finished batch: the headline count (or how far a stopped one
+ *  got), then any skipped / renamed / kept-both lines, then the error. */
+@Composable
+private fun summaryLines(r: TransferResult, fallbackError: String): List<String> {
+    val res = LocalContext.current.resources
+    val lines = ArrayList<String>()
+    val stopped = r.cancelled || (r.error != null && r.total > 0)
+    lines += when {
+        stopped && r.export -> stringResource(R.string.transfer_export_stopped, r.copied, r.total)
+        stopped -> stringResource(R.string.transfer_import_stopped, r.copied, r.total)
+        r.export -> res.getQuantityString(R.plurals.transfer_exported, r.copied, r.copied)
+        else -> res.getQuantityString(R.plurals.transfer_imported, r.copied, r.copied)
+    }
+    if (r.skipped > 0) lines += res.getQuantityString(R.plurals.transfer_skipped, r.skipped, r.skipped)
+    if (r.renamed > 0) lines += res.getQuantityString(R.plurals.transfer_renamed, r.renamed, r.renamed)
+    if (r.keptBoth > 0) lines += res.getQuantityString(R.plurals.transfer_kept_both, r.keptBoth, r.keptBoth)
+    r.error?.let { lines += it.ifBlank { fallbackError } }
+    return lines
 }
 
 @Composable

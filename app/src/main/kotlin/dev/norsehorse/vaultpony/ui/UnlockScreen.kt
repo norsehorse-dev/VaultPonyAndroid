@@ -48,6 +48,7 @@ import dev.norsehorse.vaultpony.BiometricUnlock
 import dev.norsehorse.vaultpony.MemoryCheck
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.passwordAutofill
 import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.i18n.findActivity
 import dev.norsehorse.vaultpony.SessionRegistry
@@ -296,6 +297,14 @@ fun UnlockScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = if (protectHidden) ImeAction.Next else ImeAction.Done,
                 ),
+                modifier = Modifier.fillMaxWidth().passwordAutofill(),
+            )
+            // Shown for every container, hidden volume or not, so the screen
+            // itself reveals nothing (plan §2.1).
+            Text(
+                stringResource(R.string.unlock_hidden_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -333,7 +342,7 @@ fun UnlockScreen(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().passwordAutofill(),
                 )
                 Text(
                     stringResource(R.string.unlock_protect_note),

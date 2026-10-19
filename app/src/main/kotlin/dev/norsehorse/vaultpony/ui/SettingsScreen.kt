@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,10 +21,12 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import dev.norsehorse.vaultpony.AppPrefs
@@ -65,6 +70,7 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
     val context = LocalContext.current
     var rememberOn by remember { mutableStateOf(AppPrefs.rememberVaults(context)) }
     var secure by remember { mutableStateOf(AppPrefs.secureScreen(context)) }
+    var autoLock by remember { mutableLongStateOf(AppPrefs.autoLockDelayMs(context)) }
     val currentLang by LanguageState.current
 
     fun open(url: String) {
@@ -118,10 +124,10 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
                 AppPrefs.setSecureScreen(context, it)
                 applySecure(context, it)
             }
-            SettingStatic(
-                stringResource(R.string.settings_autolock_title),
-                stringResource(R.string.settings_autolock_subtitle),
-            )
+            AutoLockPicker(selected = autoLock) {
+                autoLock = it
+                AppPrefs.setAutoLockDelayMs(context, it)
+            }
 
             // Live language switcher: tapping applies immediately (no restart).
             SectionLabel(
@@ -237,12 +243,48 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
     }
 }
 
+// Labels for AppPrefs.AUTO_LOCK_DELAYS_MS, same order.
+private val AUTO_LOCK_LABELS = listOf(
+    R.string.settings_autolock_immediately,
+    R.string.settings_autolock_30s,
+    R.string.settings_autolock_1m,
+    R.string.settings_autolock_5m,
+    R.string.settings_autolock_15m,
+    R.string.settings_autolock_1h,
+)
+
+/** Auto-lock delay (plan §2.3): a radio list, with the memory trade-off
+ *  stated right under it. */
 @Composable
-private fun SettingStatic(title: String, subtitle: String) {
+private fun AutoLockPicker(selected: Long, onSelect: (Long) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.settings_autolock_title), style = MaterialTheme.typography.titleMedium)
         Text(
-            subtitle,
+            stringResource(R.string.settings_autolock_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Column(Modifier.fillMaxWidth().padding(top = 4.dp).selectableGroup()) {
+            AppPrefs.AUTO_LOCK_DELAYS_MS.forEachIndexed { i, ms ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = ms == selected,
+                            role = Role.RadioButton,
+                            onClick = { onSelect(ms) },
+                        )
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = ms == selected, onClick = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(AUTO_LOCK_LABELS[i]), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
+        Text(
+            stringResource(R.string.settings_autolock_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

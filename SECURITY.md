@@ -11,6 +11,23 @@ before reporting.
 | 1.0.5 (latest) | Yes       |
 | < 1.0.5        | No        |
 
+## Auto-lock and keys in memory
+
+By default VaultPony locks every open vault the moment the app leaves the
+foreground or the screen turns off. Locking wipes the vault's keys from memory.
+
+Settings > Auto-lock can delay this by up to an hour. While a vault waits to
+lock, its keys stay in the app's memory in the background, and an unlocked
+vault stays visible to other apps through the system file picker. Someone
+with the unlocked phone, or with a way to read the app's memory, has that
+window to reach the vault. "Immediately" leaves no such window, which is why
+it is the default. There is no "never" option.
+
+Two short exceptions: VaultPony's own file pickers don't lock the vault while
+they are open (for at most 3 minutes), and a bulk import or export that is
+running when the lock is due gets up to 5 seconds to stop cleanly before the
+lock goes ahead.
+
 ## Reporting a Vulnerability
 
 Report privately by email to NorseHorse@norsehor.se. Please do not open a

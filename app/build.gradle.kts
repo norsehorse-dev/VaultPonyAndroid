@@ -29,8 +29,8 @@ android {
         // minSdk 26: openProxyFileDescriptor (planning doc §8).
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.1.0"
+        versionCode = 8
+        versionName = "2.0.0-rc1"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
@@ -198,7 +198,12 @@ tasks.configureEach {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+    // 2025.04.01 = Compose UI/Foundation 1.8.0, Material3 1.3.2: the first BOM
+    // with ContentType autofill semantics on text fields (plan §2.4). Compose
+    // 1.8 needs compileSdk 35 (set above), its libraries carry Kotlin 1.9
+    // metadata (fine for Kotlin 2.1), and it pulls lifecycle 2.8.7, the
+    // version this module already uses.
+    val composeBom = platform("androidx.compose:compose-bom:2025.04.01")
     implementation(composeBom)
     implementation("androidx.compose.material3:material3")
     // Icon set (folder/file/lock/fingerprint…). R8 tree-shakes unused icons.
@@ -225,4 +230,6 @@ dependencies {
     implementation("net.java.dev.jna:jna:5.15.0@aar")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    // JVM unit tests for the bulk transfer planner (BulkTransfer.kt).
+    testImplementation("junit:junit:4.13.2")
 }

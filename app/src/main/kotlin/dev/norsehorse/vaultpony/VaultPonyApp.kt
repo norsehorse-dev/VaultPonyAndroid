@@ -17,12 +17,18 @@ class VaultPonyApp : Application() {
         // point) can reach volumes the activity unlocked.
         SessionRegistry.init(this)
 
-        // Auto-lock (doc §8): the moment the whole app leaves the foreground —
-        // backgrounded, recents, or screen-off — every session is locked and
-        // the UI is sent back to unlock. In-app SAF pickers briefly background
-        // the app too, so those are exempted via SessionRegistry.expectPicker().
+        // Auto-lock (doc §8, plan §2.3): when the whole app leaves the
+        // foreground (backgrounded, recents, or screen-off) every session is
+        // locked, at once or after the delay chosen in Settings, and the UI is
+        // sent back home. In-app SAF pickers briefly background the app too,
+        // so those are exempted via SessionRegistry.expectPicker(). onStart
+        // catches a delayed lock whose timer was stalled by the freezer.
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    SessionRegistry.onAppForegrounded()
+                }
+
                 override fun onStop(owner: LifecycleOwner) {
                     SessionRegistry.onAppBackgrounded()
                 }

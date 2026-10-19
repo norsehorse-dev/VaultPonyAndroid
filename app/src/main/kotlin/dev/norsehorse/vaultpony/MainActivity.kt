@@ -64,6 +64,10 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         applySecure()
+        // A picker closed within ProcessLifecycleOwner's 700 ms stop delay
+        // never consumed its auto-lock exemption; drop it here so the next
+        // real trip to the background still locks.
+        SessionRegistry.ignoreNextBackground = false
     }
 
     private fun applySecure() {

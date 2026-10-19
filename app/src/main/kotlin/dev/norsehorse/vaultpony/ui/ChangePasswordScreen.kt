@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.ui.components.RevealToggle
+import dev.norsehorse.vaultpony.ui.components.passwordAutofill
 import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.ui.components.SectionLabel
@@ -97,7 +98,7 @@ fun ChangePasswordScreen(
             visualTransformation = revealTransformation(currentShown),
             trailingIcon = { RevealToggle(currentShown) { currentShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().passwordAutofill(),
         )
         OutlinedTextField(
             value = currentPim,
@@ -117,7 +118,7 @@ fun ChangePasswordScreen(
             visualTransformation = revealTransformation(nextShown),
             trailingIcon = { RevealToggle(nextShown) { nextShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().passwordAutofill(new = true),
         )
         OutlinedTextField(
             value = confirm,
@@ -128,7 +129,7 @@ fun ChangePasswordScreen(
             trailingIcon = { RevealToggle(confirmShown) { confirmShown = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             isError = confirm.isNotEmpty() && confirm != next,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().passwordAutofill(new = true),
         )
         OutlinedTextField(
             value = nextPim,

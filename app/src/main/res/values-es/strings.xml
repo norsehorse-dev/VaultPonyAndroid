@@ -12,7 +12,14 @@
     <string name="settings_secure_title">Ocultar el contenido de la pantalla</string>
     <string name="settings_secure_subtitle">Bloquea las capturas de pantalla y oculta la app en Recientes.</string>
     <string name="settings_autolock_title">Bloqueo automático</string>
-    <string name="settings_autolock_subtitle">Se bloquea al salir de la app o al apagarse la pantalla.</string>
+    <string name="settings_autolock_subtitle">Cuánto tiempo permanecen desbloqueadas las bóvedas después de salir de la app o apagar la pantalla.</string>
+    <string name="settings_autolock_note">Un retraso mayor mantiene la clave de la bóveda en memoria mientras la app está en segundo plano.</string>
+    <string name="settings_autolock_immediately">Inmediatamente</string>
+    <string name="settings_autolock_30s">Tras 30 segundos</string>
+    <string name="settings_autolock_1m">Tras 1 minuto</string>
+    <string name="settings_autolock_5m">Tras 5 minutos</string>
+    <string name="settings_autolock_15m">Tras 15 minutos</string>
+    <string name="settings_autolock_1h">Tras 1 hora</string>
 
     <string name="settings_pony_header">Más apps pony</string>
     <string name="pony_pgpony_subtitle">Cifrado OpenPGP</string>
@@ -47,7 +54,7 @@
     <string name="onboarding_create_title">Crea tu primera bóveda</string>
     <string name="onboarding_create_body">Una bóveda es un único archivo cifrado. Guarda lo que quieras dentro; solo tu contraseña la abre.</string>
     <string name="onboarding_hidden_title">Volúmenes ocultos</string>
-    <string name="onboarding_hidden_body">Oculta una segunda bóveda dentro de la primera. Dos contraseñas, y la exterior no da ninguna señal de que exista la oculta.</string>
+    <string name="onboarding_hidden_body">Oculta una segunda bóveda dentro de la primera. Para abrirla, escribe solo su contraseña. La contraseña externa no da ninguna señal de que exista.</string>
     <string name="onboarding_security_title">Bien protegido</string>
     <string name="onboarding_security_body">El desbloqueo biométrico, el bloqueo automático al salir y la pantalla oculta mantienen tus bóvedas solo tuyas.</string>
 
@@ -115,7 +122,8 @@
     <string name="unlock_forget_biometrics">Olvidar el desbloqueo biométrico</string>
     <string name="unlock_password">Contraseña</string>
     <string name="unlock_outer_password">Contraseña del volumen externo</string>
-    <string name="unlock_protect_hidden">Esta bóveda tiene un volumen oculto; protégelo</string>
+    <string name="unlock_protect_hidden">Abrir el volumen externo y proteger uno oculto</string>
+    <string name="unlock_hidden_note">Un volumen oculto se abre al escribir su contraseña en el campo de contraseña.</string>
     <string name="unlock_hidden_password">Contraseña del volumen oculto</string>
     <string name="unlock_protect_note">Se necesitan ambas contraseñas. Las escrituras que afectarían al volumen oculto se bloquean y la bóveda pasa a solo lectura.</string>
     <string name="unlock_add_keyfiles">Añadir archivos de clave</string>
@@ -143,12 +151,14 @@
     <string name="create_exfat_note">exFAT admite archivos de más de 4 GB. FAT es más compatible en general para bóvedas pequeñas.</string>
     <string name="create_hidden_volume">Volumen oculto</string>
     <string name="create_hidden_subtitle">Una segunda bóveda oculta con su propia contraseña.</string>
+    <string name="create_hidden_help_open">Para abrir la bóveda oculta más adelante, escribe solo la contraseña oculta en el campo de contraseña normal.</string>
+    <string name="create_hidden_help_both">Si escribes ambas contraseñas a la vez, se abre la bóveda externa con el área oculta protegida, para que puedas añadir archivos señuelo con seguridad.</string>
     <string name="create_hidden_password">Contraseña oculta</string>
     <string name="create_confirm_hidden">Confirmar contraseña oculta</string>
     <string name="create_hidden_differ">La contraseña oculta debe ser distinta de la externa.</string>
     <string name="create_hidden_size">Tamaño oculto</string>
     <string name="create_fraction_of_vault">%1$s de la bóveda</string>
-    <string name="create_hidden_warning">Escribir en el volumen externo puede sobrescribir el oculto. Mantén ligera la bóveda externa y llénala solo cuando desbloquees únicamente con la contraseña externa.</string>
+    <string name="create_hidden_warning">Escribir en la bóveda externa puede sobrescribir la oculta. Para añadir archivos a la bóveda externa, desbloquéala con ambas contraseñas para que el área oculta quede protegida.</string>
     <string name="create_working">Creando y formateando…</string>
     <string name="create_action">Elegir ubicación y crear</string>
     <string name="create_invalid_size">Introduce un tamaño válido</string>
@@ -175,6 +185,64 @@
     <string name="browser_err_mkdir">No se pudo crear la carpeta</string>
     <string name="browser_err_rename">Error al renombrar</string>
     <string name="browser_err_delete">Error al eliminar</string>
+
+    <!-- Browser: volume facts (2.0.0) -->
+    <string name="browser_label_hidden">Volumen oculto</string>
+    <string name="browser_label_protected">Área oculta protegida</string>
+    <string name="browser_space_free">%1$s libres de %2$s</string>
+    <string name="browser_volume_info">Información del volumen</string>
+    <string name="info_encryption">Cifrado</string>
+    <string name="info_hash">Hash</string>
+    <string name="info_filesystem">Sistema de archivos</string>
+    <string name="info_size">Tamaño</string>
+    <string name="info_free">Libre</string>
+    <string name="info_access">Acceso</string>
+    <string name="info_access_rw">Lectura y escritura</string>
+    <string name="info_access_ro">Solo lectura</string>
+    <string name="info_fat_limit">FAT admite archivos de hasta 4 GB cada uno.</string>
+    <string name="common_ok">Aceptar</string>
+    <string name="common_continue">Continuar</string>
+
+    <!-- Browser: bulk import and export (2.0.0) -->
+    <string name="browser_import_files">Importar archivos</string>
+    <string name="browser_import_folder">Importar carpeta</string>
+    <string name="browser_export_folder">Exportar carpeta</string>
+    <string name="transfer_preparing">Comprobando archivos…</string>
+    <string name="transfer_collision_title">Algunos archivos ya existen</string>
+    <string name="transfer_keep_both">Conservar ambos</string>
+    <string name="transfer_skip">Omitir</string>
+    <string name="transfer_replace">Reemplazar</string>
+    <string name="transfer_progress">Copiando %1$d de %2$d</string>
+    <string name="transfer_no_space_title">No hay suficiente espacio</string>
+    <string name="transfer_no_space_body">Estos archivos necesitan %1$s, pero la bóveda tiene %2$s libres.</string>
+    <plurals name="transfer_oversize">
+        <item quantity="one">%d archivo supera los 4 GB y FAT no puede almacenarlo. Se omitirá.</item>
+        <item quantity="other">%d archivos superan los 4 GB y FAT no puede almacenarlos. Se omitirán.</item>
+    </plurals>
+    <plurals name="transfer_imported">
+        <item quantity="one">Se importó %d archivo.</item>
+        <item quantity="other">Se importaron %d archivos.</item>
+    </plurals>
+    <plurals name="transfer_exported">
+        <item quantity="one">Se exportó %d archivo.</item>
+        <item quantity="other">Se exportaron %d archivos.</item>
+    </plurals>
+    <plurals name="transfer_skipped">
+        <item quantity="one">Se omitió %d archivo.</item>
+        <item quantity="other">Se omitieron %d archivos.</item>
+    </plurals>
+    <plurals name="transfer_renamed">
+        <item quantity="one">Se renombró %d archivo para adaptarlo al sistema de archivos de la bóveda.</item>
+        <item quantity="other">Se renombraron %d archivos para adaptarlos al sistema de archivos de la bóveda.</item>
+    </plurals>
+    <plurals name="transfer_kept_both">
+        <item quantity="one">Se conservaron ambas copias de %d archivo.</item>
+        <item quantity="other">Se conservaron ambas copias de %d archivos.</item>
+    </plurals>
+    <string name="transfer_import_stopped">Importación detenida. Se copiaron %1$d de %2$d archivos.</string>
+    <string name="transfer_export_stopped">Exportación detenida. Se copiaron %1$d de %2$d archivos.</string>
+    <string name="transfer_err_create">No se pudo crear %1$s</string>
+    <string name="transfer_err_write">No se pudo escribir %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
     <string name="unlock_kdf_button">Derivación de clave</string>
