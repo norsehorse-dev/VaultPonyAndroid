@@ -488,3 +488,10 @@ Plan (D16):
   fast with the normal wrong-password error); display names match VeraCrypt's list.
 - Reply on both issues: supported already, auto-detected; the names and the hash choice
   come in 2.0.0.
+
+Update (2026-10-21): the reporter confirmed both cascades already open and retitled #5 to
+"Add Streebog-512 to KDF". Streebog is already supported: unlock tries it under Auto and
+PBKDF2, and the create screen offers it as a hash. What #5 now asks for is the hash
+picker above, which lists Streebog. The unlock counter the reporter saw ("24") is 6 hashes
+times 4 header positions (normal, hidden, and their backups), not ciphers; the rc4 picker
+cuts that to 4 derivations when one hash is chosen.
