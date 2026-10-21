@@ -1,6 +1,6 @@
 # VaultPony 2.0.0 Plan
 
-Rev 4, 2026-10-21. Scope decided (section 0). Section 10 holds what is still open; section 11
+Rev 5, 2026-10-21. Scope decided (section 0). Section 10 holds what is still open; section 11
 covers issues #4 to #6.
 
 VaultPony 2.0.0 is the release that makes VaultPony work as an everyday EDS Lite
@@ -51,6 +51,8 @@ core with Argon2id.
 - D16 (2026-10-21, issues #5 and #6). Cipher cascades show under VeraCrypt's names
   ("AES-Twofish-Serpent", "Camellia-Kuznyechik"), and unlock gets an optional hash
   choice. Both land in rc4.
+- D17 (2026-10-21, from issue #4). ext4 containers open read-only in 2.0.0 (rc5, with
+  TrueCrypt mode); read-write ext4 is planned for 2.1.
 
 ---
 
@@ -303,6 +305,34 @@ have nowhere to open them. Scope:
 
 ---
 
+### 6.3 ext4, read-only (D17)
+
+Linux users often format VeraCrypt containers as ext4; today the core recognizes ext4 and
+refuses it ("not supported yet"). 2.0.0 opens them read-only:
+
+- vc-fs gains an ext4 adapter over the `ext4-view` crate (Apache-2.0 OR MIT, 1.0.0,
+  read-only by design, no_std + alloc), behind the same Vfs trait as FAT/exFAT/NTFS:
+  list, stat, read_at; every write op refuses with the read-only error; `writable()` is
+  false, so all three apps hide write actions the way they already do for NTFS.
+- Free space: report total and free from the superblock so Volume info shows them.
+- Check what ext4-view refuses (journal needing replay, encryption, unusual feature flags)
+  and turn each into a named refusal ("this ext4 volume needs a journal replay; open it
+  on Linux once") rather than a generic failure.
+- Symlinks, device nodes, sockets and FIFOs: list them, never follow symlinks out of the
+  volume; reading a non-regular file refuses. Owners and permissions are not shown.
+- File names are bytes on ext4; names that aren't valid UTF-8 show with replacement
+  characters and stay readable by their raw path internally.
+- Export and the Android Files root work as for any read-only vault.
+- Fixtures: ext4 containers made with VeraCrypt 1.26.x on Linux (small and large files,
+  deep trees, extents and inline data, a hidden volume formatted ext4), added to the
+  fixture matrix.
+- cargo-deny: add the crate and its dependencies; licenses stay Apache-2.0 compatible.
+
+Read-write ext4 is planned for 2.1. No license-compatible Rust ext4 writer exists
+(lwext4 carries GPL code), so 2.1 means our own writer: extents, block and inode bitmaps,
+group descriptor and metadata checksums, htree directories, and the journal (write
+through it or require it clean). That is its own planning doc.
+
 ## 7. Desktop in 2.0.0 (D3)
 
 Desktop takes the shared items: hidden-volume clarity, volume info and free space,
@@ -325,7 +355,7 @@ tested. Each RC covers all three platforms where its items apply.
   bookmark access.
 - rc4: share into vault, media playback, browser upgrades, recents privacy, keyfiles in
   change password (5.1 to 5.5), plus issues #4 to #6 (section 11).
-- rc5: camera capture (5.6) and TrueCrypt mode (6.2).
+- rc5: camera capture (5.6), TrueCrypt mode (6.2) and read-only ext4 (6.3).
 
 Release paths unchanged: Android through the reproducible Docker harness (builds from the
 pushed tag; F-Droid picks up the tag); iOS through App Store Connect without "veracrypt" in
