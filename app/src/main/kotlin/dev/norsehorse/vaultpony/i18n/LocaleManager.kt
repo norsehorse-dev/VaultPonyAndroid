@@ -99,6 +99,23 @@ object LocaleManager {
 
     fun current(): SupportedLanguage =
         SupportedLanguage.resolve(LanguageState.current.value) ?: SupportedLanguage.EN
+
+    @Volatile
+    private var cached: Pair<String, Context>? = null
+
+    /** A Context whose resources follow the in-app language, for text built
+     *  outside Compose (notifications, the Quick Settings tile). Cached per
+     *  language; [base] should be the application context. */
+    fun localizedContext(base: Context): Context {
+        val tag = LanguageState.current.value
+        cached?.let { (t, c) -> if (t == tag) return c }
+        val app = base.applicationContext
+        val config = Configuration(app.resources.configuration)
+        config.setLocale(Locale.forLanguageTag(tag))
+        val ctx = app.createConfigurationContext(config)
+        cached = tag to ctx
+        return ctx
+    }
 }
 
 /**

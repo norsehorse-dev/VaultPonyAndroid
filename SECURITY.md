@@ -23,10 +23,53 @@ with the unlocked phone, or with a way to read the app's memory, has that
 window to reach the vault. "Immediately" leaves no such window, which is why
 it is the default. There is no "never" option.
 
-Two short exceptions: VaultPony's own file pickers don't lock the vault while
-they are open (for at most 3 minutes), and a bulk import or export that is
-running when the lock is due gets up to 5 seconds to stop cleanly before the
-lock goes ahead.
+Two exceptions keep a vault open past that point:
+
+- VaultPony's own file pickers don't lock the vault while they are open (for
+  at most 3 minutes).
+- A bulk import or export keeps its own vault unlocked until the copy ends,
+  even with the app in the background, and for that vault the auto-lock delay
+  only starts counting then. Any other unlocked vault still locks on time.
+  While it runs, a "Copying files" notification shows its
+  progress with Lock and Cancel buttons. Lock stops the copy after the
+  current chunk (the half-copied file is removed) and then locks the vault,
+  waiting at most 5 seconds for the copy to stop.
+
+## Lock controls
+
+While a vault stays unlocked with the app in the background, VaultPony shows
+an "A vault is unlocked" notification with a Lock button. It is generic on
+purpose: it never names a vault or a file, says nothing about hidden volumes,
+and is hidden on the lock screen. A Quick Settings tile, "Lock vaults", locks
+everything from anywhere, including the lock screen. If you deny the
+notification permission, everything works the same without the notification.
+
+## Other apps and the Files app
+
+An unlocked vault appears as a location in the system Files app and in other
+apps' file pickers. Since 2.0.0 that location is writable: an app you open it
+from can read, create, change, rename, move and delete files in the vault for
+as long as the vault stays unlocked, and its changes are written straight into
+the container. Using the vault this way does not count as activity, so it
+never delays the auto-lock; a file still open in another app when the vault
+locks simply stops working.
+
+VaultPony streams those files through the vault's encryption and writes no
+plaintext to its own storage. Image thumbnails are made in memory and never
+saved. What another app does with a file it opened (for example, keeping its
+own copy or a cached preview) is outside VaultPony's control.
+
+Access from other apps never survives a lock. Every unlock gives the vault new
+random identifiers in the system file manager, so a folder or file another app
+was given stops working the moment the vault locks, and the app has to be
+pointed at the folder again after the next unlock. Nothing another app keeps
+from an earlier unlock leads back into the vault, and it doesn't reveal which
+container or which volume (outer or hidden) was open.
+
+Read-only vaults (NTFS) refuse all writes from other apps. So does an outer
+volume opened with hidden-volume protection once a write was blocked to
+protect the hidden volume: from then on the vault is read-only until it is
+locked.
 
 ## Reporting a Vulnerability
 

@@ -81,9 +81,15 @@ data class TransferResult(
     val renamed: Int,
     val keptBoth: Int,
     val cancelled: Boolean,
-    /** Set when the batch stopped on an error; may be blank (use a fallback). */
-    val error: String? = null,
+    /** Set when the batch stopped on an error. */
+    val error: BatchError? = null,
 )
+
+/** Why a batch stopped early (R4). [kind]: a core (vault) error, shown through
+ *  the localized table; the core's own text is only logged. [text]: a message
+ *  the app already localized (an export destination refusing a file). Neither
+ *  set: the generic import/export failure text. */
+data class BatchError(val kind: VaultErrorKind? = null, val text: String? = null)
 
 object BulkPlanner {
     /** FAT long names and exFAT both cap a name at 255 UTF-16 units. */

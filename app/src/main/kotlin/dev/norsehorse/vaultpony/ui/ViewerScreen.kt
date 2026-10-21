@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,8 @@ fun ViewerScreen(
 ) {
     var content by remember { mutableStateOf<Content>(Content.Loading) }
     val name = path.substringAfterLast('/')
+    // Localized resources, so the R4 error text follows the in-app language.
+    val res = LocalContext.current.resources
 
     LaunchedEffect(path) {
         content = withContext(Dispatchers.IO) {
@@ -71,7 +74,10 @@ fun ViewerScreen(
                 val bytes = readAll(session, path, size)
                 classify(name, bytes)
             } catch (e: Exception) {
-                Content.Failed(e.message ?: "read failed")
+                // The core's own text goes to the log only (R4).
+                Content.Failed(
+                    vaultFailureText(res, e, res.getString(R.string.err_vault_generic), where = "view"),
+                )
             }
         }
     }

@@ -263,4 +263,33 @@
     <string name="change_pw_kdf_note">Só o cabeçalho é recriptografado com a nova KDF. Deixe o novo PIM vazio para usar o padrão dela.</string>
     <string name="password_show">Mostrar senha</string>
     <string name="password_hide">Ocultar senha</string>
+
+    <!-- Vault errors shown in the app (2.0.0 rc2) -->
+    <string name="err_hidden_protected">Gravar aqui sobrescreveria o volume oculto, então o cofre agora está somente leitura.</string>
+    <string name="err_not_found">Arquivo não encontrado.</string>
+    <string name="err_filesystem">O sistema de arquivos do cofre informou um erro.</string>
+    <string name="err_io">Não foi possível ler ou gravar o arquivo do contêiner.</string>
+    <string name="err_wrong_password">Senha ou PIM incorretos, ou o arquivo não é um contêiner do VeraCrypt.</string>
+    <string name="err_unsupported_fs">Este contêiner tem um sistema de arquivos que o VaultPony ainda não consegue abrir.</string>
+    <string name="err_read_only">Este cofre está somente leitura.</string>
+    <string name="err_vault_full">O cofre está cheio.</string>
+    <string name="err_vault_generic">Algo deu errado no cofre.</string>
+
+    <!-- Lock controls and copy notifications (2.0.0 rc2) -->
+    <string name="notif_channel_unlocked">Cofres desbloqueados</string>
+    <string name="notif_channel_unlocked_desc">Aparece enquanto um cofre continua desbloqueado em segundo plano.</string>
+    <string name="notif_channel_transfer">Cópia de arquivos</string>
+    <string name="notif_channel_transfer_desc">Progresso de importações e exportações.</string>
+    <string name="notif_unlocked_title_one">Um cofre está desbloqueado</string>
+    <string name="notif_unlocked_title_many">Há cofres desbloqueados</string>
+    <string name="notif_unlocked_text">Toque em Bloquear para bloquear agora.</string>
+    <string name="notif_action_lock">Bloquear</string>
+    <string name="notif_import_title">Importando arquivos</string>
+    <string name="notif_export_title">Exportando arquivos</string>
+    <string name="notif_import_done">Importação concluída</string>
+    <string name="notif_export_done">Exportação concluída</string>
+    <string name="tile_lock_label">Bloquear cofres</string>
+    <string name="tile_nothing_unlocked">Nada desbloqueado</string>
+    <string name="notif_permission_rationale">O VaultPony mostra uma notificação com um botão Bloquear enquanto um cofre continua desbloqueado em segundo plano.</string>
+    <string name="notif_permission_not_now">Agora não</string>
 </resources>

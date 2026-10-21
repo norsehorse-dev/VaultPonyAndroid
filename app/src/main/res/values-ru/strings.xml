@@ -275,4 +275,33 @@
     <string name="change_pw_kdf_note">Новой KDF перешифровывается только заголовок. Оставьте новый PIM пустым, чтобы использовать её значение по умолчанию.</string>
     <string name="password_show">Показать пароль</string>
     <string name="password_hide">Скрыть пароль</string>
+
+    <!-- Vault errors shown in the app (2.0.0 rc2, R4). -->
+    <string name="err_hidden_protected">Запись сюда перезаписала бы скрытый том, поэтому хранилище теперь доступно только для чтения.</string>
+    <string name="err_not_found">Файл не найден.</string>
+    <string name="err_filesystem">Файловая система хранилища сообщила об ошибке.</string>
+    <string name="err_io">Не удалось прочитать или записать файл контейнера.</string>
+    <string name="err_wrong_password">Неверный пароль или PIM либо это не контейнер VeraCrypt.</string>
+    <string name="err_unsupported_fs">В этом контейнере файловая система, которую VaultPony пока не умеет открывать.</string>
+    <string name="err_read_only">Это хранилище доступно только для чтения.</string>
+    <string name="err_vault_full">Хранилище заполнено.</string>
+    <string name="err_vault_generic">В хранилище произошла ошибка.</string>
+
+    <!-- Lock controls and copy notifications (2.0.0 rc2). -->
+    <string name="notif_channel_unlocked">Разблокированные хранилища</string>
+    <string name="notif_channel_unlocked_desc">Показывается, пока хранилище остаётся разблокированным в фоне.</string>
+    <string name="notif_channel_transfer">Копирование файлов</string>
+    <string name="notif_channel_transfer_desc">Ход импорта и экспорта.</string>
+    <string name="notif_unlocked_title_one">Хранилище разблокировано</string>
+    <string name="notif_unlocked_title_many">Хранилища разблокированы</string>
+    <string name="notif_unlocked_text">Нажмите «Заблокировать», чтобы заблокировать сейчас.</string>
+    <string name="notif_action_lock">Заблокировать</string>
+    <string name="notif_import_title">Импорт файлов</string>
+    <string name="notif_export_title">Экспорт файлов</string>
+    <string name="notif_import_done">Импорт завершён</string>
+    <string name="notif_export_done">Экспорт завершён</string>
+    <string name="tile_lock_label">Заблокировать хранилища</string>
+    <string name="tile_nothing_unlocked">Нет разблокированных</string>
+    <string name="notif_permission_rationale">VaultPony показывает уведомление с кнопкой «Заблокировать», пока хранилище остаётся разблокированным в фоне.</string>
+    <string name="notif_permission_not_now">Не сейчас</string>
 </resources>

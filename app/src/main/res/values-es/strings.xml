@@ -263,4 +263,33 @@
     <string name="change_pw_kdf_note">Solo se vuelve a cifrar el encabezado con la nueva KDF. Deja el nuevo PIM vacío para usar su valor predeterminado.</string>
     <string name="password_show">Mostrar contraseña</string>
     <string name="password_hide">Ocultar contraseña</string>
+
+    <!-- Vault errors shown in the app (2.0.0 rc2) -->
+    <string name="err_hidden_protected">Escribir aquí sobrescribiría el volumen oculto, así que la bóveda ahora es de solo lectura.</string>
+    <string name="err_not_found">No se encontró el archivo.</string>
+    <string name="err_filesystem">El sistema de archivos de la bóveda informó de un error.</string>
+    <string name="err_io">No se pudo leer ni escribir el archivo contenedor.</string>
+    <string name="err_wrong_password">Contraseña o PIM incorrectos, o no es un contenedor de VeraCrypt.</string>
+    <string name="err_unsupported_fs">Este contenedor tiene un sistema de archivos que VaultPony aún no puede abrir.</string>
+    <string name="err_read_only">Esta bóveda es de solo lectura.</string>
+    <string name="err_vault_full">La bóveda está llena.</string>
+    <string name="err_vault_generic">Algo salió mal en la bóveda.</string>
+
+    <!-- Lock controls and copy notifications (2.0.0 rc2) -->
+    <string name="notif_channel_unlocked">Bóvedas desbloqueadas</string>
+    <string name="notif_channel_unlocked_desc">Se muestra mientras una bóveda sigue desbloqueada en segundo plano.</string>
+    <string name="notif_channel_transfer">Copia de archivos</string>
+    <string name="notif_channel_transfer_desc">Progreso de importaciones y exportaciones.</string>
+    <string name="notif_unlocked_title_one">Hay una bóveda desbloqueada</string>
+    <string name="notif_unlocked_title_many">Hay bóvedas desbloqueadas</string>
+    <string name="notif_unlocked_text">Toca Bloquear para bloquear ahora.</string>
+    <string name="notif_action_lock">Bloquear</string>
+    <string name="notif_import_title">Importando archivos</string>
+    <string name="notif_export_title">Exportando archivos</string>
+    <string name="notif_import_done">Importación terminada</string>
+    <string name="notif_export_done">Exportación terminada</string>
+    <string name="tile_lock_label">Bloquear bóvedas</string>
+    <string name="tile_nothing_unlocked">Nada desbloqueado</string>
+    <string name="notif_permission_rationale">VaultPony muestra una notificación con un botón Bloquear mientras una bóveda sigue desbloqueada en segundo plano.</string>
+    <string name="notif_permission_not_now">Ahora no</string>
 </resources>

@@ -282,4 +282,35 @@
     <string name="change_pw_kdf_note">Only the header is re-encrypted with the new KDF. Leave the new PIM empty to use its default.</string>
     <string name="password_show">Show password</string>
     <string name="password_hide">Hide password</string>
+
+    <!-- Vault errors shown in the app (2.0.0 rc2, R4). The core's own English
+         text is never shown; these replace it. -->
+    <string name="err_hidden_protected">Writing here would overwrite the hidden volume, so the vault is now read-only.</string>
+    <string name="err_not_found">File not found.</string>
+    <string name="err_filesystem">The vault\'s filesystem reported an error.</string>
+    <string name="err_io">Could not read or write the container file.</string>
+    <string name="err_wrong_password">Wrong password or PIM, or not a VeraCrypt container.</string>
+    <string name="err_unsupported_fs">This container holds a filesystem VaultPony can\'t open yet.</string>
+    <string name="err_read_only">This vault is read-only.</string>
+    <string name="err_vault_full">The vault is full.</string>
+    <string name="err_vault_generic">Something went wrong in the vault.</string>
+
+    <!-- Lock controls and copy notifications (2.0.0 rc2). Generic on purpose:
+         never a vault or file name. -->
+    <string name="notif_channel_unlocked">Unlocked vaults</string>
+    <string name="notif_channel_unlocked_desc">Shows while a vault stays unlocked in the background.</string>
+    <string name="notif_channel_transfer">Copying files</string>
+    <string name="notif_channel_transfer_desc">Progress of imports and exports.</string>
+    <string name="notif_unlocked_title_one">A vault is unlocked</string>
+    <string name="notif_unlocked_title_many">Vaults are unlocked</string>
+    <string name="notif_unlocked_text">Tap Lock to lock now.</string>
+    <string name="notif_action_lock">Lock</string>
+    <string name="notif_import_title">Importing files</string>
+    <string name="notif_export_title">Exporting files</string>
+    <string name="notif_import_done">Import finished</string>
+    <string name="notif_export_done">Export finished</string>
+    <string name="tile_lock_label">Lock vaults</string>
+    <string name="tile_nothing_unlocked">Nothing unlocked</string>
+    <string name="notif_permission_rationale">VaultPony shows a notification with a Lock button while a vault stays unlocked in the background.</string>
+    <string name="notif_permission_not_now">Not now</string>
 </resources>

@@ -43,6 +43,14 @@ object AppPrefs {
     fun setAutoLockDelayMs(c: Context, v: Long) =
         p(c).edit().putLong("auto_lock_delay_ms", v).apply()
 
+    /** The notification-permission explanation (Android 13+) was shown once,
+     *  either when a delay longer than Immediately was first picked or when
+     *  the first import/export started. It is never shown again. */
+    fun notificationRationaleShown(c: Context): Boolean = p(c).getBoolean("notif_rationale_shown", false)
+
+    fun setNotificationRationaleShown(c: Context, v: Boolean) =
+        p(c).edit().putBoolean("notif_rationale_shown", v).apply()
+
     /** First-run onboarding gate. */
     fun onboardingDone(c: Context): Boolean = p(c).getBoolean("onboarding_done", false)
 

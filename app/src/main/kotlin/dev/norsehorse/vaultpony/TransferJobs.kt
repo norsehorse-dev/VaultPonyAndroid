@@ -32,6 +32,11 @@ import java.io.InputStream
  * session's existing create/writeAt/readAt path. Imports write each file to
  * a ".vaultpony-*.part" temp beside its destination and rename it into place
  * only when complete, so no stop leaves a half file or loses a replaced one.
+ *
+ * rc2 (plan §4.3, R1): each batch runs inside [TransferService], a dataSync
+ * foreground service, so it keeps going in the background, and the auto-lock
+ * timer waits for it (SessionRegistry.setBatchActive). A Lock tapped during a
+ * copy stops it at the next chunk boundary first ([stopForLock]).
  */
 object TransferJobs {
 
@@ -65,6 +70,17 @@ object TransferJobs {
     private val _state = MutableStateFlow<State>(State.Idle)
     val state: StateFlow<State> = _state.asStateFlow()
 
+    // True from start() until the batch has fully settled (flushed, summary
+    // posted, hold released). The foreground service watches it to know when
+    // to leave the foreground. Written under runLock.
+    private val _active = MutableStateFlow(false)
+    val active: StateFlow<Boolean> = _active.asStateFlow()
+
+    /** The current (or last) batch is an export. For the notification. */
+    @Volatile
+    var exporting: Boolean = false
+        private set
+
     /** The session [state] belongs to. A browser for any other session (a
      *  different vault, or the same one unlocked again) ignores it. */
     @Volatile
@@ -78,10 +94,14 @@ object TransferJobs {
     // so the partial file is always cleaned up and the vault flushed.
     @Volatile
     private var cancelRequested = false
+    // The cancel came from a lock (the vault went away), not from the user:
+    // a batch stopped at a question then still leaves a summary.
+    @Volatile
+    private var abandoned = false
     @Volatile
     private var collisionAnswer: CompletableDeferred<CollisionPolicy?>? = null
     // A batch is between start() and its final state. onStopped is the
-    // auto-lock's hold release, called once the batch has cleaned up.
+    // user Lock's hold release, called once the batch has cleaned up.
     private val runLock = Any()
     private var running = false
     private var onStopped: (() -> Unit)? = null
@@ -100,7 +120,7 @@ object TransferJobs {
     fun importFiles(context: Context, session: VaultSession, destDir: String, uris: List<Uri>) {
         if (uris.isEmpty()) return
         val resolver = context.applicationContext.contentResolver
-        start(session, export = false) {
+        start(context, session, export = false) {
             val sources = uris.map { describe(resolver, it) }
             runImport(resolver, session, destDir, sources)
         }
@@ -109,7 +129,7 @@ object TransferJobs {
     /** Import a picked folder (and everything under it) into [destDir]. */
     fun importTree(context: Context, session: VaultSession, destDir: String, tree: Uri) {
         val resolver = context.applicationContext.contentResolver
-        start(session, export = false) {
+        start(context, session, export = false) {
             val sources = walkTree(resolver, tree) ?: return@start null
             runImport(resolver, session, destDir, sources)
         }
@@ -122,7 +142,7 @@ object TransferJobs {
         val resolver = context.applicationContext.contentResolver
         // The caller's (localized) resources, so error text follows the in-app language.
         val res = context.resources
-        start(session, export = true) {
+        start(context, session, export = true) {
             val sources = ArrayList<SourceEntry>()
             val name = vaultDir.trimEnd('/').substringAfterLast('/')
             val prefix = if (name.isEmpty()) emptyList() else listOf(name)
@@ -148,11 +168,11 @@ object TransferJobs {
         oversizeAnswer?.complete(false)
     }
 
-    /** The app is leaving the foreground: stop the batch at its next chunk
-     *  boundary (partial file removed, vault flushed, summary says stopped),
-     *  then call [onStopped] from the worker. False when no batch is running,
-     *  and [onStopped] is never called. */
-    fun stopForBackground(onStopped: () -> Unit): Boolean {
+    /** The user tapped Lock (in-app, notification or tile) during a batch:
+     *  stop it at its next chunk boundary (partial file removed, vault
+     *  flushed, summary says stopped), then call [onStopped] from the worker.
+     *  False when no batch is running, and [onStopped] is never called. */
+    fun stopForLock(onStopped: () -> Unit): Boolean {
         synchronized(runLock) {
             if (!running) return false
             this.onStopped = onStopped
@@ -161,20 +181,38 @@ object TransferJobs {
         return true
     }
 
+    /** A vault in [locked] is being locked. A batch on it that is waiting on
+     *  a question (or stuck past the hold) is told to give up, so it can't
+     *  wait forever on a session that no longer exists. */
+    fun abandonFor(locked: Collection<VaultSession>) {
+        val o = owner ?: return
+        if (busy && locked.any { it === o }) {
+            abandoned = true
+            cancel()
+        }
+    }
+
     /** Close a finished batch's summary (or the no-space notice). */
     fun dismiss() {
         if (!busy) _state.value = State.Idle
     }
 
-    private fun start(session: VaultSession, export: Boolean, body: suspend () -> State?) {
+    private fun start(context: Context, session: VaultSession, export: Boolean, body: suspend () -> State?) {
         synchronized(runLock) {
             if (running) return
             running = true
             onStopped = null
             cancelRequested = false
+            abandoned = false
+            _active.value = true
         }
         owner = session
+        exporting = export
         _state.value = State.Preparing(export)
+        // R1: the auto-lock timer waits while this batch works...
+        SessionRegistry.setBatchActive(true)
+        // ...and the foreground service keeps the process going meanwhile.
+        TransferService.start(context)
         job = scope.launch {
             try {
                 val end = try {
@@ -186,19 +224,41 @@ object TransferJobs {
                     State.Done(
                         TransferResult(
                             export = export, copied = 0, total = 0, skipped = 0, renamed = 0,
-                            keptBoth = 0, cancelled = false, error = e.message ?: "",
+                            keptBoth = 0, cancelled = false, error = batchError(session, e),
                         ),
                     )
                 }
                 _state.value = end ?: State.Idle
             } finally {
-                // The batch has flushed and settled; let a held auto-lock go.
+                // The batch has flushed and settled: the auto-lock timer may
+                // start (R1), and a Lock held for it may go ahead.
+                SessionRegistry.setBatchActive(false)
                 val release = synchronized(runLock) {
                     running = false
+                    _active.value = false
                     onStopped.also { onStopped = null }
                 }
                 release?.invoke()
+                // The copy notification is going away; the unlocked one may
+                // come back (rc2: never both at once).
+                SessionRegistry.onTransferEnded()
             }
+        }
+    }
+
+    /** A message the app wrote itself (already localized). */
+    private class LocalizedIOException(message: String) : IOException(message)
+
+    /** Classify a batch failure for the summary (R4). Core text is logged only;
+     *  a hidden-volume block also latches the vault read-only. */
+    private fun batchError(session: VaultSession, e: Exception): BatchError {
+        CoreErrorMap.log("transfer", e)
+        SessionRegistry.noteFailure(session, e)
+        val kind = CoreErrorMap.kindOf(e)
+        return when {
+            kind != null -> BatchError(kind = kind)
+            e is LocalizedIOException -> BatchError(text = e.message)
+            else -> BatchError()
         }
     }
 
@@ -243,12 +303,15 @@ object TransferJobs {
             // cancel() can't complete a deferred that didn't exist yet.
             if (cancelRequested) {
                 collisionAnswer = null
-                return null
+                return stoppedBeforeCopy(plan)
             }
             _state.value = State.AskCollision(plan.collisions)
+            // Waiting on the user doesn't hold the auto-lock timer.
+            SessionRegistry.setBatchActive(false)
             val policy = answer.await()
             collisionAnswer = null
-            if (policy == null) return null
+            if (policy == null) return stoppedBeforeCopy(plan)
+            SessionRegistry.setBatchActive(true)
             if (policy != CollisionPolicy.KEEP_BOTH) {
                 plan = BulkPlanner.plan(sources, limits, policy, mergeDirs = true, listDir)
             }
@@ -261,14 +324,16 @@ object TransferJobs {
             oversizeAnswer = answer
             if (cancelRequested) {
                 oversizeAnswer = null
-                return null
+                return stoppedBeforeCopy(plan)
             }
             _state.value = State.Oversize(plan.oversize)
+            SessionRegistry.setBatchActive(false)
             val go = answer.await()
             oversizeAnswer = null
-            if (!go) return null
+            if (!go) return stoppedBeforeCopy(plan)
+            SessionRegistry.setBatchActive(true)
         }
-        if (cancelRequested) return null
+        if (cancelRequested) return stoppedBeforeCopy(plan)
 
         var copied = 0
         var skipped = plan.skipped + plan.oversize
@@ -277,7 +342,7 @@ object TransferJobs {
         var sinceFlushFiles = 0
         var sinceFlushBytes = 0L
         var cancelled = false
-        var error: String? = null
+        var error: BatchError? = null
         try {
             loop@ for (op in plan.ops) {
                 if (cancelRequested) {
@@ -315,7 +380,7 @@ object TransferJobs {
         } catch (e: Exception) {
             // A vault-side failure (full, locked, hidden area protected): stop
             // here and say so; what was already copied stays.
-            error = e.message ?: ""
+            error = batchError(session, e)
         }
         runCatching { session.flush() }
         return State.Done(
@@ -328,6 +393,19 @@ object TransferJobs {
                 keptBoth = plan.keptBoth,
                 cancelled = cancelled,
                 error = error,
+            ),
+        )
+    }
+
+    /** A batch that ended at a question. The user's own Cancel needs no
+     *  summary; a lock that abandoned it does ("Import stopped. 0 of N files
+     *  were copied."), so the user learns nothing was copied. */
+    private fun stoppedBeforeCopy(plan: TransferPlan): State? {
+        if (!abandoned) return null
+        return State.Done(
+            TransferResult(
+                export = false, copied = 0, total = plan.files, skipped = 0, renamed = 0,
+                keptBoth = 0, cancelled = true,
             ),
         )
     }
@@ -532,7 +610,16 @@ object TransferJobs {
         tree: Uri,
         sources: List<SourceEntry>,
     ): State? {
-        if (cancelRequested) return null
+        if (cancelRequested) {
+            // Locked before the first file: say so, as an import does.
+            if (!abandoned) return null
+            return State.Done(
+                TransferResult(
+                    export = true, copied = 0, total = sources.count { !it.isDir }, skipped = 0,
+                    renamed = 0, keptBoth = 0, cancelled = true,
+                ),
+            )
+        }
         val rootId = DocumentsContract.getTreeDocumentId(tree)
         val rootDoc = DocumentsContract.buildDocumentUriUsingTree(tree, rootId)
         // Only the picked folder can already hold these names; everything
@@ -548,7 +635,7 @@ object TransferJobs {
         var index = 0
         var bytesDone = 0L
         var cancelled = false
-        var error: String? = null
+        var error: BatchError? = null
         try {
             loop@ for (op in plan.ops) {
                 if (cancelRequested) {
@@ -560,7 +647,7 @@ object TransferJobs {
                         val parent = docs.getValue(op.dest.dropLast(1))
                         docs[op.dest] = DocumentsContract.createDocument(
                             resolver, parent, Document.MIME_TYPE_DIR, op.dest.last(),
-                        ) ?: throw IOException(res.getString(R.string.transfer_err_create, op.dest.last()))
+                        ) ?: throw LocalizedIOException(res.getString(R.string.transfer_err_create, op.dest.last()))
                     }
                     is TransferOp.CopyFile -> {
                         index++
@@ -580,7 +667,7 @@ object TransferJobs {
                 }
             }
         } catch (e: Exception) {
-            error = e.message ?: ""
+            error = batchError(session, e)
         }
         return State.Done(
             TransferResult(
@@ -624,9 +711,9 @@ object TransferJobs {
         val ext = BulkPlanner.splitExtension(name).second.removePrefix(".").lowercase()
         val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
         val doc = DocumentsContract.createDocument(resolver, parent, mime, name)
-            ?: throw IOException(res.getString(R.string.transfer_err_create, name))
+            ?: throw LocalizedIOException(res.getString(R.string.transfer_err_create, name))
         try {
-            val out = resolver.openOutputStream(doc) ?: throw IOException(res.getString(R.string.transfer_err_write, name))
+            val out = resolver.openOutputStream(doc) ?: throw LocalizedIOException(res.getString(R.string.transfer_err_write, name))
             out.use { stream ->
                 val size = src.size.toULong()
                 var offset = 0uL

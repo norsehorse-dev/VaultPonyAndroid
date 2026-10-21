@@ -263,4 +263,35 @@
     <string name="change_pw_kdf_note">Seul l’en-tête est rechiffré avec la nouvelle KDF. Laissez le nouveau PIM vide pour utiliser sa valeur par défaut.</string>
     <string name="password_show">Afficher le mot de passe</string>
     <string name="password_hide">Masquer le mot de passe</string>
+
+    <!-- Vault errors shown in the app (2.0.0 rc2, R4). The core's own English
+         text is never shown; these replace it. -->
+    <string name="err_hidden_protected">Écrire ici écraserait le volume caché, le coffre est donc désormais en lecture seule.</string>
+    <string name="err_not_found">Fichier introuvable.</string>
+    <string name="err_filesystem">Le système de fichiers du coffre a signalé une erreur.</string>
+    <string name="err_io">Impossible de lire ou d\'écrire le fichier conteneur.</string>
+    <string name="err_wrong_password">Mot de passe ou PIM incorrect, ou ce n\'est pas un conteneur VeraCrypt.</string>
+    <string name="err_unsupported_fs">Ce conteneur contient un système de fichiers que VaultPony ne sait pas encore ouvrir.</string>
+    <string name="err_read_only">Ce coffre est en lecture seule.</string>
+    <string name="err_vault_full">Le coffre est plein.</string>
+    <string name="err_vault_generic">Une erreur s\'est produite dans le coffre.</string>
+
+    <!-- Lock controls and copy notifications (2.0.0 rc2). Generic on purpose:
+         never a vault or file name. -->
+    <string name="notif_channel_unlocked">Coffres déverrouillés</string>
+    <string name="notif_channel_unlocked_desc">S\'affiche tant qu\'un coffre reste déverrouillé en arrière-plan.</string>
+    <string name="notif_channel_transfer">Copie de fichiers</string>
+    <string name="notif_channel_transfer_desc">Progression des importations et exportations.</string>
+    <string name="notif_unlocked_title_one">Un coffre est déverrouillé</string>
+    <string name="notif_unlocked_title_many">Des coffres sont déverrouillés</string>
+    <string name="notif_unlocked_text">Touchez Verrouiller pour verrouiller maintenant.</string>
+    <string name="notif_action_lock">Verrouiller</string>
+    <string name="notif_import_title">Importation des fichiers</string>
+    <string name="notif_export_title">Exportation des fichiers</string>
+    <string name="notif_import_done">Importation terminée</string>
+    <string name="notif_export_done">Exportation terminée</string>
+    <string name="tile_lock_label">Verrouiller les coffres</string>
+    <string name="tile_nothing_unlocked">Rien de déverrouillé</string>
+    <string name="notif_permission_rationale">VaultPony affiche une notification avec un bouton Verrouiller tant qu\'un coffre reste déverrouillé en arrière-plan.</string>
+    <string name="notif_permission_not_now">Pas maintenant</string>
 </resources>

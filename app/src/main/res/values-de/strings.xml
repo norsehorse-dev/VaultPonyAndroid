@@ -263,4 +263,33 @@
     <string name="change_pw_kdf_note">Nur der Header wird mit der neuen KDF neu verschlüsselt. Lass die neue PIM leer, um deren Standardwert zu verwenden.</string>
     <string name="password_show">Passwort anzeigen</string>
     <string name="password_hide">Passwort verbergen</string>
+
+    <!-- Vault errors shown in the app (2.0.0 rc2) -->
+    <string name="err_hidden_protected">Schreiben an dieser Stelle würde das versteckte Volume überschreiben, daher ist der Tresor jetzt schreibgeschützt.</string>
+    <string name="err_not_found">Datei nicht gefunden.</string>
+    <string name="err_filesystem">Das Dateisystem des Tresors hat einen Fehler gemeldet.</string>
+    <string name="err_io">Die Container-Datei konnte nicht gelesen oder geschrieben werden.</string>
+    <string name="err_wrong_password">Passwort oder PIM falsch, oder kein VeraCrypt-Container.</string>
+    <string name="err_unsupported_fs">Dieser Container enthält ein Dateisystem, das VaultPony noch nicht öffnen kann.</string>
+    <string name="err_read_only">Dieser Tresor ist schreibgeschützt.</string>
+    <string name="err_vault_full">Der Tresor ist voll.</string>
+    <string name="err_vault_generic">Im Tresor ist etwas schiefgelaufen.</string>
+
+    <!-- Lock controls and copy notifications (2.0.0 rc2) -->
+    <string name="notif_channel_unlocked">Entsperrte Tresore</string>
+    <string name="notif_channel_unlocked_desc">Wird angezeigt, solange ein Tresor im Hintergrund entsperrt bleibt.</string>
+    <string name="notif_channel_transfer">Dateien kopieren</string>
+    <string name="notif_channel_transfer_desc">Fortschritt von Importen und Exporten.</string>
+    <string name="notif_unlocked_title_one">Ein Tresor ist entsperrt</string>
+    <string name="notif_unlocked_title_many">Tresore sind entsperrt</string>
+    <string name="notif_unlocked_text">Tippe auf Sperren, um jetzt zu sperren.</string>
+    <string name="notif_action_lock">Sperren</string>
+    <string name="notif_import_title">Dateien werden importiert</string>
+    <string name="notif_export_title">Dateien werden exportiert</string>
+    <string name="notif_import_done">Import abgeschlossen</string>
+    <string name="notif_export_done">Export abgeschlossen</string>
+    <string name="tile_lock_label">Tresore sperren</string>
+    <string name="tile_nothing_unlocked">Nichts entsperrt</string>
+    <string name="notif_permission_rationale">VaultPony zeigt eine Benachrichtigung mit der Schaltfläche „Sperren“, solange ein Tresor im Hintergrund entsperrt bleibt.</string>
+    <string name="notif_permission_not_now">Nicht jetzt</string>
 </resources>

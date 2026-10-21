@@ -75,6 +75,7 @@ import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.TransferJobs
 import dev.norsehorse.vaultpony.TransferResult
+import dev.norsehorse.vaultpony.VaultChanges
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.ui.components.ChipTone
 import dev.norsehorse.vaultpony.ui.components.MonoChip
@@ -111,7 +112,16 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
     var space by remember { mutableStateOf<VolumeSpace?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var viewing by remember { mutableStateOf<DirEntry?>(null) }
-    val writable = facts?.writable ?: false
+    // Changes made through the Files app (or a hidden-volume trip, which also
+    // posts one) reload the folder on screen. Reading it here also recomposes,
+    // so the read-only latch below is re-checked.
+    val outsideChange by VaultChanges.last.collectAsState()
+    // An outer volume whose hidden-volume protection tripped is read-only for
+    // the rest of the session, whatever facts.writable says.
+    val latched = facts != null && SessionRegistry.isReadOnlyLatched(session)
+    val writable = (facts?.writable ?: false) && !latched
+    // POST_NOTIFICATIONS explanation before the first import/export (R2).
+    val notifGate = rememberNotificationGate()
 
     var showNewFolder by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
@@ -159,16 +169,18 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                     repo.exportFile(session, child(path, entry.name), entry.size, uri)
                     refresh++
                 } catch (e: Exception) {
-                    error = e.message ?: errExport
+                    error = vaultFailureText(context.resources, e, errExport, session, "export")
                 }
             }
         }
     }
 
     fun startFolderExport(dir: String) {
-        exportDir = dir
-        SessionRegistry.expectPicker()
-        exportFolderPicker.launch(null)
+        notifGate.runAfter {
+            exportDir = dir
+            SessionRegistry.expectPicker()
+            exportFolderPicker.launch(null)
+        }
     }
 
     BackHandler(enabled = viewing != null || path != "/") {
@@ -193,7 +205,7 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
             }
             error = null
         } catch (e: Exception) {
-            error = e.message ?: errListing
+            error = vaultFailureText(context.resources, e, errListing, where = "list")
         }
         facts = try {
             withContext(Dispatchers.IO) { session.facts() }
@@ -210,6 +222,12 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
     // A finished batch changed the folder (or, on export, nothing), refresh both.
     LaunchedEffect(transfer) {
         if (transfer is TransferJobs.State.Done) refresh++
+    }
+
+    // Another app wrote into this vault through the Files app (plan §4.1).
+    LaunchedEffect(outsideChange) {
+        val c = outsideChange ?: return@LaunchedEffect
+        if (c.volumeId == SessionRegistry.idOf(session) && c.affects(path)) refresh++
     }
 
     val current = viewing
@@ -279,6 +297,15 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                 }
             }
 
+            if (latched) {
+                Text(
+                    stringResource(R.string.err_hidden_protected),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                )
+            }
+
             // Breadcrumb
             Row(
                 Modifier
@@ -323,12 +350,16 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                         showNewFolder = true
                     }
                     ActionPill(Icons.Filled.FileUpload, stringResource(R.string.browser_import_files)) {
-                        SessionRegistry.expectPicker()
-                        importFilesPicker.launch(arrayOf("*/*"))
+                        notifGate.runAfter {
+                            SessionRegistry.expectPicker()
+                            importFilesPicker.launch(arrayOf("*/*"))
+                        }
                     }
                     ActionPill(Icons.Filled.Folder, stringResource(R.string.browser_import_folder)) {
-                        SessionRegistry.expectPicker()
-                        importFolderPicker.launch(null)
+                        notifGate.runAfter {
+                            SessionRegistry.expectPicker()
+                            importFolderPicker.launch(null)
+                        }
                     }
                 }
                 // Reading out works on a read-only vault too.
@@ -456,7 +487,7 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                 showNewFolder = false
                 scope.launch {
                     try { repo.mkdir(session, child(path, name)); refresh++ }
-                    catch (e: Exception) { error = e.message ?: errMkdir }
+                    catch (e: Exception) { error = vaultFailureText(context.resources, e, errMkdir, session, "mkdir") }
                 }
             },
         )
@@ -471,7 +502,7 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                 renaming = null
                 scope.launch {
                     try { repo.rename(session, child(path, entry.name), child(path, newName)); refresh++ }
-                    catch (e: Exception) { error = e.message ?: errRename }
+                    catch (e: Exception) { error = vaultFailureText(context.resources, e, errRename, session, "rename") }
                 }
             },
         )
@@ -492,7 +523,7 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                     deleting = null
                     scope.launch {
                         try { repo.remove(session, child(path, entry.name)); refresh++ }
-                        catch (e: Exception) { error = e.message ?: errDelete }
+                        catch (e: Exception) { error = vaultFailureText(context.resources, e, errDelete, session, "delete") }
                     }
                 }) { Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error) }
             },
@@ -726,42 +757,23 @@ private fun TransferDialogs(state: TransferJobs.State, fallbackError: String) {
 }
 
 /** A finished batch's summary. Also shown by VaultPonyRoot when the batch's
- *  vault is no longer on screen (it was stopped and locked because the app
- *  went to the background), so the user still learns how far it got. */
+ *  vault is no longer on screen (a Lock stopped the batch, or the vault
+ *  auto-locked after it), so the user still learns how far it got. */
 @Composable
 internal fun TransferSummaryDialog(result: TransferResult, fallbackError: String) {
+    val res = LocalContext.current.resources
     AlertDialog(
         onDismissRequest = {},
         properties = TRANSFER_DIALOG,
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                summaryLines(result, fallbackError).forEach { Text(it) }
+                transferSummaryLines(res, result, fallbackError).forEach { Text(it) }
             }
         },
         confirmButton = {
             TextButton(onClick = { TransferJobs.dismiss() }) { Text(stringResource(R.string.common_ok)) }
         },
     )
-}
-
-/** Summary of a finished batch: the headline count (or how far a stopped one
- *  got), then any skipped / renamed / kept-both lines, then the error. */
-@Composable
-private fun summaryLines(r: TransferResult, fallbackError: String): List<String> {
-    val res = LocalContext.current.resources
-    val lines = ArrayList<String>()
-    val stopped = r.cancelled || (r.error != null && r.total > 0)
-    lines += when {
-        stopped && r.export -> stringResource(R.string.transfer_export_stopped, r.copied, r.total)
-        stopped -> stringResource(R.string.transfer_import_stopped, r.copied, r.total)
-        r.export -> res.getQuantityString(R.plurals.transfer_exported, r.copied, r.copied)
-        else -> res.getQuantityString(R.plurals.transfer_imported, r.copied, r.copied)
-    }
-    if (r.skipped > 0) lines += res.getQuantityString(R.plurals.transfer_skipped, r.skipped, r.skipped)
-    if (r.renamed > 0) lines += res.getQuantityString(R.plurals.transfer_renamed, r.renamed, r.renamed)
-    if (r.keptBoth > 0) lines += res.getQuantityString(R.plurals.transfer_kept_both, r.keptBoth, r.keptBoth)
-    r.error?.let { lines += it.ifBlank { fallbackError } }
-    return lines
 }
 
 @Composable

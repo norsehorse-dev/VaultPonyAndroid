@@ -71,6 +71,9 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
     var rememberOn by remember { mutableStateOf(AppPrefs.rememberVaults(context)) }
     var secure by remember { mutableStateOf(AppPrefs.secureScreen(context)) }
     var autoLock by remember { mutableLongStateOf(AppPrefs.autoLockDelayMs(context)) }
+    // A delay longer than Immediately is when the "Vault unlocked"
+    // notification starts to matter: explain and ask once (R2).
+    val notifGate = rememberNotificationGate()
     val currentLang by LanguageState.current
 
     fun open(url: String) {
@@ -127,6 +130,7 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
             AutoLockPicker(selected = autoLock) {
                 autoLock = it
                 AppPrefs.setAutoLockDelayMs(context, it)
+                if (it > 0L) notifGate.runAfter {}
             }
 
             // Live language switcher: tapping applies immediately (no restart).

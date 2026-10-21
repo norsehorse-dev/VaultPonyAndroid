@@ -80,18 +80,24 @@ fun VaultPonyRoot(
     val baseGeneration = remember { SessionRegistry.lockGeneration.value }
     LaunchedEffect(lockGeneration) {
         if (lockGeneration != baseGeneration) {
-            session = null
-            openVolumeId = null
-            screen = Screen.Home
+            // Auto-lock can spare the vault a copy is running in (R1); stay
+            // in its browser then. Anything else goes home.
+            val open = session
+            if (open == null || !SessionRegistry.isOpen(open)) {
+                session = null
+                openVolumeId = null
+                screen = Screen.Home
+            }
         }
     }
     // Re-checked whenever this recomposes (a lockGeneration change does it),
     // so a session locked while backgrounded never draws a frame, even before
     // the effect above clears it.
     val visibleSession = session?.takeIf { SessionRegistry.isOpen(it) }
-    // A batch summary whose vault isn't on screen any more (backgrounding
-    // stopped the batch and the vault locked): show it wherever the user is.
-    // The browser shows its own session's batch itself.
+    // A batch summary whose vault isn't on screen any more (a Lock from the
+    // notification or tile stopped the batch, or the vault auto-locked after
+    // it ended): show it wherever the user is. The browser shows its own
+    // session's batch itself.
     val transferState by TransferJobs.state.collectAsState()
     val orphanSummary = (transferState as? TransferJobs.State.Done)
         ?.takeIf { TransferJobs.owner !== visibleSession }
@@ -113,9 +119,10 @@ fun VaultPonyRoot(
                     BrowserScreen(
                         session = s,
                         onLock = {
-                            // Through the registry, so the Files root goes too.
-                            openVolumeId?.let { SessionRegistry.lock(it) }
-                            s.lock()
+                            // Through the registry, so the Files root goes too
+                            // and a running copy stops cleanly first.
+                            val id = openVolumeId
+                            if (id != null) SessionRegistry.requestLock(id) else s.lock()
                             session = null
                             openVolumeId = null
                             screen = Screen.Home
