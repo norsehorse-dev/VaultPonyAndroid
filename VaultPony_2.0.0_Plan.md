@@ -1,7 +1,8 @@
 # VaultPony 2.0.0 Plan
 
-Rev 5, 2026-10-21. Scope decided (section 0). Section 10 holds what is still open; section 11
-covers issues #4 to #6.
+Rev 6, 2026-10-21. Scope decided (section 0). Section 10 holds what is still open; section 11
+covers issues #4 to #6. The rc3 Phase 0 spike (desk research) is in
+`VaultPony_2.0.0_rc3_Spike.md`; section 4.2 carries its recommendation.
 
 VaultPony 2.0.0 is the release that makes VaultPony work as an everyday EDS Lite
 replacement, not just a correct VeraCrypt reader. It starts from the three points in
@@ -181,30 +182,44 @@ iOS and Desktop equivalents.
 
 ### 4.2 iOS: File Provider extension
 
-The big new piece. Notes for the Phase 0 spike, each a real risk:
+The big new piece. The Phase 0 desk spike (`VaultPony_2.0.0_rc3_Spike.md`, sources there)
+recommends the design below. It still needs NorseHorse's confirmation (Q4 to Q9) and an
+on-device spike (S1 to S5 in the spike doc) before any rc3 code.
 
-- Model: `NSFileProviderReplicatedExtension`, one domain per unlocked vault, added with
-  `NSFileProviderManager.add` on unlock and removed on lock.
-- Plaintext on disk. A replicated provider materializes files the user opens into
-  system-managed storage, so decrypted copies exist on disk while the vault is unlocked.
-  Mitigations: remove the domain with `.removeAll` on lock and on auto-lock, mark items
-  so the system evicts eagerly, and keep the extension off entirely when no-trace mode is
-  on. This is a threat-model change for THREAT_MODEL-IOS.md and has to be explained to
-  users in the setting itself.
-- Separate process, no shared session. The extension needs the vault's keys without the
-  app's memory. Options: (a) the extension unlocks itself with the password via a
-  FileProviderUI authentication screen; (b) the app hands over derived keys through an
-  app-group Keychain item that lives only while unlocked (`ThisDeviceOnly`, deleted on
-  lock). (b) is smoother but puts key material in the Keychain; (a) is cleaner but needs
-  the KDF to fit in the extension (Q1).
-- Memory ceiling. File Provider extensions have a much smaller memory limit than the app.
-  Argon2id at VeraCrypt's PIMs can need hundreds of MiB (`argon2_memory_mib`), which may
-  not fit; another reason to prefer handing over derived keys. Measure in the spike.
-- Container access. The container is a security-scoped bookmark held by the app; the
-  extension must resolve it from the app group. Verify bookmarks for iCloud Drive and
-  third-party providers resolve inside the extension.
-- Auto-lock: the extension has no scene phase. The app's lock path (timer, lock action,
-  background expiry) removes the domain, which tears down the extension's session.
+- Model: the non-replicated `NSFileProviderExtension`, not the replicated one Rev 5 named.
+  It is the only model where VaultPony decides where plaintext lands: its own app-group
+  folder with `.complete` data protection, excluded from backup, deleted by the app at
+  lock even if the extension is dead. Replicated storage on iOS is system-managed. One
+  domain per unlocked vault, with a random domain id minted at every unlock (same idea as
+  D14), removed on lock. Empty working set, no Spotlight, no thumbnails or Recents for
+  vault items (Q6).
+- Memory: File Provider extensions on iOS are held to about 20 MB. Argon2id at the default
+  PIM needs 416 MiB and even PIM 1 needs 64 MiB, so the extension can never run the KDF.
+  The core gets a low-memory profile (small caches, bounded buffers) for use in the
+  extension.
+- Keys (answers Q1): the app unlocks as today, then pushes an exported key blob plus the
+  open container fd (as a `FileHandle`) to the extension over an `NSFileProviderService`
+  XPC connection. Keys live only in process memory on both sides; nothing in the Keychain
+  (Q8). If iOS kills the extension, Files shows an "Open VaultPony to continue" screen
+  (FileProviderUI) and the app re-pushes on foreground.
+- Container access: the fd handoff avoids resolving bookmarks inside the extension. The
+  spike tests the bookmark fallback per storage location. Copy-mode sessions (no writable
+  fd) stay out of Files access (Q7).
+- Two writers: the app and the extension can both write the same volume. Needs a
+  cross-process gate (`flock` plus a generation counter) and `remount()` in the core so
+  each side reloads filesystem state after the other wrote. Blocker for writes.
+- Write path: edits arrive as whole files; the core gets `replace()` that streams into a
+  `.part` entry and swaps, with `.part` recovery at mount, so a killed extension never
+  leaves a half-written file.
+- Auto-lock: the app's lock path removes the domain and wipes the plaintext folder; the
+  extension also holds the deadline itself and drops keys when it passes, so a suspended
+  app can't keep Files access alive. How "Immediately" interacts with Files is Q4.
+- Core FFI needed first (VaultPonyCore, minor bump): positional I/O in `FileDevice`, key
+  handoff export/import with a fingerprint check, `remount()`, the low-memory profile,
+  `replace()` with `.part` recovery, and a THREAT_MODEL section on the handoff.
+- THREAT_MODEL-IOS.md gets a section on plaintext materialization, the key handoff and
+  residue the system keeps outside VaultPony's control. "Show in Files" is off while
+  no-trace mode is on, and its setting text says plaintext copies exist while unlocked.
 - iPad drag and drop works against the domain for free once it exists.
 
 ### 4.3 Lock controls and long operations
@@ -394,13 +409,28 @@ commits, or this document.
 
 ## 10. Open questions
 
-Q1. iOS File Provider keys: extension unlocks itself (password via FileProviderUI) or the
-app hands over derived keys through a short-lived app-group Keychain item? Decide after
-the Phase 0 spike measures the extension's memory limit against Argon2id.
+Q1. iOS File Provider keys. Answered by the spike, pending Q9: neither original option.
+The extension can't run Argon2id in its 20 MB, so the app pushes keys and the container fd
+over XPC (section 4.2).
 
 Q2. Desktop extras: in-app media player, and a tray/menu "Lock all"?
 
 Q3. PIM fields stay out of autofill. Confirm.
+
+From the rc3 spike (section 4.2):
+
+Q4. With auto-lock "Immediately", should Files access require a minimum delay, or should
+Files activity extend the deadline up to the 1 hour cap?
+
+Q5. "Show in Files": a per-unlock checkbox on the unlock screen, or a Settings toggle?
+
+Q6. Skip thumbnails, Recents and Files search for vault items in rc3?
+
+Q7. Leave copy-mode sessions out of Files access in rc3?
+
+Q8. Confirm no Keychain key cache in 2.0.0.
+
+Q9. Confirm the switch from the replicated to the non-replicated model.
 
 ---
 
