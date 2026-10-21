@@ -1,6 +1,7 @@
 # VaultPony 2.0.0 Plan
 
-Rev 3, 2026-10-16. Scope decided (section 0). Section 10 holds what is still open.
+Rev 4, 2026-10-21. Scope decided (section 0). Section 10 holds what is still open; section 11
+covers issues #4 to #6.
 
 VaultPony 2.0.0 is the release that makes VaultPony work as an everyday EDS Lite
 replacement, not just a correct VeraCrypt reader. It starts from the three points in
@@ -38,6 +39,18 @@ core with Argon2id.
   into the vault (handling in 5.6).
 - D12. iOS large imports pause when the app is backgrounded and resume on return if the
   vault is still unlocked.
+- D13 (2026-10-19, rc2). A running copy keeps only its own vault unlocked until it ends;
+  the "A vault is unlocked" notification shows only in the background and not during a
+  copy; Desktop gets a tray "Lock all"; core errors are shown as translated messages.
+- D14 (2026-10-19, rc2). Android provider document ids come from a random token minted
+  at every unlock, so no grant survives a lock and nothing stored elsewhere reveals the
+  container or volume.
+- D15 (2026-10-21, issue #4). Android gets an auto-lock option "Until I lock it". It is
+  only offered while notifications are allowed, the unlocked notification always shows
+  while it applies, and picking it shows a warning. iOS stays capped at 1 hour.
+- D16 (2026-10-21, issues #5 and #6). Cipher cascades show under VeraCrypt's names
+  ("AES-Twofish-Serpent", "Camellia-Kuznyechik"), and unlock gets an optional hash
+  choice. Both land in rc4.
 
 ---
 
@@ -311,7 +324,7 @@ tested. Each RC covers all three platforms where its items apply.
 - rc3: iOS File Provider extension (4.2), after a Phase 0 spike on keys, memory, and
   bookmark access.
 - rc4: share into vault, media playback, browser upgrades, recents privacy, keyfiles in
-  change password (5.1 to 5.5).
+  change password (5.1 to 5.5), plus issues #4 to #6 (section 11).
 - rc5: camera capture (5.6) and TrueCrypt mode (6.2).
 
 Release paths unchanged: Android through the reproducible Docker harness (builds from the
@@ -324,6 +337,8 @@ Planned as a multi-agent pass per RC with a final sweep for strings left in Engl
 
 Public credit: issue #3 by number only. No user names in release notes, changelogs,
 commits, or this document.
+
+---
 
 ---
 
@@ -356,3 +371,60 @@ the Phase 0 spike measures the extension's memory limit against Argon2id.
 Q2. Desktop extras: in-app media player, and a tray/menu "Lock all"?
 
 Q3. PIM fields stay out of autofill. Confirm.
+
+---
+
+## 11. Issues #4 to #6 (opened 2026-10-21)
+
+### 11.1 Issue #4: reaching the unlocked vault from the Files app
+
+What happened: on 1.1.0 every vault locks the moment VaultPony leaves the foreground, so
+the "VaultPony" root disappears from the system Files app as soon as the user switches to
+it, and the Settings auto-lock row was static text. rc1 (auto-lock delay up to 1 hour) and
+rc2 (writable Files root, lock controls, per-unlock document ids) already fix the reported
+behaviour. What is left is the request to keep a vault reachable for an unlimited time.
+
+Plan (D15), Android only:
+- Settings > Auto-lock gains "Until I lock it" below "After 1 hour".
+- Offered only when notifications are allowed (POST_NOTIFICATIONS on 13+ and the "Unlocked
+  vaults" channel enabled). If notifications are later turned off, the setting reads back
+  as "After 1 hour" and says why.
+- Picking it shows a confirmation: the vault's key stays in memory and other apps can read
+  and write the vault until you lock it from the notification, the tile or the app.
+- While it applies, the "A vault is unlocked" notification always shows when the app is
+  in the background (including during a copy, where the copy notification already carries
+  Lock).
+- Process death still locks (sessions live in memory), and a reboot locks.
+- iOS keeps the 1 hour cap (D5): iOS suspends the app anyway. Desktop has its own idle
+  lock; no change.
+- SECURITY.md: describe the option and its trade-off.
+- Website: the "reach the unlocked vault system-wide from Files" claim is only true from
+  2.0.0 on; update the site copy at release.
+- The reporter offered to test; invite them to the Android RC.
+
+### 11.2 Issues #5 and #6: Camellia-Kuznyechik and AES-Twofish-Serpent
+
+Both cascades are already supported for opening and creating on every platform: the core
+implements all 15 VeraCrypt schemes (`Camellia(Kuznyechik)` and `AES(Twofish(Serpent))`
+in the core's nested naming), and both are in the VeraCrypt-made fixture matrix. Unlock
+detects the cipher by itself; the "Key derivation" picker the reports point at is the KDF
+family (Auto, PBKDF2, Argon2id), not the cipher. Picking a cipher would not make unlocking
+faster: trying a wrong cipher is cheap, deriving a header key with the wrong hash is not.
+
+Plan (D16):
+- Names: VeraCrypt's display names everywhere a user sees a scheme (create pickers, Volume
+  info, desktop CLI output): "AES-Twofish-Serpent", "Camellia-Kuznyechik", and so on. Add a
+  display-name field to the core registry and an FFI function returning it; the internal
+  names stay the API and the on-disk logic is untouched.
+- Hash choice on unlock: an optional "Hash" picker under Key derivation, like VeraCrypt's
+  mount dialog: Auto (default), SHA-512, SHA-256, BLAKE2s-256, Whirlpool, Streebog,
+  Argon2id. Core: extend the unlock filter so a single PRF can be requested (today
+  KdfFilter is Auto / PBKDF2-only / Argon2id-only); UniFFI change, so Android, iOS and
+  Desktop move together. The existing KDF picker and the new one should become one control
+  if that reads better on small screens (decide in rc4 design).
+- Remembered per vault with the existing "found KDF" memory (Face ID / biometric unlock
+  already stores which KDF a vault uses), so the second unlock is fast without any choice.
+- Tests: unlock each fixture with its exact hash and with a wrong single hash (must fail
+  fast with the normal wrong-password error); display names match VeraCrypt's list.
+- Reply on both issues: supported already, auto-detected; the names and the hash choice
+  come in 2.0.0.
