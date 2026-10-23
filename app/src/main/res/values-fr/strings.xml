@@ -7,8 +7,6 @@
     <string name="settings_security_header">Sécurité</string>
     <string name="settings_language_header">Langue</string>
 
-    <string name="settings_remember_title">Mémoriser mes coffres</string>
-    <string name="settings_remember_subtitle">Affiche une liste d\'accueil des coffres que vous avez ouverts. Enregistre leurs emplacements sur cet appareil.</string>
     <string name="settings_secure_title">Masquer le contenu de l\'écran</string>
     <string name="settings_secure_subtitle">Bloque les captures d\'écran et masque l\'application dans les Récents.</string>
     <string name="settings_autolock_title">Verrouillage automatique</string>
@@ -20,6 +18,19 @@
     <string name="settings_autolock_5m">Après 5 minutes</string>
     <string name="settings_autolock_15m">Après 15 minutes</string>
     <string name="settings_autolock_1h">Après 1 heure</string>
+    <string name="settings_autolock_until_locked">Jusqu\'à ce que je verrouille</string>
+    <string name="settings_autolock_until_needs_notifications">Nécessite les notifications. Autorisez les notifications de VaultPony pour utiliser cette option.</string>
+    <string name="autolock_until_confirm_title">Garder les coffres déverrouillés ?</string>
+    <string name="autolock_until_confirm_message">La clé du coffre reste en mémoire, et d\'autres applications peuvent lire et écrire dans le coffre via Fichiers jusqu\'à ce que vous le verrouilliez depuis la notification, la tuile Réglages rapides ou l\'application. Redémarrer le téléphone ou fermer VaultPony le verrouille aussi.</string>
+    <string name="autolock_until_confirm_keep">Garder déverrouillé</string>
+    <string name="settings_vault_list_title">Liste des coffres</string>
+    <string name="settings_vault_list_show">Afficher les noms</string>
+    <string name="settings_vault_list_hide">Masquer les noms</string>
+    <string name="settings_vault_list_none">Ne pas conserver</string>
+    <string name="settings_vault_list_hide_note">La liste affiche Coffre 1, Coffre 2, etc. Le lien enregistré vers chaque fichier indique toujours son emplacement, car VaultPony en a besoin pour rouvrir le fichier.</string>
+    <string name="vault_list_remove_title">Retirer tous les coffres de la liste ?</string>
+    <string name="vault_list_remove_message">Les fichiers des coffres eux-mêmes ne sont pas modifiés. Les déverrouillages biométriques enregistrés pour ces coffres sont également supprimés.</string>
+    <string name="vault_list_remove">Retirer</string>
 
     <string name="settings_pony_header">Autres applications pony</string>
     <string name="pony_pgpony_subtitle">Chiffrement OpenPGP</string>
@@ -75,10 +86,14 @@
     <string name="home_opened_relative">ouvert %1$s</string>
     <string name="home_recently">récemment</string>
     <string name="home_forget">Oublier</string>
+    <string name="home_vault_numbered">Coffre %1$d</string>
 
     <string name="viewer_binary">Fichier binaire (%1$s). Exportez-le pour l\'ouvrir ailleurs.</string>
     <string name="viewer_too_big">Le fichier fait %1$s. Trop volumineux pour un aperçu dans l\'application. Exportez-le à la place.</string>
     <string name="viewer_read_error">Impossible de lire ce fichier : %1$s</string>
+    <string name="viewer_cant_play">Impossible de lire ce fichier.</string>
+    <string name="media_play">Lire</string>
+    <string name="media_pause">Pause</string>
 
     <string name="common_done">Terminé</string>
     <string name="common_op_failed">L\'opération a échoué</string>
@@ -111,7 +126,14 @@
     <string name="change_pw_working">Re-chiffrement de l\'en-tête…</string>
     <string name="change_pw_success">Mot de passe changé. Utilisez votre nouveau mot de passe désormais.</string>
     <string name="change_pw_error">Impossible de changer le mot de passe.</string>
-    <string name="change_pw_keyfile_note">Les coffres protégés par fichier-clé ne peuvent pas encore être modifiés ici. Utilisez la CLI.</string>
+    <string name="change_pw_current_keyfiles">Fichiers-clés actuels</string>
+    <string name="change_pw_new_keyfiles">Nouveaux fichiers-clés</string>
+    <string name="change_pw_keyfiles_none">Aucun</string>
+    <plurals name="change_pw_keyfiles_selected">
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
+    </plurals>
+    <string name="change_pw_keyfiles_note">Pour continuer à utiliser les mêmes fichiers-clés, ajoutez-les de nouveau sous Nouveaux fichiers-clés. Laissez Nouveaux fichiers-clés vide pour ne plus utiliser de fichiers-clés.</string>
 
     <string name="unlock_title">Déverrouiller le coffre</string>
     <string name="unlock_subtitle_none">Ouvrez ou créez un conteneur chiffré</string>
@@ -185,6 +207,43 @@
     <string name="browser_err_mkdir">Impossible de créer le dossier</string>
     <string name="browser_err_rename">Échec du renommage</string>
     <string name="browser_err_delete">Échec de la suppression</string>
+    <string name="browser_more_options">Plus d\'options</string>
+    <string name="browser_view_list">Liste</string>
+    <string name="browser_view_grid">Grille</string>
+    <string name="browser_sort_by">Trier par</string>
+    <string name="browser_sort_name">Nom</string>
+    <string name="browser_sort_size">Taille</string>
+    <string name="browser_sort_date">Date de modification</string>
+    <string name="browser_sort_ascending">Croissant</string>
+    <string name="browser_sort_descending">Décroissant</string>
+    <string name="browser_search">Rechercher</string>
+    <string name="browser_search_this_folder">Ce dossier</string>
+    <string name="browser_search_whole_vault">Tout le coffre</string>
+    <string name="browser_search_no_matches">Aucun résultat</string>
+    <string name="browser_searching">Recherche…</string>
+    <plurals name="browser_selected">
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
+    </plurals>
+    <string name="browser_select_all">Tout sélectionner</string>
+    <string name="browser_export">Exporter</string>
+    <string name="browser_move">Déplacer</string>
+    <plurals name="browser_delete_items_title">
+        <item quantity="one">Supprimer %d élément ?</item>
+        <item quantity="other">Supprimer %d éléments ?</item>
+    </plurals>
+    <string name="browser_delete_items_message">Cette action est irréversible.</string>
+    <string name="browser_move_to">Déplacer vers</string>
+    <string name="browser_move_here">Déplacer ici</string>
+    <string name="browser_err_move">Échec du déplacement</string>
+    <string name="share_target_label">Enregistrer dans VaultPony</string>
+    <string name="share_unlock_first">Déverrouillez un coffre pour enregistrer ces fichiers.</string>
+    <string name="share_choose_folder">Choisir un dossier</string>
+    <string name="share_save_here">Enregistrer ici</string>
+    <plurals name="share_files_count">
+        <item quantity="one">%d fichier à enregistrer</item>
+        <item quantity="other">%d fichiers à enregistrer</item>
+    </plurals>
 
     <!-- Browser: volume facts (2.0.0) -->
     <string name="browser_label_hidden">Volume caché</string>
@@ -245,17 +304,15 @@
     <string name="transfer_err_write">Impossible d\'écrire %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
-    <string name="unlock_kdf_button">Dérivation de clé</string>
-    <string name="unlock_kdf_label">Dérivation de clé (KDF)</string>
     <string name="kdf_auto">Auto</string>
     <string name="kdf_pbkdf2">PBKDF2</string>
-    <string name="kdf_argon2id">Argon2id</string>
-    <string name="unlock_kdf_note">Auto essaie chaque KDF, comme VeraCrypt. Si vous savez laquelle votre coffre utilise, la choisir accélère le déverrouillage.</string>
+    <string name="unlock_hash_label">Hachage</string>
+    <string name="unlock_hash_note">Auto essaie chaque hachage, comme VeraCrypt. Si vous savez quel hachage votre coffre utilise, le choisir accélère le déverrouillage.</string>
     <string name="unlock_cancel">Annuler</string>
     <string name="unlock_memory_warning">Argon2id avec ce PIM demande environ %1$d Mo de mémoire, et cet appareil en a environ %2$d Mo de libres. Le déverrouillage peut échouer.</string>
     <string name="unlock_memory_try">Essayer quand même</string>
     <string name="unlock_memory_pbkdf2">Ignorer Argon2id</string>
-    <string name="error_kdf_memory">Pas assez de mémoire libre pour Argon2id (%1$d Mo nécessaires). Fermez d’autres applications et réessayez, ou choisissez PBKDF2 si ce coffre n’utilise pas Argon2id.</string>
+    <string name="error_kdf_memory_hash">Pas assez de mémoire libre pour Argon2id (%1$d Mo nécessaires). Fermez d\'autres applications et réessayez. Si ce coffre n\'utilise pas Argon2id, choisissez son hachage sous Hachage sur l\'écran de déverrouillage.</string>
     <string name="error_short_password_pim">Un PIM inférieur à %1$d exige un mot de passe d’au moins %2$d caractères.</string>
     <string name="create_argon2_note">Argon2id sollicite beaucoup la mémoire : ouvrir ce coffre demande environ 416 Mo de mémoire libre et prend quelques secondes. VeraCrypt sur ordinateur l’ouvre à partir de la version 1.26.29.</string>
     <string name="change_pw_kdf_label">Dérivation de clé (KDF)</string>
@@ -275,6 +332,7 @@
     <string name="err_read_only">Ce coffre est en lecture seule.</string>
     <string name="err_vault_full">Le coffre est plein.</string>
     <string name="err_vault_generic">Une erreur s\'est produite dans le coffre.</string>
+    <string name="err_empty_keyfile">Un fichier-clé est vide. VeraCrypt n\'accepte pas les fichiers-clés vides.</string>
 
     <!-- Lock controls and copy notifications (2.0.0 rc2). Generic on purpose:
          never a vault or file name. -->

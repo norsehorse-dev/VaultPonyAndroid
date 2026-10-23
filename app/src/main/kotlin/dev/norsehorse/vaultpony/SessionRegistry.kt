@@ -30,6 +30,10 @@ object SessionRegistry {
 
     private val sessions = LinkedHashMap<String, VaultSession>()
 
+    // Container URI per unlocked volume id, so a lock under the vault list's
+    // "Don't keep" can release that container's file permission (plan §5.4).
+    private val uris = HashMap<String, String>()
+
     // Provider-facing token per unlocked volume id (plan §4.1, rc2 decision):
     // minted fresh on every unlock, dropped on lock. The DocumentsProvider
     // builds every root and document id from it, never from the volume id,
@@ -62,6 +66,30 @@ object SessionRegistry {
     // can start late when a batch holds it (R1).
     private var backgroundDelay = 0L
     private val delayedLock = Runnable { lockIfDue() }
+
+    // Auto-lock "Until I lock it" (D15, plan §11.1): this trip to the
+    // background has no deadline at all. It holds only while the "A vault is
+    // unlocked" notification can be seen; if notifications are turned off
+    // meanwhile, the trip falls back to 1 hour from [backgroundAt]. Checked
+    // on a timer and, throttled, from every entry point (the timer stalls in
+    // the freezer like the lock timer). Guarded by this.
+    private var untilLocked = false
+    private var backgroundAt = 0L
+    private var untilCheckedAt = 0L
+    private const val UNTIL_RECHECK_MS = 30_000L
+    private val untilCheck: Runnable = object : Runnable {
+        override fun run() {
+            checkUntilLocked(force = true)
+            val again = synchronized(this@SessionRegistry) { untilLocked && inBackground }
+            if (again) mainHandler.postDelayed(this, UNTIL_RECHECK_MS)
+        }
+    }
+
+    // Bumped every time the app comes back to the foreground, so a screen
+    // can re-read something the user may have changed in system settings
+    // (Settings re-checks whether "Until I lock it" can be offered).
+    private val _foregrounds = MutableStateFlow(0)
+    val foregrounds = _foregrounds.asStateFlow()
 
     // An in-app picker exempts its own trip to the background, but only this
     // long: a picker left open (or an app switch from inside it) still locks.
@@ -110,7 +138,10 @@ object SessionRegistry {
      *  (at least [PICKER_CAP_MS] when an in-app picker caused it). A running
      *  batch keeps only its own vault open until it ends (R1). Main thread. */
     fun onAppBackgrounded() {
-        val userDelay = appContext?.let { AppPrefs.autoLockDelayMs(it) } ?: 0L
+        val stored = appContext?.let { AppPrefs.autoLockDelayMs(it) } ?: 0L
+        // "Until I lock it": no deadline, whatever caused the trip.
+        val until = stored == AppPrefs.AUTO_LOCK_UNTIL_LOCKED
+        val userDelay = if (until) 0L else stored
         val picker = ignoreNextBackground
         val delay = if (picker) {
             ignoreNextBackground = false
@@ -118,32 +149,77 @@ object SessionRegistry {
         } else {
             userDelay
         }
+        val now = SystemClock.elapsedRealtime()
         synchronized(this) {
             inBackground = true
             pickerTrip = picker
-            backgroundDelay = delay
-            lockDeadline = SystemClock.elapsedRealtime() + delay
+            untilLocked = until
+            backgroundAt = now
+            untilCheckedAt = now
+            backgroundDelay = if (until) 0L else delay
+            // 0 = no deadline (lockIfDue never fires).
+            lockDeadline = if (until) 0L else now + delay
         }
         mainHandler.removeCallbacks(delayedLock)
-        if (delay <= 0L) lockIfDue() else mainHandler.postDelayed(delayedLock, delay)
+        mainHandler.removeCallbacks(untilCheck)
+        when {
+            until -> mainHandler.postDelayed(untilCheck, UNTIL_RECHECK_MS)
+            delay <= 0L -> lockIfDue()
+            else -> mainHandler.postDelayed(delayedLock, delay)
+        }
         synchronized(this) { publishStatus() }
+    }
+
+    /** "Until I lock it" holds only while its notification can be seen. When
+     *  notifications were turned off during this trip to the background, fall
+     *  back to "After 1 hour", counted from when the app left. [force]: skip
+     *  the throttle (the timer); entry points check at most every 30 s. */
+    @Synchronized
+    private fun checkUntilLocked(force: Boolean) {
+        if (!untilLocked || !inBackground) return
+        val now = SystemClock.elapsedRealtime()
+        if (!force && now - untilCheckedAt < UNTIL_RECHECK_MS) return
+        untilCheckedAt = now
+        val ctx = appContext ?: return
+        if (VaultNotifications.unlockedAllowed(ctx)) return
+        untilLocked = false
+        backgroundDelay = AppPrefs.AUTO_LOCK_UNTIL_FALLBACK
+        lockDeadline = backgroundAt + AppPrefs.AUTO_LOCK_UNTIL_FALLBACK
+        mainHandler.removeCallbacks(delayedLock)
+        mainHandler.postDelayed(delayedLock, (lockDeadline - now).coerceAtLeast(0L))
+        publishStatus()
     }
 
     /** App is coming back to the foreground. Runs before the first frame, so
      *  an overdue lock happens before any vault content can show. Main thread. */
     fun onAppForegrounded() {
         mainHandler.removeCallbacks(delayedLock)
+        mainHandler.removeCallbacks(untilCheck)
         synchronized(this) {
             lockIfDue()
             inBackground = false
             pickerTrip = false
+            untilLocked = false
             lockDeadline = 0L
             backgroundDelay = 0L
             if (!batchActive) keep = null
             publishStatus()
         }
+        _foregrounds.value = _foregrounds.value + 1
         // The in-app summary takes over from a "finished" notification.
         appContext?.let { VaultNotifications.hideTransferDone(it) }
+    }
+
+    /** The user swiped the "A vault is unlocked" notification away (Android
+     *  14+ allows it for a notification without a foreground service). Under
+     *  "Until I lock it" a vault would then stay open with nothing on screen
+     *  to say so, so the notification is posted again (D15, plan §11.1:
+     *  it always shows while that option applies). Otherwise the swipe
+     *  stands until the next status change. Any thread. */
+    fun onUnlockedDismissed() {
+        synchronized(this) {
+            if (untilLocked && inBackground && sessions.isNotEmpty()) publishStatus()
+        }
     }
 
     /** True while the app is in the background (backgrounded or screen off). */
@@ -162,6 +238,10 @@ object SessionRegistry {
             if (active) {
                 keep = TransferJobs.owner
                 keepUntil = Long.MAX_VALUE
+            } else if (inBackground && untilLocked) {
+                // No deadline to wait for; a later fallback to 1 hour counts
+                // from when the app left, like every other vault.
+                keep = null
             } else if (inBackground) {
                 keepUntil = SystemClock.elapsedRealtime() + backgroundDelay
                 schedule = backgroundDelay
@@ -177,6 +257,7 @@ object SessionRegistry {
      *  others lock. */
     @Synchronized
     private fun lockIfDue() {
+        checkUntilLocked(force = false)
         if (!inBackground || lockDeadline == 0L) return
         val now = SystemClock.elapsedRealtime()
         if (now < lockDeadline) return
@@ -187,7 +268,7 @@ object SessionRegistry {
     /** Lock every vault but [kept] (the one a batch is copying with). */
     @Synchronized
     private fun lockAllExcept(kept: VaultSession) {
-        val gone = sessions.entries.filter { it.value !== kept }
+        val gone = sessions.entries.filter { it.value !== kept }.map { it.key to it.value }
         if (gone.isEmpty()) return
         for ((id, s) in gone) {
             sessions.remove(id)
@@ -195,6 +276,7 @@ object SessionRegistry {
             s.lock()
             latched.remove(s)
         }
+        afterLocked(gone)
         notifyRootsChanged()
         // The UI goes home unless it shows the vault that is still open.
         _lockGeneration.value = _lockGeneration.value + 1
@@ -248,13 +330,18 @@ object SessionRegistry {
         if (all) lockAll() else if (volume != null) lock(volume)
     }
 
+    /** Register an unlocked [session]. [uri] is its container, kept so a lock
+     *  under "Don't keep" can release the container's file permission. */
     @Synchronized
-    fun put(volumeId: String, session: VaultSession) {
+    fun put(volumeId: String, session: VaultSession, uri: String? = null) {
         sessions.remove(volumeId)?.let {
             it.lock()
             latched.remove(it)
+            ThumbnailCache.clear()
+            mainHandler.post { MediaPlayback.releaseFor(listOf(it)) }
         }
         sessions[volumeId] = session
+        if (uri != null) uris[volumeId] = uri
         providerTokens[volumeId] = ProviderTokens.mint()
         notifyRootsChanged()
         // An unlock that finished while the app sat in the background past its
@@ -339,6 +426,7 @@ object SessionRegistry {
         TransferJobs.abandonFor(listOf(removed))
         removed.lock()
         latched.remove(removed)
+        afterLocked(listOf(volumeId to removed))
         notifyRootsChanged()
         publishStatus()
     }
@@ -350,15 +438,37 @@ object SessionRegistry {
             return
         }
         TransferJobs.abandonFor(sessions.values.toList())
+        val gone = sessions.entries.map { it.key to it.value }
         sessions.values.forEach { it.lock() }
         sessions.clear()
         providerTokens.clear()
         keep = null
         latched.clear()
+        afterLocked(gone)
         notifyRootsChanged()
         _lockGeneration.value = _lockGeneration.value + 1
         publishStatus()
     }
+
+    /** Everything a lock takes with it besides the key: in-memory
+     *  thumbnails, any media player on those vaults, and under the vault
+     *  list's "Don't keep", each vault's file permission and biometric
+     *  unlock (plan §5.3, §5.2, §5.4). Call holding this. */
+    private fun afterLocked(gone: List<Pair<String, VaultSession>>) {
+        ThumbnailCache.clear()
+        val players = gone.map { it.second }
+        mainHandler.post { MediaPlayback.releaseFor(players) }
+        for ((id, _) in gone) uris.remove(id)
+        val ctx = appContext ?: return
+        if (AppPrefs.vaultListMode(ctx) == VaultListMode.NONE) {
+            for ((id, _) in gone) BiometricUnlock.clear(ctx, id)
+            VaultStore.releaseGrants(ctx, uris.values.toSet())
+        }
+    }
+
+    /** Container URIs of the vaults unlocked right now. */
+    @Synchronized
+    fun openUris(): Set<String> = uris.filterKeys { it in sessions }.values.toSet()
 
     private fun notifyRootsChanged() {
         val ctx = appContext ?: return
@@ -383,7 +493,10 @@ object SessionRegistry {
     private fun publishStatus() {
         val ctx = appContext ?: return
         val copying = TransferJobs.active.value
-        LockControls.onStatus(ctx, sessions.size, showNotification = inBackground && !pickerTrip && !copying)
+        // Under "Until I lock it" an in-app picker's trip shows it too: the
+        // vault stays open with no deadline, so the Lock button must be there.
+        val show = inBackground && (untilLocked || !pickerTrip) && !copying
+        LockControls.onStatus(ctx, sessions.size, showNotification = show)
     }
 }
 

@@ -25,6 +25,7 @@ object CoreErrorMap {
         is VaultException.KdfOutOfMemory -> CoreVariant.KDF_OUT_OF_MEMORY
         is VaultException.Cancelled -> CoreVariant.CANCELLED
         is VaultException.PasswordTooShortForPim -> CoreVariant.PASSWORD_TOO_SHORT_FOR_PIM
+        is VaultException.EmptyKeyfile -> CoreVariant.EMPTY_KEYFILE
         else -> null
     }
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import uniffi.vault_ffi.VaultSession
+import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 
@@ -116,6 +117,17 @@ object TransferJobs {
 
     val busy: Boolean get() = synchronized(runLock) { running }
 
+    /** Name a text-only share is saved under (plan §5.1). */
+    const val SHARED_TEXT_NAME = "Shared text.txt"
+
+    // Source ref of a shared text; never a content URI (shares are filtered
+    // to content:// before they get here).
+    private const val SHARED_TEXT_REF = "vaultpony:shared-text"
+
+    // The shared text's bytes while its batch runs; wiped when it ends.
+    @Volatile
+    private var sharedText: ByteArray? = null
+
     /** Import picked documents (multi-select) into the vault folder [destDir]. */
     fun importFiles(context: Context, session: VaultSession, destDir: String, uris: List<Uri>) {
         if (uris.isEmpty()) return
@@ -123,6 +135,34 @@ object TransferJobs {
         start(context, session, export = false) {
             val sources = uris.map { describe(resolver, it) }
             runImport(resolver, session, destDir, sources)
+        }
+    }
+
+    /** Save what another app shared (ACTION_SEND / SEND_MULTIPLE, plan
+     *  §5.1) into [destDir]: the shared documents, or [text] as "Shared
+     *  text.txt" when nothing else came with it. Name collisions keep both
+     *  without asking (D6). The documents are read with the share's own
+     *  read grant, which the foreground service also holds until the batch
+     *  ends, so the copy goes on even if the share's activity is closed.
+     *  False when nothing started (nothing to save, or another batch is
+     *  still running). */
+    fun importShared(context: Context, session: VaultSession, destDir: String, uris: List<Uri>, text: String?): Boolean {
+        if (uris.isEmpty() && text == null) return false
+        val resolver = context.applicationContext.contentResolver
+        return start(context, session, export = false, grants = uris) {
+            val sources = ArrayList<SourceEntry>()
+            uris.mapTo(sources) { describe(resolver, it) }
+            if (uris.isEmpty() && text != null) {
+                val bytes = text.toByteArray(Charsets.UTF_8)
+                sharedText = bytes
+                sources += SourceEntry(listOf(SHARED_TEXT_NAME), isDir = false, size = bytes.size.toLong(), ref = SHARED_TEXT_REF)
+            }
+            try {
+                runImport(resolver, session, destDir, sources, askCollisions = false)
+            } finally {
+                sharedText?.fill(0)
+                sharedText = null
+            }
         }
     }
 
@@ -148,6 +188,29 @@ object TransferJobs {
             val prefix = if (name.isEmpty()) emptyList() else listOf(name)
             if (prefix.isNotEmpty()) sources += SourceEntry(prefix, true, 0, vaultDir)
             if (!walkVault(session, vaultDir, prefix, sources)) return@start null
+            runExport(resolver, res, session, tree, sources)
+        }
+    }
+
+    /** Export the browser's multi-selection (plan §5.3): [names] in the
+     *  vault folder [vaultDir], files and folders with everything in them,
+     *  into the picked device folder [tree]. */
+    fun exportItems(context: Context, session: VaultSession, vaultDir: String, names: List<String>, tree: Uri) {
+        if (names.isEmpty()) return
+        val resolver = context.applicationContext.contentResolver
+        val res = context.resources
+        start(context, session, export = true) {
+            val sources = ArrayList<SourceEntry>()
+            for (name in names.sortedBy { it.lowercase() }) {
+                val path = BulkPlanner.vaultPath(vaultDir, listOf(name))
+                val entry = session.stat(path)
+                if (entry.isDir) {
+                    sources += SourceEntry(listOf(name), isDir = true, size = 0, ref = path)
+                    if (!walkVault(session, path, listOf(name), sources)) return@start null
+                } else {
+                    sources += SourceEntry(listOf(name), isDir = false, size = entry.size.toLong(), ref = path)
+                }
+            }
             runExport(resolver, res, session, tree, sources)
         }
     }
@@ -197,9 +260,18 @@ object TransferJobs {
         if (!busy) _state.value = State.Idle
     }
 
-    private fun start(context: Context, session: VaultSession, export: Boolean, body: suspend () -> State?) {
+    /** Start a batch. [grants]: shared documents whose read grant the
+     *  foreground service should hold for the batch. False when another
+     *  batch is still running, and nothing happens. */
+    private fun start(
+        context: Context,
+        session: VaultSession,
+        export: Boolean,
+        grants: List<Uri> = emptyList(),
+        body: suspend () -> State?,
+    ): Boolean {
         synchronized(runLock) {
-            if (running) return
+            if (running) return false
             running = true
             onStopped = null
             cancelRequested = false
@@ -212,7 +284,7 @@ object TransferJobs {
         // R1: the auto-lock timer waits while this batch works...
         SessionRegistry.setBatchActive(true)
         // ...and the foreground service keeps the process going meanwhile.
-        TransferService.start(context)
+        TransferService.start(context, grants)
         job = scope.launch {
             try {
                 val end = try {
@@ -244,6 +316,7 @@ object TransferJobs {
                 SessionRegistry.onTransferEnded()
             }
         }
+        return true
     }
 
     /** A message the app wrote itself (already localized). */
@@ -269,6 +342,7 @@ object TransferJobs {
         session: VaultSession,
         destDir: String,
         sources: List<SourceEntry>,
+        askCollisions: Boolean = true,
     ): State? {
         if (sources.isEmpty() || cancelRequested) return null
         val facts = session.facts()
@@ -297,7 +371,8 @@ object TransferJobs {
         }
         var plan = BulkPlanner.plan(sources, limits, CollisionPolicy.KEEP_BOTH, mergeDirs = true, listDir)
         if (swept > 0) runCatching { session.flush() }
-        if (plan.collisions > 0) {
+        // A share keeps both without asking: the plan already does (D6).
+        if (plan.collisions > 0 && askCollisions) {
             val answer = CompletableDeferred<CollisionPolicy?>()
             collisionAnswer = answer
             // cancel() can't complete a deferred that didn't exist yet.
@@ -424,10 +499,14 @@ object TransferJobs {
         cap: Long?,
         onBytes: (Long) -> Unit,
     ): Outcome {
-        val input = try {
-            resolver.openInputStream(Uri.parse(op.source.ref))
-        } catch (e: Exception) {
-            null
+        val input = if (op.source.ref == SHARED_TEXT_REF) {
+            sharedText?.let { ByteArrayInputStream(it) }
+        } else {
+            try {
+                resolver.openInputStream(Uri.parse(op.source.ref))
+            } catch (e: Exception) {
+                null
+            }
         } ?: return Outcome.SKIPPED
         val dir = path.substringBeforeLast('/').ifEmpty { "/" }
         val temp = BulkPlanner.vaultPath(dir, listOf(BulkPlanner.tempName(randomToken())))

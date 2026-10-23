@@ -18,13 +18,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import dev.norsehorse.vaultpony.AppPrefs
 import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.SessionRegistry
+import dev.norsehorse.vaultpony.VaultListMode
+import dev.norsehorse.vaultpony.VaultNotifications
 import dev.norsehorse.vaultpony.i18n.LanguageState
 import dev.norsehorse.vaultpony.i18n.LocaleManager
 import dev.norsehorse.vaultpony.i18n.SupportedLanguage
@@ -68,9 +75,20 @@ private const val CONTACT_URL = "mailto:NorseHorse@norsehor.se"
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
     val context = LocalContext.current
-    var rememberOn by remember { mutableStateOf(AppPrefs.rememberVaults(context)) }
+    var listMode by remember { mutableStateOf(AppPrefs.vaultListMode(context)) }
+    var confirmDontKeep by remember { mutableStateOf(false) }
     var secure by remember { mutableStateOf(AppPrefs.secureScreen(context)) }
     var autoLock by remember { mutableLongStateOf(AppPrefs.autoLockDelayMs(context)) }
+    var confirmUntilLocked by remember { mutableStateOf(false) }
+    // "Until I lock it" needs the unlocked notification (D15). Re-read every
+    // time the app comes back, since the user may have just changed it in
+    // system settings; a saved "Until I lock it" reads as 1 hour without it.
+    val foregrounds by SessionRegistry.foregrounds.collectAsState()
+    var notificationsOn by remember { mutableStateOf(VaultNotifications.unlockedAllowed(context)) }
+    LaunchedEffect(foregrounds) {
+        notificationsOn = VaultNotifications.unlockedAllowed(context)
+        autoLock = AppPrefs.autoLockDelayMs(context)
+    }
     // A delay longer than Immediately is when the "Vault unlocked"
     // notification starts to matter: explain and ask once (R2).
     val notifGate = rememberNotificationGate()
@@ -105,13 +123,14 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
                 stringResource(R.string.settings_privacy_header),
                 Modifier.padding(top = 10.dp, bottom = 4.dp),
             )
-            SettingSwitch(
-                title = stringResource(R.string.settings_remember_title),
-                subtitle = stringResource(R.string.settings_remember_subtitle),
-                checked = rememberOn,
-            ) {
-                rememberOn = it
-                AppPrefs.setRememberVaults(context, it)
+            VaultListPicker(selected = listMode) { mode ->
+                if (mode == VaultListMode.NONE) {
+                    // Deletes every entry: ask first.
+                    if (listMode != VaultListMode.NONE) confirmDontKeep = true
+                } else {
+                    listMode = mode
+                    AppPrefs.setVaultListMode(context, mode)
+                }
             }
 
             SectionLabel(
@@ -127,10 +146,16 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
                 AppPrefs.setSecureScreen(context, it)
                 applySecure(context, it)
             }
-            AutoLockPicker(selected = autoLock) {
-                autoLock = it
-                AppPrefs.setAutoLockDelayMs(context, it)
-                if (it > 0L) notifGate.runAfter {}
+            AutoLockPicker(selected = autoLock, untilLockedAvailable = notificationsOn) {
+                if (it == AppPrefs.AUTO_LOCK_UNTIL_LOCKED) {
+                    if (autoLock != it) confirmUntilLocked = true
+                } else {
+                    autoLock = it
+                    AppPrefs.setAutoLockDelayMs(context, it)
+                    // The permission prompt doesn't send the app to the
+                    // background, so re-read the answer here too.
+                    if (it > 0L) notifGate.runAfter { notificationsOn = VaultNotifications.unlockedAllowed(context) }
+                }
             }
 
             // Live language switcher: tapping applies immediately (no restart).
@@ -216,6 +241,117 @@ fun SettingsScreen(onBack: () -> Unit, onReplayOnboarding: () -> Unit) {
             )
         }
     }
+
+    if (confirmDontKeep) {
+        AlertDialog(
+            onDismissRequest = { confirmDontKeep = false },
+            title = { Text(stringResource(R.string.vault_list_remove_title)) },
+            text = { Text(stringResource(R.string.vault_list_remove_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDontKeep = false
+                    listMode = VaultListMode.NONE
+                    // Unlocked vaults keep their file permission until they lock.
+                    AppPrefs.setVaultListMode(context, VaultListMode.NONE, SessionRegistry.openUris())
+                }) { Text(stringResource(R.string.vault_list_remove), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDontKeep = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+
+    if (confirmUntilLocked) {
+        AlertDialog(
+            onDismissRequest = { confirmUntilLocked = false },
+            title = { Text(stringResource(R.string.autolock_until_confirm_title)) },
+            text = { Text(stringResource(R.string.autolock_until_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmUntilLocked = false
+                    AppPrefs.setAutoLockDelayMs(context, AppPrefs.AUTO_LOCK_UNTIL_LOCKED)
+                    autoLock = AppPrefs.autoLockDelayMs(context)
+                }) { Text(stringResource(R.string.autolock_until_confirm_keep)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmUntilLocked = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+}
+
+/** Vault list (plan §5.4): Show names (default), Hide names, Don't keep. */
+@Composable
+private fun VaultListPicker(selected: VaultListMode, onSelect: (VaultListMode) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+        Text(stringResource(R.string.settings_vault_list_title), style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.fillMaxWidth().padding(top = 4.dp).selectableGroup()) {
+            listOf(
+                VaultListMode.SHOW to R.string.settings_vault_list_show,
+                VaultListMode.HIDE to R.string.settings_vault_list_hide,
+                VaultListMode.NONE to R.string.settings_vault_list_none,
+            ).forEach { (mode, label) ->
+                RadioRow(
+                    label = stringResource(label),
+                    selected = mode == selected,
+                    onClick = { onSelect(mode) },
+                )
+            }
+        }
+        when (selected) {
+            VaultListMode.HIDE -> Text(
+                stringResource(R.string.settings_vault_list_hide_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            VaultListMode.NONE -> Text(
+                stringResource(R.string.home_no_trace),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            VaultListMode.SHOW -> Unit
+        }
+    }
+}
+
+@Composable
+private fun RadioRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    note: String? = null,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                enabled = enabled,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
+        Spacer(Modifier.size(8.dp))
+        Column {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            )
+            if (note != null) {
+                Text(
+                    note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -255,12 +391,13 @@ private val AUTO_LOCK_LABELS = listOf(
     R.string.settings_autolock_5m,
     R.string.settings_autolock_15m,
     R.string.settings_autolock_1h,
+    R.string.settings_autolock_until_locked,
 )
 
 /** Auto-lock delay (plan §2.3): a radio list, with the memory trade-off
  *  stated right under it. */
 @Composable
-private fun AutoLockPicker(selected: Long, onSelect: (Long) -> Unit) {
+private fun AutoLockPicker(selected: Long, untilLockedAvailable: Boolean, onSelect: (Long) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
         Text(stringResource(R.string.settings_autolock_title), style = MaterialTheme.typography.titleMedium)
         Text(
@@ -270,21 +407,16 @@ private fun AutoLockPicker(selected: Long, onSelect: (Long) -> Unit) {
         )
         Column(Modifier.fillMaxWidth().padding(top = 4.dp).selectableGroup()) {
             AppPrefs.AUTO_LOCK_DELAYS_MS.forEachIndexed { i, ms ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = ms == selected,
-                            role = Role.RadioButton,
-                            onClick = { onSelect(ms) },
-                        )
-                        .padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = ms == selected, onClick = null)
-                    Spacer(Modifier.size(8.dp))
-                    Text(stringResource(AUTO_LOCK_LABELS[i]), style = MaterialTheme.typography.bodyLarge)
-                }
+                // "Until I lock it" only while its notification can show (D15).
+                val until = ms == AppPrefs.AUTO_LOCK_UNTIL_LOCKED
+                val enabled = !until || untilLockedAvailable
+                RadioRow(
+                    label = stringResource(AUTO_LOCK_LABELS[i]),
+                    selected = ms == selected,
+                    onClick = { onSelect(ms) },
+                    enabled = enabled,
+                    note = if (enabled) null else stringResource(R.string.settings_autolock_until_needs_notifications),
+                )
             }
         }
         Text(

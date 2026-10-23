@@ -55,7 +55,7 @@ class VaultRepository(private val context: Context) {
             }
         }
         val session = VaultSession.unlockFd(fd, passphrase, pim, keyfiles, kdf, cancel, listener)
-        SessionRegistry.put(volumeId(uri), session)
+        SessionRegistry.put(volumeId(uri), session, uri.toString())
         session
     }
 
@@ -85,7 +85,7 @@ class VaultRepository(private val context: Context) {
         val session = VaultSession.unlockOuterProtectedFd(
             fd, outerPassphrase, hiddenPassphrase, pim, kdf, cancel, listener,
         )
-        SessionRegistry.put(volumeId(uri), session)
+        SessionRegistry.put(volumeId(uri), session, uri.toString())
         session
     }
 
@@ -183,12 +183,14 @@ class VaultRepository(private val context: Context) {
             )
         }
 
-    /** Change [uri]'s password/PIM in place — the data is untouched, only the
-     *  header is re-encrypted under the new password. The old password selects
-     *  the volume and is verified before anything is written. [newPrf] moves
-     *  the header to another KDF/hash (a core registry name such as
-     *  "Argon2id"); null keeps the current one. [newPim] is read under the
-     *  KDF the header ends up with, so 0 means that KDF's default. */
+    /** Change [uri]'s password/PIM in place. The data is untouched; only the
+     *  header is re-encrypted under the new password. The old password (with
+     *  [oldKeyfiles]) selects the volume and is verified before anything is
+     *  written. [newKeyfiles] are folded into the new password; empty means
+     *  the vault no longer uses keyfiles (plan §5.5). [newPrf] moves the
+     *  header to another KDF/hash (a core registry name such as "Argon2id");
+     *  null keeps the current one. [newPim] is read under the KDF the header
+     *  ends up with, so 0 means that KDF's default. */
     suspend fun changePassword(
         uri: Uri,
         oldPassword: String,
@@ -196,13 +198,15 @@ class VaultRepository(private val context: Context) {
         newPassword: String,
         newPim: UInt,
         newPrf: String? = null,
+        oldKeyfiles: List<ByteArray> = emptyList(),
+        newKeyfiles: List<ByteArray> = emptyList(),
         kdf: KdfFilter = KdfFilter.AUTO,
         cancel: UnlockCancel? = null,
     ) = withContext(Dispatchers.IO) {
         val pfd = context.contentResolver.openFileDescriptor(uri, "rw")
             ?: throw IllegalStateException("this container must be opened read-write to change its password")
         uniffi.vault_ffi.changePassword(
-            pfd.detachFd(), oldPassword, oldPim, emptyList(), newPassword, newPim, emptyList(),
+            pfd.detachFd(), oldPassword, oldPim, oldKeyfiles, newPassword, newPim, newKeyfiles,
             newPrf, kdf, cancel,
         )
     }
@@ -258,6 +262,73 @@ class VaultRepository(private val context: Context) {
     suspend fun remove(session: VaultSession, path: String) = withContext(Dispatchers.IO) {
         session.remove(path)
         session.flush()
+    }
+
+    /** Delete [paths] (files, and folders with everything in them) as one
+     *  operation from the browser's multi-select (plan §5.3). Stops at the
+     *  first failure; what was already removed stays removed and is flushed. */
+    suspend fun removeAll(session: VaultSession, paths: List<String>) = withContext(Dispatchers.IO) {
+        try {
+            for (p in paths) {
+                if (session.stat(p).isDir) removeTree(session, p) else session.remove(p)
+            }
+            session.flush()
+        } catch (e: Exception) {
+            runCatching { session.flush() }
+            throw e
+        }
+    }
+
+    /**
+     * Move [names] from the vault folder [fromDir] into [toDir] (plan §5.3).
+     * A name already taken there gets keep-both naming, "name (1)" (D6). A
+     * folder is never moved into itself or below itself; such an entry is
+     * left where it is. On exFAT a folder moves in place; FAT folders carry a
+     * ".." entry the core doesn't rewrite on a move, so there the folder is
+     * recreated and its files are moved into it one by one (no data copied).
+     * Stops at the first failure; what already moved stays moved, flushed.
+     */
+    suspend fun move(session: VaultSession, fromDir: String, names: List<String>, toDir: String) =
+        withContext(Dispatchers.IO) {
+            if (ProviderPaths.samePath(fromDir, toDir)) return@withContext
+            val dirsInPlace = runCatching { session.facts().filesystem }
+                .getOrNull()?.equals("Exfat", ignoreCase = true) == true
+            val taken = session.list(toDir).map { it.name }.toMutableList()
+            try {
+                for (name in names) {
+                    val src = ProviderPaths.child(fromDir, name)
+                    val entry = session.stat(src)
+                    if (entry.isDir && ProviderPaths.isWithin(src, toDir)) continue
+                    val target = ProviderNames.unique(name, entry.isDir, taken)
+                    taken += target
+                    val dest = ProviderPaths.child(toDir, target)
+                    if (entry.isDir && !dirsInPlace) rebuildDir(session, src, dest) else session.rename(src, dest)
+                }
+                session.flush()
+            } catch (e: Exception) {
+                runCatching { session.flush() }
+                throw e
+            }
+        }
+
+    /** FAT folder move: make [dest], move each file across by rename,
+     *  recurse into subfolders, then remove the emptied [src]. */
+    private fun rebuildDir(session: VaultSession, src: String, dest: String) {
+        session.mkdir(dest)
+        for (e in session.list(src)) {
+            val from = ProviderPaths.child(src, e.name)
+            val to = ProviderPaths.child(dest, e.name)
+            if (e.isDir) rebuildDir(session, from, to) else session.rename(from, to)
+        }
+        session.remove(src)
+    }
+
+    private fun removeTree(session: VaultSession, dir: String) {
+        for (e in session.list(dir)) {
+            val p = ProviderPaths.child(dir, e.name)
+            if (e.isDir) removeTree(session, p) else session.remove(p)
+        }
+        session.remove(dir)
     }
 
     /** Stream a file out of the vault to a device destination (a SAF document

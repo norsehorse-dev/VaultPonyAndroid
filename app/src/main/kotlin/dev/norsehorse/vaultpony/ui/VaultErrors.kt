@@ -22,9 +22,10 @@ internal fun vaultErrorText(context: Context, e: Throwable, fallback: String): S
     when (e) {
         is VaultException.Cancelled -> null
         is VaultException.KdfOutOfMemory ->
-            context.getString(R.string.error_kdf_memory, e.neededMib.toInt())
+            context.getString(R.string.error_kdf_memory_hash, e.neededMib.toInt())
         is VaultException.PasswordTooShortForPim ->
             context.getString(R.string.error_short_password_pim, e.defaultPim.toInt(), e.minLen.toInt())
+        is VaultException.EmptyKeyfile -> context.getString(R.string.err_empty_keyfile)
         else -> e.message ?: fallback
     }
 
@@ -38,6 +39,7 @@ internal fun VaultErrorKind.textRes(): Int = when (this) {
     VaultErrorKind.UNSUPPORTED_FS -> R.string.err_unsupported_fs
     VaultErrorKind.READ_ONLY -> R.string.err_read_only
     VaultErrorKind.FULL -> R.string.err_vault_full
+    VaultErrorKind.EMPTY_KEYFILE -> R.string.err_empty_keyfile
     VaultErrorKind.OTHER -> R.string.err_vault_generic
 }
 

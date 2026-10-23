@@ -22,6 +22,8 @@ enum class CoreVariant {
     KDF_OUT_OF_MEMORY,
     CANCELLED,
     PASSWORD_TOO_SHORT_FOR_PIM,
+    /** A keyfile with no bytes; VeraCrypt refuses those (2.0.0 rc4). */
+    EMPTY_KEYFILE,
 }
 
 /** What the user is told. Each maps to one string resource. */
@@ -34,6 +36,7 @@ enum class VaultErrorKind {
     UNSUPPORTED_FS,
     READ_ONLY,
     FULL,
+    EMPTY_KEYFILE,
     OTHER,
 }
 
@@ -65,6 +68,7 @@ object CoreErrors {
         CoreVariant.UNSUPPORTED_FILESYSTEM -> VaultErrorKind.UNSUPPORTED_FS
         CoreVariant.FILESYSTEM -> ofFilesystem(detail.orEmpty())
         CoreVariant.IO -> VaultErrorKind.IO
+        CoreVariant.EMPTY_KEYFILE -> VaultErrorKind.EMPTY_KEYFILE
         else -> VaultErrorKind.OTHER
     }
 

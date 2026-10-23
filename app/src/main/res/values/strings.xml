@@ -14,8 +14,6 @@
     <string name="settings_security_header">Security</string>
     <string name="settings_language_header">Language</string>
 
-    <string name="settings_remember_title">Remember my vaults</string>
-    <string name="settings_remember_subtitle">Show a home list of vaults you\'ve opened. Stores their locations on this device.</string>
     <string name="settings_secure_title">Hide screen contents</string>
     <string name="settings_secure_subtitle">Block screenshots and hide the app in Recents.</string>
     <string name="settings_autolock_title">Auto-lock</string>
@@ -27,6 +25,23 @@
     <string name="settings_autolock_5m">After 5 minutes</string>
     <string name="settings_autolock_15m">After 15 minutes</string>
     <string name="settings_autolock_1h">After 1 hour</string>
+
+    <!-- Auto-lock "Until I lock it" (2.0.0 rc4, D15, issue #4) -->
+    <string name="settings_autolock_until_locked">Until I lock it</string>
+    <string name="settings_autolock_until_needs_notifications">Needs notifications. Allow VaultPony\'s notifications to use this.</string>
+    <string name="autolock_until_confirm_title">Keep vaults unlocked?</string>
+    <string name="autolock_until_confirm_message">The vault\'s key stays in memory, and other apps can read and write the vault through Files until you lock it from the notification, the tile or the app. Restarting the phone or closing VaultPony also locks it.</string>
+    <string name="autolock_until_confirm_keep">Keep unlocked</string>
+
+    <!-- Vault list privacy (2.0.0 rc4, plan 5.4). Replaces "Remember my vaults". -->
+    <string name="settings_vault_list_title">Vault list</string>
+    <string name="settings_vault_list_show">Show names</string>
+    <string name="settings_vault_list_hide">Hide names</string>
+    <string name="settings_vault_list_none">Don\'t keep</string>
+    <string name="settings_vault_list_hide_note">The list shows Vault 1, Vault 2 and so on. The saved link to each file still records where it is, because VaultPony needs it to open the file again.</string>
+    <string name="vault_list_remove_title">Remove all vaults from the list?</string>
+    <string name="vault_list_remove_message">The vault files themselves are not touched. Saved biometric unlocks for them are removed too.</string>
+    <string name="vault_list_remove">Remove</string>
 
     <!-- More pony apps -->
     <string name="settings_pony_header">More pony apps</string>
@@ -88,11 +103,17 @@
     <string name="home_opened_relative">opened %1$s</string>
     <string name="home_recently">recently</string>
     <string name="home_forget">Forget</string>
+    <!-- Vault list "Hide names": the home list numbers vaults in list order. -->
+    <string name="home_vault_numbered">Vault %1$d</string>
 
     <!-- Viewer -->
     <string name="viewer_binary">Binary file (%1$s). Extract it to open elsewhere.</string>
     <string name="viewer_too_big">File is %1$s. Too large to preview in-app. Extract it instead.</string>
     <string name="viewer_read_error">Could not read this file: %1$s</string>
+    <!-- Media playback (2.0.0 rc4, plan 5.2) -->
+    <string name="viewer_cant_play">Can\'t play this file.</string>
+    <string name="media_play">Play</string>
+    <string name="media_pause">Pause</string>
 
     <string name="common_done">Done</string>
     <string name="common_op_failed">Operation failed</string>
@@ -127,7 +148,15 @@
     <string name="change_pw_working">Re-encrypting the header…</string>
     <string name="change_pw_success">Password changed. Use your new password from now on.</string>
     <string name="change_pw_error">Could not change password.</string>
-    <string name="change_pw_keyfile_note">Keyfile-protected vaults can\'t be changed here yet. Use the CLI.</string>
+    <!-- Keyfiles in Change password (2.0.0 rc4, plan 5.5) -->
+    <string name="change_pw_current_keyfiles">Current keyfiles</string>
+    <string name="change_pw_new_keyfiles">New keyfiles</string>
+    <string name="change_pw_keyfiles_none">None</string>
+    <plurals name="change_pw_keyfiles_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="change_pw_keyfiles_note">To keep using the same keyfiles, add them again under New keyfiles. Leave New keyfiles empty to stop using keyfiles.</string>
 
     <!-- Unlock -->
     <string name="unlock_title">Unlock vault</string>
@@ -205,6 +234,47 @@
     <string name="browser_err_rename">Rename failed</string>
     <string name="browser_err_delete">Delete failed</string>
 
+    <!-- Browser upgrades (2.0.0 rc4, plan 5.3) -->
+    <string name="browser_more_options">More options</string>
+    <string name="browser_view_list">List</string>
+    <string name="browser_view_grid">Grid</string>
+    <string name="browser_sort_by">Sort by</string>
+    <string name="browser_sort_name">Name</string>
+    <string name="browser_sort_size">Size</string>
+    <string name="browser_sort_date">Date modified</string>
+    <string name="browser_sort_ascending">Ascending</string>
+    <string name="browser_sort_descending">Descending</string>
+    <string name="browser_search">Search</string>
+    <string name="browser_search_this_folder">This folder</string>
+    <string name="browser_search_whole_vault">Whole vault</string>
+    <string name="browser_search_no_matches">No matches</string>
+    <string name="browser_searching">Searching…</string>
+    <plurals name="browser_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="browser_select_all">Select all</string>
+    <string name="browser_export">Export</string>
+    <string name="browser_move">Move</string>
+    <plurals name="browser_delete_items_title">
+        <item quantity="one">Delete %d item?</item>
+        <item quantity="other">Delete %d items?</item>
+    </plurals>
+    <string name="browser_delete_items_message">This can\'t be undone.</string>
+    <string name="browser_move_to">Move to</string>
+    <string name="browser_move_here">Move here</string>
+    <string name="browser_err_move">Move failed</string>
+
+    <!-- Share into a vault (2.0.0 rc4, plan 5.1) -->
+    <string name="share_target_label">Save to VaultPony</string>
+    <string name="share_unlock_first">Unlock a vault to save these files.</string>
+    <string name="share_choose_folder">Choose a folder</string>
+    <string name="share_save_here">Save here</string>
+    <plurals name="share_files_count">
+        <item quantity="one">%d file to save</item>
+        <item quantity="other">%d files to save</item>
+    </plurals>
+
     <!-- Browser: volume facts (2.0.0) -->
     <string name="browser_label_hidden">Hidden volume</string>
     <string name="browser_label_protected">Hidden area protected</string>
@@ -264,17 +334,17 @@
     <string name="transfer_err_write">Could not write %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
-    <string name="unlock_kdf_button">Key derivation</string>
-    <string name="unlock_kdf_label">Key derivation (KDF)</string>
     <string name="kdf_auto">Auto</string>
     <string name="kdf_pbkdf2">PBKDF2</string>
-    <string name="kdf_argon2id">Argon2id</string>
-    <string name="unlock_kdf_note">Auto tries every KDF, like VeraCrypt. If you know which one your vault uses, picking it makes unlocking faster.</string>
+    <!-- Unlock "Hash" menu (2.0.0 rc4, D16/D21, issues #5 and #6). The hash
+         names come from the core untranslated; only kdf_auto is translated. -->
+    <string name="unlock_hash_label">Hash</string>
+    <string name="unlock_hash_note">Auto tries every hash, like VeraCrypt. If you know which hash your vault uses, picking it makes unlocking faster.</string>
     <string name="unlock_cancel">Cancel</string>
     <string name="unlock_memory_warning">Argon2id at this PIM needs about %1$d MB of memory, and this device has about %2$d MB free. Unlocking may fail.</string>
     <string name="unlock_memory_try">Try anyway</string>
     <string name="unlock_memory_pbkdf2">Skip Argon2id</string>
-    <string name="error_kdf_memory">Not enough free memory for Argon2id (%1$d MB needed). Close other apps and try again, or choose PBKDF2 if this vault doesn\'t use Argon2id.</string>
+    <string name="error_kdf_memory_hash">Not enough free memory for Argon2id (%1$d MB needed). Close other apps and try again. If this vault doesn\'t use Argon2id, pick its hash under Hash on the unlock screen.</string>
     <string name="error_short_password_pim">A PIM below %1$d needs a password of at least %2$d characters.</string>
     <string name="create_argon2_note">Argon2id is memory-hard: opening this vault needs about 416 MB of free memory and takes a few seconds. Desktop VeraCrypt opens it from version 1.26.29.</string>
     <string name="change_pw_kdf_label">Key derivation (KDF)</string>
@@ -294,6 +364,7 @@
     <string name="err_read_only">This vault is read-only.</string>
     <string name="err_vault_full">The vault is full.</string>
     <string name="err_vault_generic">Something went wrong in the vault.</string>
+    <string name="err_empty_keyfile">A keyfile is empty. VeraCrypt doesn\'t accept empty keyfiles.</string>
 
     <!-- Lock controls and copy notifications (2.0.0 rc2). Generic on purpose:
          never a vault or file name. -->

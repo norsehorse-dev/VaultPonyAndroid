@@ -17,6 +17,16 @@ class VaultPonyApp : Application() {
         // point) can reach volumes the activity unlocked.
         SessionRegistry.init(this)
 
+        // Vault list "Don't keep" (plan §5.4), including users who had
+        // "Remember my vaults" off before 2.0.0 rc4: nothing is unlocked at
+        // process start, so no container file permission or biometric unlock
+        // should be left from an earlier run.
+        if (AppPrefs.vaultListMode(this) == VaultListMode.NONE) {
+            VaultStore.clear(this)
+            VaultStore.releaseGrants(this, emptySet())
+            BiometricUnlock.clearAllExcept(this, emptySet())
+        }
+
         // Auto-lock (doc §8, plan §2.3): when the whole app leaves the
         // foreground (backgrounded, recents, or screen-off) every session is
         // locked, at once or after the delay chosen in Settings, and the UI is

@@ -14,6 +14,7 @@ class CoreErrorsTest {
         assertEquals(VaultErrorKind.HIDDEN_PROTECTED, CoreErrors.classify(CoreVariant.HIDDEN_VOLUME_PROTECTED, null))
         assertEquals(VaultErrorKind.WRONG_PASSWORD, CoreErrors.classify(CoreVariant.NOT_FOUND_OR_WRONG_PASSWORD, null))
         assertEquals(VaultErrorKind.UNSUPPORTED_FS, CoreErrors.classify(CoreVariant.UNSUPPORTED_FILESYSTEM, "Ext4"))
+        assertEquals(VaultErrorKind.EMPTY_KEYFILE, CoreErrors.classify(CoreVariant.EMPTY_KEYFILE, null))
     }
 
     @Test

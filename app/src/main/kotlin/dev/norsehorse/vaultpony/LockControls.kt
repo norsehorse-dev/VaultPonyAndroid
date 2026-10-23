@@ -14,6 +14,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import dev.norsehorse.vaultpony.i18n.LanguageState
 import dev.norsehorse.vaultpony.i18n.LocaleManager
@@ -60,6 +61,7 @@ object VaultNotifications {
 
     const val ACTION_LOCK = "dev.norsehorse.vaultpony.action.LOCK_ALL"
     const val ACTION_CANCEL_TRANSFER = "dev.norsehorse.vaultpony.action.CANCEL_TRANSFER"
+    const val ACTION_UNLOCKED_DISMISSED = "dev.norsehorse.vaultpony.action.UNLOCKED_DISMISSED"
 
     private fun manager(c: Context): NotificationManager? = c.getSystemService(NotificationManager::class.java)
 
@@ -68,6 +70,19 @@ object VaultNotifications {
         Build.VERSION.SDK_INT < 33 ||
             ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
+
+    /** The "A vault is unlocked" notification can actually be seen: the
+     *  app may post (the runtime grant on 13+), its notifications aren't
+     *  blocked, and the "Unlocked vaults" channel isn't turned off. Auto-lock
+     *  "Until I lock it" depends on it (D15). A channel not created yet
+     *  counts as on: it is created enabled the first time it is used. */
+    fun unlockedAllowed(c: Context): Boolean {
+        val app = c.applicationContext
+        if (!canPost(app)) return false
+        if (!NotificationManagerCompat.from(app).areNotificationsEnabled()) return false
+        val channel = runCatching { manager(app)?.getNotificationChannel(CHANNEL_UNLOCKED) }.getOrNull()
+        return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
+    }
 
     // In-app language the channels were last named in; null = not created
     // in this process yet.
@@ -123,6 +138,11 @@ object VaultNotifications {
 
     private fun cancelIntent(app: Context) = broadcast(app, ACTION_CANCEL_TRANSFER, 2)
 
+    // Android 14 lets the user swipe away even an ongoing notification that
+    // doesn't belong to a foreground service. Under "Until I lock it" the
+    // unlocked notification must stay, so a swipe comes back here (D15).
+    private fun dismissedIntent(app: Context) = broadcast(app, ACTION_UNLOCKED_DISMISSED, 3)
+
     // -- "A vault is unlocked" (R2) -----------------------------------------
 
     fun showUnlocked(context: Context, count: Int) {
@@ -143,6 +163,7 @@ object VaultNotifications {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setContentIntent(openAppIntent(app))
+            .setDeleteIntent(dismissedIntent(app))
             .addAction(R.drawable.ic_stat_lock, text.getString(R.string.notif_action_lock), lockIntent(app))
             .build()
         runCatching { manager(app)?.notify(ID_UNLOCKED, n) }
@@ -238,6 +259,7 @@ class LockReceiver : BroadcastReceiver() {
         when (intent.action) {
             VaultNotifications.ACTION_LOCK -> SessionRegistry.requestLock(null)
             VaultNotifications.ACTION_CANCEL_TRANSFER -> TransferJobs.cancel()
+            VaultNotifications.ACTION_UNLOCKED_DISMISSED -> SessionRegistry.onUnlockedDismissed()
         }
     }
 }

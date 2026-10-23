@@ -53,6 +53,18 @@ object BiometricUnlock {
         prefs(context).edit().remove("$volumeId.ct").remove("$volumeId.iv").apply()
     }
 
+    /** Remove every stored biometric unlock except those of [keepIds]
+     *  (vault list "Don't keep", plan §5.4). */
+    fun clearAllExcept(context: Context, keepIds: Set<String>) {
+        val p = prefs(context)
+        val edit = p.edit()
+        for (key in p.all.keys) {
+            val id = key.substringBeforeLast('.')
+            if (id !in keepIds) edit.remove(key)
+        }
+        edit.apply()
+    }
+
     /** Authenticate, then store the secret encrypted. [kdf] is the KDF family
      *  the container turned out to use, so a biometric unlock can skip the
      *  other family's work (for Argon2id, the whole PBKDF2 sweep). [onDone]

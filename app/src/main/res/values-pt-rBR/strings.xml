@@ -7,8 +7,6 @@
     <string name="settings_security_header">Segurança</string>
     <string name="settings_language_header">Idioma</string>
 
-    <string name="settings_remember_title">Lembrar meus cofres</string>
-    <string name="settings_remember_subtitle">Mostra uma lista inicial dos cofres que você abriu. Salva a localização deles neste dispositivo.</string>
     <string name="settings_secure_title">Ocultar o conteúdo da tela</string>
     <string name="settings_secure_subtitle">Bloqueia capturas de tela e oculta o app em Recentes.</string>
     <string name="settings_autolock_title">Bloqueio automático</string>
@@ -20,6 +18,23 @@
     <string name="settings_autolock_5m">Após 5 minutos</string>
     <string name="settings_autolock_15m">Após 15 minutos</string>
     <string name="settings_autolock_1h">Após 1 hora</string>
+
+    <!-- Auto-lock "Until I lock it" (2.0.0 rc4, D15, issue #4) -->
+    <string name="settings_autolock_until_locked">Até eu bloquear</string>
+    <string name="settings_autolock_until_needs_notifications">Requer notificações. Permita as notificações do VaultPony para usar esta opção.</string>
+    <string name="autolock_until_confirm_title">Manter os cofres desbloqueados?</string>
+    <string name="autolock_until_confirm_message">A chave do cofre fica na memória, e outros apps podem ler e gravar o cofre pelo app Arquivos até você bloqueá-lo pela notificação, pelo bloco das configurações rápidas ou pelo app. Reiniciar o telefone ou fechar o VaultPony também o bloqueia.</string>
+    <string name="autolock_until_confirm_keep">Manter desbloqueados</string>
+
+    <!-- Vault list privacy (2.0.0 rc4, plan 5.4). Replaces "Remember my vaults". -->
+    <string name="settings_vault_list_title">Lista de cofres</string>
+    <string name="settings_vault_list_show">Mostrar nomes</string>
+    <string name="settings_vault_list_hide">Ocultar nomes</string>
+    <string name="settings_vault_list_none">Não manter</string>
+    <string name="settings_vault_list_hide_note">A lista mostra Cofre 1, Cofre 2 e assim por diante. O link salvo para cada arquivo ainda registra onde ele está, porque o VaultPony precisa dele para abrir o arquivo de novo.</string>
+    <string name="vault_list_remove_title">Remover todos os cofres da lista?</string>
+    <string name="vault_list_remove_message">Os arquivos dos cofres em si não são alterados. Os desbloqueios biométricos salvos para eles também são removidos.</string>
+    <string name="vault_list_remove">Remover</string>
 
     <string name="settings_pony_header">Mais apps pony</string>
     <string name="pony_pgpony_subtitle">Criptografia OpenPGP</string>
@@ -75,10 +90,16 @@
     <string name="home_opened_relative">aberto %1$s</string>
     <string name="home_recently">recentemente</string>
     <string name="home_forget">Esquecer</string>
+    <!-- Vault list "Hide names": the home list numbers vaults in list order. -->
+    <string name="home_vault_numbered">Cofre %1$d</string>
 
     <string name="viewer_binary">Arquivo binário (%1$s). Exporte-o para abrir em outro lugar.</string>
     <string name="viewer_too_big">O arquivo tem %1$s. Grande demais para pré-visualizar no app. Exporte-o.</string>
     <string name="viewer_read_error">Não foi possível ler este arquivo: %1$s</string>
+    <!-- Media playback (2.0.0 rc4, plan 5.2) -->
+    <string name="viewer_cant_play">Não é possível reproduzir este arquivo.</string>
+    <string name="media_play">Reproduzir</string>
+    <string name="media_pause">Pausar</string>
 
     <string name="common_done">Concluído</string>
     <string name="common_op_failed">A operação falhou</string>
@@ -111,7 +132,15 @@
     <string name="change_pw_working">Recriptografando o cabeçalho…</string>
     <string name="change_pw_success">Senha alterada. Use sua nova senha a partir de agora.</string>
     <string name="change_pw_error">Não foi possível alterar a senha.</string>
-    <string name="change_pw_keyfile_note">Cofres protegidos por arquivo de chave ainda não podem ser alterados aqui. Use a CLI.</string>
+    <!-- Keyfiles in Change password (2.0.0 rc4, plan 5.5) -->
+    <string name="change_pw_current_keyfiles">Arquivos de chave atuais</string>
+    <string name="change_pw_new_keyfiles">Novos arquivos de chave</string>
+    <string name="change_pw_keyfiles_none">Nenhum</string>
+    <plurals name="change_pw_keyfiles_selected">
+        <item quantity="one">%d selecionado</item>
+        <item quantity="other">%d selecionados</item>
+    </plurals>
+    <string name="change_pw_keyfiles_note">Para continuar usando os mesmos arquivos de chave, adicione-os de novo em Novos arquivos de chave. Deixe Novos arquivos de chave vazio para deixar de usar arquivos de chave.</string>
 
     <string name="unlock_title">Abrir o cofre</string>
     <string name="unlock_subtitle_none">Abra ou crie um contêiner criptografado</string>
@@ -186,6 +215,47 @@
     <string name="browser_err_rename">Falha ao renomear</string>
     <string name="browser_err_delete">Falha ao excluir</string>
 
+    <!-- Browser upgrades (2.0.0 rc4, plan 5.3) -->
+    <string name="browser_more_options">Mais opções</string>
+    <string name="browser_view_list">Lista</string>
+    <string name="browser_view_grid">Grade</string>
+    <string name="browser_sort_by">Ordenar por</string>
+    <string name="browser_sort_name">Nome</string>
+    <string name="browser_sort_size">Tamanho</string>
+    <string name="browser_sort_date">Data de modificação</string>
+    <string name="browser_sort_ascending">Crescente</string>
+    <string name="browser_sort_descending">Decrescente</string>
+    <string name="browser_search">Pesquisar</string>
+    <string name="browser_search_this_folder">Esta pasta</string>
+    <string name="browser_search_whole_vault">Cofre inteiro</string>
+    <string name="browser_search_no_matches">Nenhum resultado</string>
+    <string name="browser_searching">Pesquisando…</string>
+    <plurals name="browser_selected">
+        <item quantity="one">%d selecionado</item>
+        <item quantity="other">%d selecionados</item>
+    </plurals>
+    <string name="browser_select_all">Selecionar tudo</string>
+    <string name="browser_export">Exportar</string>
+    <string name="browser_move">Mover</string>
+    <plurals name="browser_delete_items_title">
+        <item quantity="one">Excluir %d item?</item>
+        <item quantity="other">Excluir %d itens?</item>
+    </plurals>
+    <string name="browser_delete_items_message">Isso não pode ser desfeito.</string>
+    <string name="browser_move_to">Mover para</string>
+    <string name="browser_move_here">Mover para cá</string>
+    <string name="browser_err_move">Falha ao mover</string>
+
+    <!-- Share into a vault (2.0.0 rc4, plan 5.1) -->
+    <string name="share_target_label">Salvar no VaultPony</string>
+    <string name="share_unlock_first">Desbloqueie um cofre para salvar estes arquivos.</string>
+    <string name="share_choose_folder">Escolha uma pasta</string>
+    <string name="share_save_here">Salvar aqui</string>
+    <plurals name="share_files_count">
+        <item quantity="one">%d arquivo para salvar</item>
+        <item quantity="other">%d arquivos para salvar</item>
+    </plurals>
+
     <!-- Browser: volume facts (2.0.0) -->
     <string name="browser_label_hidden">Volume oculto</string>
     <string name="browser_label_protected">Área oculta protegida</string>
@@ -245,17 +315,17 @@
     <string name="transfer_err_write">Não foi possível gravar %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
-    <string name="unlock_kdf_button">Derivação de chave</string>
-    <string name="unlock_kdf_label">Derivação de chave (KDF)</string>
     <string name="kdf_auto">Automático</string>
     <string name="kdf_pbkdf2">PBKDF2</string>
-    <string name="kdf_argon2id">Argon2id</string>
-    <string name="unlock_kdf_note">Automático tenta todas as KDFs, como o VeraCrypt. Se você sabe qual o seu cofre usa, escolhê-la deixa o desbloqueio mais rápido.</string>
+    <!-- Unlock "Hash" menu (2.0.0 rc4, D16/D21, issues #5 and #6). The hash
+         names come from the core untranslated; only kdf_auto is translated. -->
+    <string name="unlock_hash_label">Hash</string>
+    <string name="unlock_hash_note">Automático tenta todos os hashes, como o VeraCrypt. Se você sabe qual hash o seu cofre usa, escolhê-lo deixa o desbloqueio mais rápido.</string>
     <string name="unlock_cancel">Cancelar</string>
     <string name="unlock_memory_warning">O Argon2id com este PIM precisa de cerca de %1$d MB de memória, e este aparelho tem cerca de %2$d MB livres. O desbloqueio pode falhar.</string>
     <string name="unlock_memory_try">Tentar mesmo assim</string>
     <string name="unlock_memory_pbkdf2">Pular Argon2id</string>
-    <string name="error_kdf_memory">Memória livre insuficiente para o Argon2id (são necessários %1$d MB). Feche outros apps e tente de novo, ou escolha PBKDF2 se este cofre não usa Argon2id.</string>
+    <string name="error_kdf_memory_hash">Memória livre insuficiente para o Argon2id (são necessários %1$d MB). Feche outros apps e tente de novo. Se este cofre não usa Argon2id, escolha o hash dele em Hash na tela de desbloqueio.</string>
     <string name="error_short_password_pim">Um PIM abaixo de %1$d exige uma senha de pelo menos %2$d caracteres.</string>
     <string name="create_argon2_note">O Argon2id exige bastante memória: abrir este cofre precisa de cerca de 416 MB livres e leva alguns segundos. O VeraCrypt para desktop o abre a partir da versão 1.26.29.</string>
     <string name="change_pw_kdf_label">Derivação de chave (KDF)</string>
@@ -274,6 +344,7 @@
     <string name="err_read_only">Este cofre está somente leitura.</string>
     <string name="err_vault_full">O cofre está cheio.</string>
     <string name="err_vault_generic">Algo deu errado no cofre.</string>
+    <string name="err_empty_keyfile">Um arquivo de chave está vazio. O VeraCrypt não aceita arquivos de chave vazios.</string>
 
     <!-- Lock controls and copy notifications (2.0.0 rc2) -->
     <string name="notif_channel_unlocked">Cofres desbloqueados</string>

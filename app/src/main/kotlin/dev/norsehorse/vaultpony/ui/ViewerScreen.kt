@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import dev.norsehorse.vaultpony.MediaKinds
 import dev.norsehorse.vaultpony.R
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
@@ -66,8 +67,12 @@ fun ViewerScreen(
     val name = path.substringAfterLast('/')
     // Localized resources, so the R4 error text follows the in-app language.
     val res = LocalContext.current.resources
+    // Video and audio stream through the player at any size (plan §5.2);
+    // nothing is read up front for them.
+    val mediaMime = remember(name) { MediaKinds.mimeOf(name) }
 
     LaunchedEffect(path) {
+        if (mediaMime != null) return@LaunchedEffect
         content = withContext(Dispatchers.IO) {
             if (size > VIEW_CAP) return@withContext Content.TooBig(size)
             try {
@@ -103,29 +108,33 @@ fun ViewerScreen(
             MonoChip(humanSize(size))
         }
         HorizontalDivider()
-        when (val c = content) {
-            Content.Loading -> Box(
-                Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
-            is Content.TextView -> Text(
-                c.text,
-                fontFamily = FontFamily.Monospace,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .horizontalScroll(rememberScrollState())
-                    .padding(16.dp),
-            )
-            is Content.ImageView -> Image(
-                bitmap = c.bitmap,
-                contentDescription = name,
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-            )
-            is Content.Binary -> Notice(stringResource(R.string.viewer_binary, humanSize(c.size)))
-            is Content.TooBig -> Notice(stringResource(R.string.viewer_too_big, humanSize(c.size)))
-            is Content.Failed -> Notice(stringResource(R.string.viewer_read_error, c.message))
+        if (mediaMime != null) {
+            MediaPlayerPane(session, path, size, video = mediaMime.startsWith("video/"))
+        } else {
+            when (val c = content) {
+                Content.Loading -> Box(
+                    Modifier.fillMaxSize().padding(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) { CircularProgressIndicator() }
+                is Content.TextView -> Text(
+                    c.text,
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .horizontalScroll(rememberScrollState())
+                        .padding(16.dp),
+                )
+                is Content.ImageView -> Image(
+                    bitmap = c.bitmap,
+                    contentDescription = name,
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                )
+                is Content.Binary -> Notice(stringResource(R.string.viewer_binary, humanSize(c.size)))
+                is Content.TooBig -> Notice(stringResource(R.string.viewer_too_big, humanSize(c.size)))
+                is Content.Failed -> Notice(stringResource(R.string.viewer_read_error, c.message))
+            }
         }
     }
 }

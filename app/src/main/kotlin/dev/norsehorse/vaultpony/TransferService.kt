@@ -1,9 +1,11 @@
 package dev.norsehorse.vaultpony
 
 import android.app.Service
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
@@ -114,11 +116,22 @@ class TransferService : Service() {
 
         /** Called when a batch starts, which is always from the app in the
          *  foreground (a picker result or a tap). If Android refuses anyway,
-         *  the batch still runs; it just has no foreground protection. */
-        fun start(context: Context) {
+         *  the batch still runs; it just has no foreground protection.
+         *  [grants]: documents shared into a vault (plan §5.1). They ride on
+         *  the start intent with FLAG_GRANT_READ_URI_PERMISSION, so the
+         *  service holds their read grant until it stops, not only the
+         *  activity that received the share. */
+        fun start(context: Context, grants: List<Uri> = emptyList()) {
             val app = context.applicationContext
+            val intent = Intent(app, TransferService::class.java)
+            if (grants.isNotEmpty()) {
+                val clip = ClipData.newRawUri("", grants.first())
+                grants.drop(1).forEach { clip.addItem(ClipData.Item(it)) }
+                intent.clipData = clip
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
             try {
-                ContextCompat.startForegroundService(app, Intent(app, TransferService::class.java))
+                ContextCompat.startForegroundService(app, intent)
             } catch (e: Exception) {
                 Log.w(TAG, "transfer service not started", e)
             }

@@ -7,8 +7,6 @@
     <string name="settings_security_header">Seguridad</string>
     <string name="settings_language_header">Idioma</string>
 
-    <string name="settings_remember_title">Recordar mis bóvedas</string>
-    <string name="settings_remember_subtitle">Muestra una lista de inicio de las bóvedas que has abierto. Guarda sus ubicaciones en este dispositivo.</string>
     <string name="settings_secure_title">Ocultar el contenido de la pantalla</string>
     <string name="settings_secure_subtitle">Bloquea las capturas de pantalla y oculta la app en Recientes.</string>
     <string name="settings_autolock_title">Bloqueo automático</string>
@@ -20,6 +18,19 @@
     <string name="settings_autolock_5m">Tras 5 minutos</string>
     <string name="settings_autolock_15m">Tras 15 minutos</string>
     <string name="settings_autolock_1h">Tras 1 hora</string>
+    <string name="settings_autolock_until_locked">Hasta que la bloquee</string>
+    <string name="settings_autolock_until_needs_notifications">Requiere notificaciones. Permite las notificaciones de VaultPony para usar esta opción.</string>
+    <string name="autolock_until_confirm_title">¿Mantener las bóvedas desbloqueadas?</string>
+    <string name="autolock_until_confirm_message">La clave de la bóveda permanece en memoria, y otras apps pueden leer y escribir en la bóveda a través de Archivos hasta que la bloquees desde la notificación, el botón de ajustes rápidos o la app. Reiniciar el teléfono o cerrar VaultPony también la bloquea.</string>
+    <string name="autolock_until_confirm_keep">Mantener desbloqueadas</string>
+    <string name="settings_vault_list_title">Lista de bóvedas</string>
+    <string name="settings_vault_list_show">Mostrar nombres</string>
+    <string name="settings_vault_list_hide">Ocultar nombres</string>
+    <string name="settings_vault_list_none">No conservar</string>
+    <string name="settings_vault_list_hide_note">La lista muestra Bóveda 1, Bóveda 2, etc. El enlace guardado a cada archivo sigue registrando dónde está, porque VaultPony lo necesita para volver a abrir el archivo.</string>
+    <string name="vault_list_remove_title">¿Quitar todas las bóvedas de la lista?</string>
+    <string name="vault_list_remove_message">Los archivos de las bóvedas no se modifican. También se eliminan los desbloqueos biométricos guardados para ellas.</string>
+    <string name="vault_list_remove">Quitar</string>
 
     <string name="settings_pony_header">Más apps pony</string>
     <string name="pony_pgpony_subtitle">Cifrado OpenPGP</string>
@@ -75,10 +86,14 @@
     <string name="home_opened_relative">abierta %1$s</string>
     <string name="home_recently">hace poco</string>
     <string name="home_forget">Olvidar</string>
+    <string name="home_vault_numbered">Bóveda %1$d</string>
 
     <string name="viewer_binary">Archivo binario (%1$s). Expórtalo para abrirlo en otra parte.</string>
     <string name="viewer_too_big">El archivo mide %1$s. Demasiado grande para previsualizar en la app. Expórtalo en su lugar.</string>
     <string name="viewer_read_error">No se pudo leer este archivo: %1$s</string>
+    <string name="viewer_cant_play">No se puede reproducir este archivo.</string>
+    <string name="media_play">Reproducir</string>
+    <string name="media_pause">Pausar</string>
 
     <string name="common_done">Listo</string>
     <string name="common_op_failed">La operación falló</string>
@@ -111,7 +126,14 @@
     <string name="change_pw_working">Volviendo a cifrar el encabezado…</string>
     <string name="change_pw_success">Contraseña cambiada. Usa tu nueva contraseña a partir de ahora.</string>
     <string name="change_pw_error">No se pudo cambiar la contraseña.</string>
-    <string name="change_pw_keyfile_note">Las bóvedas protegidas con archivos de clave aún no se pueden cambiar aquí. Usa la CLI.</string>
+    <string name="change_pw_current_keyfiles">Archivos de clave actuales</string>
+    <string name="change_pw_new_keyfiles">Nuevos archivos de clave</string>
+    <string name="change_pw_keyfiles_none">Ninguno</string>
+    <plurals name="change_pw_keyfiles_selected">
+        <item quantity="one">%d seleccionado</item>
+        <item quantity="other">%d seleccionados</item>
+    </plurals>
+    <string name="change_pw_keyfiles_note">Para seguir usando los mismos archivos de clave, vuelve a añadirlos en Nuevos archivos de clave. Deja Nuevos archivos de clave vacío para dejar de usar archivos de clave.</string>
 
     <string name="unlock_title">Abrir la bóveda</string>
     <string name="unlock_subtitle_none">Abre o crea un contenedor cifrado</string>
@@ -185,6 +207,43 @@
     <string name="browser_err_mkdir">No se pudo crear la carpeta</string>
     <string name="browser_err_rename">Error al renombrar</string>
     <string name="browser_err_delete">Error al eliminar</string>
+    <string name="browser_more_options">Más opciones</string>
+    <string name="browser_view_list">Lista</string>
+    <string name="browser_view_grid">Cuadrícula</string>
+    <string name="browser_sort_by">Ordenar por</string>
+    <string name="browser_sort_name">Nombre</string>
+    <string name="browser_sort_size">Tamaño</string>
+    <string name="browser_sort_date">Fecha de modificación</string>
+    <string name="browser_sort_ascending">Ascendente</string>
+    <string name="browser_sort_descending">Descendente</string>
+    <string name="browser_search">Buscar</string>
+    <string name="browser_search_this_folder">Esta carpeta</string>
+    <string name="browser_search_whole_vault">Toda la bóveda</string>
+    <string name="browser_search_no_matches">Sin resultados</string>
+    <string name="browser_searching">Buscando…</string>
+    <plurals name="browser_selected">
+        <item quantity="one">%d seleccionado</item>
+        <item quantity="other">%d seleccionados</item>
+    </plurals>
+    <string name="browser_select_all">Seleccionar todo</string>
+    <string name="browser_export">Exportar</string>
+    <string name="browser_move">Mover</string>
+    <plurals name="browser_delete_items_title">
+        <item quantity="one">¿Eliminar %d elemento?</item>
+        <item quantity="other">¿Eliminar %d elementos?</item>
+    </plurals>
+    <string name="browser_delete_items_message">Esta acción no se puede deshacer.</string>
+    <string name="browser_move_to">Mover a</string>
+    <string name="browser_move_here">Mover aquí</string>
+    <string name="browser_err_move">Error al mover</string>
+    <string name="share_target_label">Guardar en VaultPony</string>
+    <string name="share_unlock_first">Desbloquea una bóveda para guardar estos archivos.</string>
+    <string name="share_choose_folder">Elige una carpeta</string>
+    <string name="share_save_here">Guardar aquí</string>
+    <plurals name="share_files_count">
+        <item quantity="one">%d archivo para guardar</item>
+        <item quantity="other">%d archivos para guardar</item>
+    </plurals>
 
     <!-- Browser: volume facts (2.0.0) -->
     <string name="browser_label_hidden">Volumen oculto</string>
@@ -245,17 +304,15 @@
     <string name="transfer_err_write">No se pudo escribir %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
-    <string name="unlock_kdf_button">Derivación de clave</string>
-    <string name="unlock_kdf_label">Derivación de clave (KDF)</string>
     <string name="kdf_auto">Automático</string>
     <string name="kdf_pbkdf2">PBKDF2</string>
-    <string name="kdf_argon2id">Argon2id</string>
-    <string name="unlock_kdf_note">Automático prueba todas las KDF, como VeraCrypt. Si sabes cuál usa tu bóveda, elegirla hace que se desbloquee más rápido.</string>
+    <string name="unlock_hash_label">Hash</string>
+    <string name="unlock_hash_note">Automático prueba todos los hashes, como VeraCrypt. Si sabes qué hash usa tu bóveda, elegirlo hace que se desbloquee más rápido.</string>
     <string name="unlock_cancel">Cancelar</string>
     <string name="unlock_memory_warning">Argon2id con este PIM necesita unos %1$d MB de memoria y este dispositivo tiene unos %2$d MB libres. El desbloqueo puede fallar.</string>
     <string name="unlock_memory_try">Intentar de todos modos</string>
     <string name="unlock_memory_pbkdf2">Omitir Argon2id</string>
-    <string name="error_kdf_memory">No hay suficiente memoria libre para Argon2id (se necesitan %1$d MB). Cierra otras apps e inténtalo de nuevo, o elige PBKDF2 si esta bóveda no usa Argon2id.</string>
+    <string name="error_kdf_memory_hash">No hay suficiente memoria libre para Argon2id (se necesitan %1$d MB). Cierra otras apps e inténtalo de nuevo. Si esta bóveda no usa Argon2id, elige su hash en Hash en la pantalla de desbloqueo.</string>
     <string name="error_short_password_pim">Un PIM menor que %1$d requiere una contraseña de al menos %2$d caracteres.</string>
     <string name="create_argon2_note">Argon2id usa mucha memoria: abrir esta bóveda requiere unos 416 MB libres y tarda unos segundos. VeraCrypt de escritorio la abre desde la versión 1.26.29.</string>
     <string name="change_pw_kdf_label">Derivación de clave (KDF)</string>
@@ -274,6 +331,7 @@
     <string name="err_read_only">Esta bóveda es de solo lectura.</string>
     <string name="err_vault_full">La bóveda está llena.</string>
     <string name="err_vault_generic">Algo salió mal en la bóveda.</string>
+    <string name="err_empty_keyfile">Un archivo de clave está vacío. VeraCrypt no acepta archivos de clave vacíos.</string>
 
     <!-- Lock controls and copy notifications (2.0.0 rc2) -->
     <string name="notif_channel_unlocked">Bóvedas desbloqueadas</string>

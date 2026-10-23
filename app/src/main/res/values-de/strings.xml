@@ -7,8 +7,6 @@
     <string name="settings_security_header">Sicherheit</string>
     <string name="settings_language_header">Sprache</string>
 
-    <string name="settings_remember_title">Meine Tresore merken</string>
-    <string name="settings_remember_subtitle">Zeigt eine Startliste der geöffneten Tresore. Ihre Speicherorte werden auf diesem Gerät gespeichert.</string>
     <string name="settings_secure_title">Bildschirminhalt verbergen</string>
     <string name="settings_secure_subtitle">Screenshots blockieren und die App in der Übersicht ausblenden.</string>
     <string name="settings_autolock_title">Automatische Sperre</string>
@@ -20,6 +18,19 @@
     <string name="settings_autolock_5m">Nach 5 Minuten</string>
     <string name="settings_autolock_15m">Nach 15 Minuten</string>
     <string name="settings_autolock_1h">Nach 1 Stunde</string>
+    <string name="settings_autolock_until_locked">Bis ich manuell sperre</string>
+    <string name="settings_autolock_until_needs_notifications">Benötigt Benachrichtigungen. Erlaube die Benachrichtigungen von VaultPony, um diese Option zu nutzen.</string>
+    <string name="autolock_until_confirm_title">Tresore entsperrt lassen?</string>
+    <string name="autolock_until_confirm_message">Der Schlüssel des Tresors bleibt im Speicher, und andere Apps können über die Dateien-App im Tresor lesen und schreiben, bis du ihn über die Benachrichtigung, die Kachel oder die App sperrst. Auch ein Neustart des Telefons oder das Schließen von VaultPony sperrt ihn.</string>
+    <string name="autolock_until_confirm_keep">Entsperrt lassen</string>
+    <string name="settings_vault_list_title">Tresorliste</string>
+    <string name="settings_vault_list_show">Namen anzeigen</string>
+    <string name="settings_vault_list_hide">Namen verbergen</string>
+    <string name="settings_vault_list_none">Nicht behalten</string>
+    <string name="settings_vault_list_hide_note">Die Liste zeigt Tresor 1, Tresor 2 und so weiter. Der gespeicherte Verweis auf jede Datei hält weiterhin fest, wo sie liegt, weil VaultPony ihn braucht, um die Datei erneut zu öffnen.</string>
+    <string name="vault_list_remove_title">Alle Tresore aus der Liste entfernen?</string>
+    <string name="vault_list_remove_message">Die Tresordateien selbst bleiben unberührt. Gespeicherte biometrische Entsperrungen für sie werden ebenfalls entfernt.</string>
+    <string name="vault_list_remove">Entfernen</string>
 
     <string name="settings_pony_header">Weitere Pony-Apps</string>
     <string name="pony_pgpony_subtitle">OpenPGP-Verschlüsselung</string>
@@ -75,10 +86,14 @@
     <string name="home_opened_relative">geöffnet %1$s</string>
     <string name="home_recently">kürzlich</string>
     <string name="home_forget">Vergessen</string>
+    <string name="home_vault_numbered">Tresor %1$d</string>
 
     <string name="viewer_binary">Binärdatei (%1$s). Exportiere sie, um sie woanders zu öffnen.</string>
     <string name="viewer_too_big">Datei ist %1$s. Zu groß für die Vorschau in der App. Exportiere sie stattdessen.</string>
     <string name="viewer_read_error">Diese Datei konnte nicht gelesen werden: %1$s</string>
+    <string name="viewer_cant_play">Diese Datei kann nicht abgespielt werden.</string>
+    <string name="media_play">Abspielen</string>
+    <string name="media_pause">Pause</string>
 
     <string name="common_done">Fertig</string>
     <string name="common_op_failed">Vorgang fehlgeschlagen</string>
@@ -111,7 +126,14 @@
     <string name="change_pw_working">Header wird neu verschlüsselt…</string>
     <string name="change_pw_success">Passwort geändert. Verwende ab jetzt dein neues Passwort.</string>
     <string name="change_pw_error">Passwort konnte nicht geändert werden.</string>
-    <string name="change_pw_keyfile_note">Mit Schlüsseldateien geschützte Tresore können hier noch nicht geändert werden. Nutze die CLI.</string>
+    <string name="change_pw_current_keyfiles">Aktuelle Schlüsseldateien</string>
+    <string name="change_pw_new_keyfiles">Neue Schlüsseldateien</string>
+    <string name="change_pw_keyfiles_none">Keine</string>
+    <plurals name="change_pw_keyfiles_selected">
+        <item quantity="one">%d ausgewählt</item>
+        <item quantity="other">%d ausgewählt</item>
+    </plurals>
+    <string name="change_pw_keyfiles_note">Um weiterhin dieselben Schlüsseldateien zu verwenden, füge sie unter „Neue Schlüsseldateien“ erneut hinzu. Lass „Neue Schlüsseldateien“ leer, um keine Schlüsseldateien mehr zu verwenden.</string>
 
     <string name="unlock_title">Tresor entsperren</string>
     <string name="unlock_subtitle_none">Einen verschlüsselten Container öffnen oder erstellen</string>
@@ -185,6 +207,43 @@
     <string name="browser_err_mkdir">Ordner konnte nicht erstellt werden</string>
     <string name="browser_err_rename">Umbenennen fehlgeschlagen</string>
     <string name="browser_err_delete">Löschen fehlgeschlagen</string>
+    <string name="browser_more_options">Weitere Optionen</string>
+    <string name="browser_view_list">Liste</string>
+    <string name="browser_view_grid">Raster</string>
+    <string name="browser_sort_by">Sortieren nach</string>
+    <string name="browser_sort_name">Name</string>
+    <string name="browser_sort_size">Größe</string>
+    <string name="browser_sort_date">Änderungsdatum</string>
+    <string name="browser_sort_ascending">Aufsteigend</string>
+    <string name="browser_sort_descending">Absteigend</string>
+    <string name="browser_search">Suchen</string>
+    <string name="browser_search_this_folder">Dieser Ordner</string>
+    <string name="browser_search_whole_vault">Ganzer Tresor</string>
+    <string name="browser_search_no_matches">Keine Treffer</string>
+    <string name="browser_searching">Suche läuft…</string>
+    <plurals name="browser_selected">
+        <item quantity="one">%d ausgewählt</item>
+        <item quantity="other">%d ausgewählt</item>
+    </plurals>
+    <string name="browser_select_all">Alle auswählen</string>
+    <string name="browser_export">Exportieren</string>
+    <string name="browser_move">Verschieben</string>
+    <plurals name="browser_delete_items_title">
+        <item quantity="one">%d Element löschen?</item>
+        <item quantity="other">%d Elemente löschen?</item>
+    </plurals>
+    <string name="browser_delete_items_message">Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="browser_move_to">Verschieben nach</string>
+    <string name="browser_move_here">Hierher verschieben</string>
+    <string name="browser_err_move">Verschieben fehlgeschlagen</string>
+    <string name="share_target_label">In VaultPony speichern</string>
+    <string name="share_unlock_first">Entsperre einen Tresor, um diese Dateien zu speichern.</string>
+    <string name="share_choose_folder">Ordner wählen</string>
+    <string name="share_save_here">Hier speichern</string>
+    <plurals name="share_files_count">
+        <item quantity="one">%d Datei zum Speichern</item>
+        <item quantity="other">%d Dateien zum Speichern</item>
+    </plurals>
 
     <!-- Browser: volume facts (2.0.0) -->
     <string name="browser_label_hidden">Verstecktes Volume</string>
@@ -245,17 +304,15 @@
     <string name="transfer_err_write">%1$s konnte nicht geschrieben werden</string>
 
     <!-- Argon2id (1.1.0) -->
-    <string name="unlock_kdf_button">Schlüsselableitung</string>
-    <string name="unlock_kdf_label">Schlüsselableitung (KDF)</string>
     <string name="kdf_auto">Automatisch</string>
     <string name="kdf_pbkdf2">PBKDF2</string>
-    <string name="kdf_argon2id">Argon2id</string>
-    <string name="unlock_kdf_note">Automatisch probiert jede KDF, wie VeraCrypt. Wenn du weißt, welche dein Tresor nutzt, entsperrt er mit dieser Auswahl schneller.</string>
+    <string name="unlock_hash_label">Hash</string>
+    <string name="unlock_hash_note">Automatisch probiert jeden Hash, wie VeraCrypt. Wenn du weißt, welchen Hash dein Tresor nutzt, entsperrt er mit dieser Auswahl schneller.</string>
     <string name="unlock_cancel">Abbrechen</string>
     <string name="unlock_memory_warning">Argon2id braucht bei dieser PIM etwa %1$d MB Speicher, auf diesem Gerät sind etwa %2$d MB frei. Das Entsperren kann fehlschlagen.</string>
     <string name="unlock_memory_try">Trotzdem versuchen</string>
     <string name="unlock_memory_pbkdf2">Argon2id überspringen</string>
-    <string name="error_kdf_memory">Nicht genug freier Speicher für Argon2id (%1$d MB nötig). Schließe andere Apps und versuche es erneut, oder wähle PBKDF2, falls dieser Tresor kein Argon2id nutzt.</string>
+    <string name="error_kdf_memory_hash">Nicht genug freier Speicher für Argon2id (%1$d MB nötig). Schließe andere Apps und versuche es erneut. Falls dieser Tresor kein Argon2id nutzt, wähle seinen Hash unter „Hash“ auf dem Entsperrbildschirm.</string>
     <string name="error_short_password_pim">Eine PIM unter %1$d erfordert ein Passwort mit mindestens %2$d Zeichen.</string>
     <string name="create_argon2_note">Argon2id ist speicherintensiv: Zum Öffnen dieses Tresors werden etwa 416 MB freier Speicher benötigt, und es dauert einige Sekunden. VeraCrypt auf dem Desktop öffnet ihn ab Version 1.26.29.</string>
     <string name="change_pw_kdf_label">Schlüsselableitung (KDF)</string>
@@ -274,6 +331,7 @@
     <string name="err_read_only">Dieser Tresor ist schreibgeschützt.</string>
     <string name="err_vault_full">Der Tresor ist voll.</string>
     <string name="err_vault_generic">Im Tresor ist etwas schiefgelaufen.</string>
+    <string name="err_empty_keyfile">Eine Schlüsseldatei ist leer. VeraCrypt akzeptiert keine leeren Schlüsseldateien.</string>
 
     <!-- Lock controls and copy notifications (2.0.0 rc2) -->
     <string name="notif_channel_unlocked">Entsperrte Tresore</string>

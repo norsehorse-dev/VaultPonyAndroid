@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -39,20 +39,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.norsehorse.vaultpony.AppPrefs
 import dev.norsehorse.vaultpony.R
+import dev.norsehorse.vaultpony.VaultListMode
 import dev.norsehorse.vaultpony.VaultRef
 import dev.norsehorse.vaultpony.VaultStore
 import dev.norsehorse.vaultpony.ui.components.SectionLabel
 
+/** [shareNote]: shown at the top while files shared from another app wait
+ *  for a vault to be unlocked (plan §5.1). */
 @Composable
 fun HomeScreen(
     onOpenVault: (Uri) -> Unit,
     onPickContainer: () -> Unit,
     onCreateNew: () -> Unit,
     onSettings: () -> Unit,
+    shareNote: String? = null,
 ) {
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
-    val rememberOn = AppPrefs.rememberVaults(context)
+    val mode = AppPrefs.vaultListMode(context)
+    val rememberOn = mode != VaultListMode.NONE
     val vaults = remember(refresh) { if (rememberOn) VaultStore.list(context) else emptyList() }
 
     Column(Modifier.fillMaxSize()) {
@@ -74,11 +79,27 @@ fun HomeScreen(
         }
 
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            if (shareNote != null) {
+                item {
+                    Text(
+                        shareNote,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    )
+                }
+            }
             if (rememberOn && vaults.isNotEmpty()) {
                 item { SectionLabel(stringResource(R.string.home_your_vaults), Modifier.padding(top = 8.dp, bottom = 2.dp)) }
-                items(vaults, key = { it.uri }) { ref ->
+                itemsIndexed(vaults, key = { _, ref -> ref.uri }) { index, ref ->
+                    // "Hide names" stores none: "Vault 1", "Vault 2"... in
+                    // list order. An entry saved under it keeps no name after
+                    // switching back to "Show names" until it is opened again.
+                    val numbered = stringResource(R.string.home_vault_numbered, index + 1)
+                    val title = if (mode == VaultListMode.HIDE) numbered else ref.name.ifBlank { numbered }
                     VaultCard(
                         ref = ref,
+                        title = title,
                         onOpen = { onOpenVault(Uri.parse(ref.uri)) },
                         onForget = {
                             VaultStore.remove(context, ref.uri)
@@ -124,7 +145,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun VaultCard(ref: VaultRef, onOpen: () -> Unit, onForget: () -> Unit) {
+private fun VaultCard(ref: VaultRef, title: String, onOpen: () -> Unit, onForget: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     Row(
         Modifier
@@ -147,7 +168,7 @@ private fun VaultCard(ref: VaultRef, onOpen: () -> Unit, onForget: () -> Unit) {
         }
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(ref.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1)
             val opened = if (ref.lastOpened > 0) relative(ref.lastOpened)
             else stringResource(R.string.home_recently)
             Text(

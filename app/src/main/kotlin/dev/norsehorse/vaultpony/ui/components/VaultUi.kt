@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.norsehorse.vaultpony.MediaKinds
 import dev.norsehorse.vaultpony.ui.theme.MonoLabel
 
 enum class ChipTone { Neutral, Accent, Hidden }
@@ -93,9 +96,13 @@ fun VaultSeal(modifier: Modifier = Modifier) {
 fun fileIcon(name: String, isDir: Boolean): ImageVector {
     if (isDir) return Icons.Filled.Folder
     return when (name.substringAfterLast('.', "").lowercase()) {
-        "png", "jpg", "jpeg", "gif", "webp", "bmp" -> Icons.Filled.Image
+        "png", "jpg", "jpeg", "gif", "webp", "bmp", "heic", "heif" -> Icons.Filled.Image
         "txt", "md", "log", "json", "xml", "csv", "ini", "cfg" -> Icons.Filled.Description
         "pdf" -> Icons.Filled.PictureAsPdf
-        else -> Icons.Filled.InsertDriveFile
+        else -> when (MediaKinds.mimeOf(name)?.substringBefore('/')) {
+            "video" -> Icons.Filled.Movie
+            "audio" -> Icons.Filled.MusicNote
+            else -> Icons.Filled.InsertDriveFile
+        }
     }
 }

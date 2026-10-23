@@ -22,6 +22,7 @@ import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.TransferJobs
 import dev.norsehorse.vaultpony.AppPrefs
 import dev.norsehorse.vaultpony.SessionRegistry
+import dev.norsehorse.vaultpony.ShareRequest
 import dev.norsehorse.vaultpony.VaultRepository
 import dev.norsehorse.vaultpony.VaultStore
 import dev.norsehorse.vaultpony.ui.theme.VaultPonyTheme
@@ -42,12 +43,17 @@ private sealed interface Screen {
 // after creating we return the user to the slide after it so they can finish.
 private const val ONBOARDING_CREATE_SLIDE = 2
 
-/** App shell: home → unlock → browse, plus create and settings. */
+/** App shell: home → unlock → browse, plus create and settings. With a
+ *  [share] (plan §5.1): straight to a folder picker in the unlocked vault, or
+ *  home with "Unlock a vault to save these files." and then the picker in the
+ *  vault that gets unlocked; [onShareFinished] when it is done or cancelled. */
 @Composable
 fun VaultPonyRoot(
     pickedContainer: Uri?,
     onPickContainer: () -> Unit,
     onContainerConsumed: () -> Unit,
+    share: ShareRequest? = null,
+    onShareFinished: () -> Unit = {},
 ) {
     val context = LocalContext.current
     // The open vault's registry id survives activity recreation (rotation);
@@ -60,9 +66,15 @@ fun VaultPonyRoot(
     }
     var screen by remember {
         mutableStateOf<Screen>(
-            if (AppPrefs.onboardingDone(context)) Screen.Home else Screen.Onboarding(),
+            if (AppPrefs.onboardingDone(context) || share != null) Screen.Home else Screen.Onboarding(),
         )
     }
+
+    // Share into a vault. The vault unlocked for it (or null: the most
+    // recently unlocked one), and whether its import has started. Saveable,
+    // so a rotation mid-copy keeps showing the copy.
+    var shareVolumeId by rememberSaveable { mutableStateOf<String?>(null) }
+    var shareStarted by rememberSaveable { mutableStateOf(false) }
 
     // A container opened via the SAF picker or an intent goes straight to
     // unlock; consume it so re-opening the same file routes again.
@@ -94,14 +106,34 @@ fun VaultPonyRoot(
     // so a session locked while backgrounded never draws a frame, even before
     // the effect above clears it.
     val visibleSession = session?.takeIf { SessionRegistry.isOpen(it) }
+    // The vault a share goes into: the one unlocked for it, else the most
+    // recently unlocked one. Re-read every recomposition, so a lock drops it.
+    val shareSession = if (share == null) {
+        null
+    } else {
+        shareVolumeId?.let { SessionRegistry.get(it) }
+            ?: SessionRegistry.ids().lastOrNull()?.let { SessionRegistry.get(it) }
+    }
     // A batch summary whose vault isn't on screen any more (a Lock from the
     // notification or tile stopped the batch, or the vault auto-locked after
     // it ended): show it wherever the user is. The browser shows its own
     // session's batch itself.
     val transferState by TransferJobs.state.collectAsState()
+    val onScreen = if (share != null) shareSession else visibleSession
     val orphanSummary = (transferState as? TransferJobs.State.Done)
-        ?.takeIf { TransferJobs.owner !== visibleSession }
+        ?.takeIf { TransferJobs.owner !== onScreen }
         ?.result
+
+    // A share is over once its import has settled and its summary was
+    // closed (or nothing needed one): back to the app that shared.
+    val copying by TransferJobs.active.collectAsState()
+    LaunchedEffect(share, shareStarted, transferState, copying) {
+        if (share != null && shareStarted && transferState == TransferJobs.State.Idle && !copying) {
+            shareStarted = false
+            shareVolumeId = null
+            onShareFinished()
+        }
+    }
 
     VaultPonyTheme {
         if (orphanSummary != null) {
@@ -115,7 +147,18 @@ fun VaultPonyRoot(
         Scaffold { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 val s = visibleSession
-                if (s != null) {
+                if (share != null && shareSession != null) {
+                    ShareSaveScreen(
+                        session = shareSession,
+                        share = share,
+                        started = shareStarted,
+                        onStarted = { shareStarted = true },
+                        onCancel = {
+                            shareVolumeId = null
+                            onShareFinished()
+                        },
+                    )
+                } else if (s != null && share == null) {
                     BrowserScreen(
                         session = s,
                         onLock = {
@@ -146,6 +189,7 @@ fun VaultPonyRoot(
                             onPickContainer = onPickContainer,
                             onCreateNew = { screen = Screen.Create() },
                             onSettings = { screen = Screen.Settings },
+                            shareNote = if (share != null) stringResource(R.string.share_unlock_first) else null,
                         )
                         Screen.Settings -> SettingsScreen(
                             onBack = { screen = Screen.Home },
@@ -207,11 +251,15 @@ fun VaultPonyRoot(
                                 VaultStore.add(context, sc.uri)
                                 // An unlock that finished in the background past
                                 // the auto-lock deadline was locked on arrival.
-                                if (SessionRegistry.isOpen(unlocked)) {
+                                if (!SessionRegistry.isOpen(unlocked)) {
+                                    screen = Screen.Home
+                                } else if (share != null) {
+                                    // Saving a share: its folder picker, not the browser.
+                                    shareVolumeId = VaultRepository.volumeId(sc.uri)
+                                    screen = Screen.Home
+                                } else {
                                     openVolumeId = VaultRepository.volumeId(sc.uri)
                                     session = unlocked
-                                } else {
-                                    screen = Screen.Home
                                 }
                             },
                             onBack = { screen = Screen.Home },

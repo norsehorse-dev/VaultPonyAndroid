@@ -54,6 +54,27 @@
             </intent-filter>
         </activity>
 
+        <!-- Share into a vault (2.0.0 plan §5.1): "Save to VaultPony" in the
+             share sheet. An alias of MainActivity, so the share is handled
+             in the sharing app's task by the very activity that received the
+             shared files' read grant. No new permission. -->
+        <activity-alias
+            android:name=".ShareTarget"
+            android:targetActivity=".MainActivity"
+            android:label="@string/share_target_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Unlocked volumes appear system-wide in Files (doc §8), writable
              since 2.0.0 (plan §4.1). -->
         <provider

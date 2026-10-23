@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -44,6 +43,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import dev.norsehorse.vaultpony.AppPrefs
 import dev.norsehorse.vaultpony.BiometricUnlock
 import dev.norsehorse.vaultpony.MemoryCheck
 import dev.norsehorse.vaultpony.R
@@ -53,7 +53,9 @@ import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.i18n.findActivity
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.UnlockProgress
+import dev.norsehorse.vaultpony.VaultListMode
 import dev.norsehorse.vaultpony.VaultRepository
+import dev.norsehorse.vaultpony.VaultStore
 import dev.norsehorse.vaultpony.ui.components.VaultSeal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,6 +64,8 @@ import uniffi.vault_ffi.KdfFilter
 import uniffi.vault_ffi.UnlockCancel
 import uniffi.vault_ffi.VaultException
 import uniffi.vault_ffi.VaultSession
+import uniffi.vault_ffi.hashChoices
+import uniffi.vault_ffi.kdfFilterMayUseArgon2
 
 /** VeraCrypt only mixes the first 1 MiB of each keyfile (the core caps this
  *  too); read no more than that so a giant file can't balloon the process. */
@@ -84,6 +88,9 @@ fun UnlockScreen(
 
     val volumeId = container?.let { VaultRepository.volumeId(it) }
     val canBio = remember { BiometricUnlock.canUse(context) }
+    // Under "Don't keep" a biometric unlock would be removed at the next
+    // lock, so it isn't offered (plan §5.4).
+    val keepsList = remember { AppPrefs.vaultListMode(context) != VaultListMode.NONE }
     val unlockFailed = stringResource(R.string.unlock_failed)
 
     var passphrase by remember { mutableStateOf("") }
@@ -101,10 +108,15 @@ fun UnlockScreen(
     var busy by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf<UnlockProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    // Which KDFs to try (Argon2id support, VeraCrypt 1.26.29+). Auto matches
-    // VeraCrypt; narrowing skips the other family's cost.
-    var kdf by remember { mutableStateOf(KdfFilter.AUTO) }
-    var showKdf by remember { mutableStateOf(false) }
+    // Which hash to try (D16, D21): Auto (every hash, like VeraCrypt), one
+    // PBKDF2 hash, or Argon2id. Starts on the hash remembered for this vault,
+    // which is only ever one the user picked by hand. [hashPicked]: the
+    // current value came from the menu, so a successful unlock remembers it
+    // (or, for Auto, forgets the remembered one).
+    var kdf by remember(container) {
+        mutableStateOf(container?.let { VaultStore.rememberedHash(context, it) } ?: KdfFilter.AUTO)
+    }
+    var hashPicked by remember(container) { mutableStateOf(false) }
     var cancelHandle by remember { mutableStateOf<UnlockCancel?>(null) }
     var memoryWarning by remember { mutableStateOf<MemoryCheck?>(null) }
 
@@ -132,8 +144,9 @@ fun UnlockScreen(
         val protect = protectHidden
         val pimV = pim.toUIntOrNull() ?: 0u
         val kf = keyfiles
-        val enrollNow = !protect &&
+        val enrollNow = !protect && keepsList &&
             enrollBio && kf.isEmpty() && activity != null && volumeId != null
+        val rememberHash = hashPicked
         val handle = UnlockCancel()
         cancelHandle = handle
         memoryWarning = null
@@ -166,6 +179,12 @@ fun UnlockScreen(
                 hiddenPassphrase = ""
                 keyfiles.forEach { it.fill(0) }
                 keyfiles = emptyList()
+                // Only a hash picked by hand, only after it opened the vault,
+                // and never under "Don't keep" (VaultStore checks, D21).
+                if (rememberHash) {
+                    VaultStore.add(context, uri)
+                    VaultStore.setHash(context, uri, kdfChoice)
+                }
                 if (enrollNow) {
                     // Remember which KDF family opened it, so the biometric
                     // unlock goes straight there next time.
@@ -386,15 +405,18 @@ fun UnlockScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            if (!showKdf) {
-                TextButton(onClick = { showKdf = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.unlock_kdf_button))
-                }
-            } else {
-                KdfChoice(selected = kdf, onSelect = { kdf = it })
-            }
+            HashMenu(
+                selected = kdf,
+                onSelect = {
+                    kdf = it
+                    hashPicked = true
+                    // Picking Auto forgets a remembered hash right away; a
+                    // single hash is only remembered once it opens the vault.
+                    if (it == KdfFilter.AUTO) VaultStore.setHash(context, container, null)
+                },
+            )
 
-            if (canBio && activity != null && volumeId != null && !enrolled && keyfiles.isEmpty() && !protectHidden) {
+            if (canBio && keepsList && activity != null && volumeId != null && !enrolled && keyfiles.isEmpty() && !protectHidden) {
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -456,8 +478,9 @@ fun UnlockScreen(
                     }
                     Button(
                         onClick = {
+                            // Not a hand pick: nothing is remembered from it.
                             kdf = KdfFilter.PBKDF2_ONLY
-                            showKdf = true
+                            hashPicked = false
                             startUnlock(KdfFilter.PBKDF2_ONLY)
                         },
                         modifier = Modifier.weight(1f),
@@ -472,7 +495,7 @@ fun UnlockScreen(
                         // Argon2id needs hundreds of MiB for a moment. Check
                         // before starting rather than let the system kill the
                         // app mid-unlock.
-                        val check = if (kdf != KdfFilter.PBKDF2_ONLY) repo.argon2MemoryCheck(pimV) else null
+                        val check = if (mayUseArgon2(kdf)) repo.argon2MemoryCheck(pimV) else null
                         if (check != null && !check.enough) {
                             memoryWarning = check
                         } else {
@@ -509,31 +532,38 @@ fun UnlockScreen(
     }
 }
 
-/** The unlock screen's KDF picker: Auto (like VeraCrypt), PBKDF2 only, or
- *  Argon2id only, with a one-line explanation. */
+/** Whether an unlock under [filter] may run Argon2id, so free memory is
+ *  checked first. Errs on the side of checking. */
+private fun mayUseArgon2(filter: KdfFilter): Boolean =
+    runCatching { kdfFilterMayUseArgon2(filter) }.getOrDefault(filter != KdfFilter.PBKDF2_ONLY)
+
+/** The unlock screen's "Hash" menu (D16, D21): the core's list, Auto first,
+ *  then VeraCrypt's PRF order and Argon2id. Only "Auto" is translated; the
+ *  hash names are the same in every language. PBKDF2 only, which "Skip
+ *  Argon2id" sets, isn't in the menu but still reads correctly. */
 @Composable
-private fun KdfChoice(selected: KdfFilter, onSelect: (KdfFilter) -> Unit) {
+private fun HashMenu(selected: KdfFilter, onSelect: (KdfFilter) -> Unit) {
+    val choices = remember { runCatching { hashChoices() }.getOrDefault(emptyList()) }
+    val labels = remember(choices) { choices.associate { it.filter to it.label } }
+    val options = remember(choices) { choices.map { it.filter }.ifEmpty { listOf(KdfFilter.AUTO) } }
+    val auto = stringResource(R.string.kdf_auto)
+    val pbkdf2 = stringResource(R.string.kdf_pbkdf2)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            stringResource(R.string.unlock_kdf_label),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        ChoiceDropdown(
+            label = stringResource(R.string.unlock_hash_label),
+            options = options,
+            selected = selected,
+            display = { f ->
+                when (f) {
+                    KdfFilter.AUTO -> auto
+                    KdfFilter.PBKDF2_ONLY -> pbkdf2
+                    else -> labels[f] ?: f.name
+                }
+            },
+            onSelect = onSelect,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(
-                KdfFilter.AUTO to R.string.kdf_auto,
-                KdfFilter.PBKDF2_ONLY to R.string.kdf_pbkdf2,
-                KdfFilter.ARGON2ID_ONLY to R.string.kdf_argon2id,
-            ).forEach { (value, label) ->
-                FilterChip(
-                    selected = selected == value,
-                    onClick = { onSelect(value) },
-                    label = { Text(stringResource(label)) },
-                )
-            }
-        }
         Text(
-            stringResource(R.string.unlock_kdf_note),
+            stringResource(R.string.unlock_hash_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

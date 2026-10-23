@@ -1,6 +1,6 @@
 # VaultPony 2.0.0 Plan
 
-Rev 8, 2026-10-22. Scope decided (section 0). Section 10 holds what is still open; section 11
+Rev 9, 2026-10-22. Scope decided (section 0). Section 10 holds what is still open; section 11
 covers issues #4 to #6. The rc3 Phase 0 spike (desk research) is in
 `VaultPony_2.0.0_rc3_Spike.md`; section 4.2 carries its recommendation.
 
@@ -63,6 +63,14 @@ core with Argon2id.
 - D20 (2026-10-22, rc3). "Show in Files" is a checkbox on the unlock screen, off by
   default, per unlock. rc3 leaves out thumbnails, Recents and Files search for vault items,
   and copy-mode vaults get no Files access.
+- D21 (2026-10-22, rc4, issues #5 and #6). The unlock screen's Key derivation buttons become
+  one "Hash" menu with VeraCrypt's list (Auto, SHA-512, Whirlpool, SHA-256, BLAKE2s-256,
+  Streebog, Argon2id). Only a hash the user picks by hand is remembered per vault, and never
+  in no-trace or "Don't keep" mode, because a remembered hash found by opening a hidden
+  volume would not match the outer one.
+- D22 (2026-10-22, rc4). Media playback adds no dependency: Android uses the platform
+  MediaPlayer with a MediaDataSource over the vault, iOS AVPlayer with a resource loader.
+  Desktop gets no in-app player; its mount opens files in the system player (Q2 closed).
 
 ---
 
@@ -445,7 +453,7 @@ Q1. iOS File Provider keys. Answered (D18): neither original option.
 The extension can't run Argon2id in its 20 MB, so the app pushes keys and the container fd
 over XPC (section 4.2).
 
-Q2. Desktop extras: in-app media player, and a tray/menu "Lock all"?
+Q2. Desktop extras. Answered: tray "Lock all" in rc2 (D13); no in-app player (D22).
 
 Q3. PIM fields stay out of autofill. Confirm.
 

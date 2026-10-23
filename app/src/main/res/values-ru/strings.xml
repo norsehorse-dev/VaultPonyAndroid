@@ -7,8 +7,6 @@
     <string name="settings_security_header">Безопасность</string>
     <string name="settings_language_header">Язык</string>
 
-    <string name="settings_remember_title">Запоминать мои хранилища</string>
-    <string name="settings_remember_subtitle">Показывает на главном экране список открытых хранилищ. Их расположение сохраняется на этом устройстве.</string>
     <string name="settings_secure_title">Скрывать содержимое экрана</string>
     <string name="settings_secure_subtitle">Блокирует снимки экрана и скрывает приложение в списке недавних.</string>
     <string name="settings_autolock_title">Автоблокировка</string>
@@ -20,6 +18,19 @@
     <string name="settings_autolock_5m">Через 5 минут</string>
     <string name="settings_autolock_15m">Через 15 минут</string>
     <string name="settings_autolock_1h">Через 1 час</string>
+    <string name="settings_autolock_until_locked">Пока не заблокирую</string>
+    <string name="settings_autolock_until_needs_notifications">Нужны уведомления. Разрешите уведомления VaultPony, чтобы использовать этот вариант.</string>
+    <string name="autolock_until_confirm_title">Оставлять хранилища разблокированными?</string>
+    <string name="autolock_until_confirm_message">Ключ хранилища остаётся в памяти, и другие приложения могут читать и записывать файлы в хранилище через приложение «Файлы», пока вы не заблокируете его из уведомления, плитки или приложения. Хранилище также блокируется при перезапуске телефона или закрытии VaultPony.</string>
+    <string name="autolock_until_confirm_keep">Не блокировать</string>
+    <string name="settings_vault_list_title">Список хранилищ</string>
+    <string name="settings_vault_list_show">Показывать имена</string>
+    <string name="settings_vault_list_hide">Скрывать имена</string>
+    <string name="settings_vault_list_none">Не хранить</string>
+    <string name="settings_vault_list_hide_note">В списке отображаются «Хранилище 1», «Хранилище 2» и так далее. Сохранённая ссылка на каждый файл по-прежнему указывает его расположение, потому что она нужна VaultPony, чтобы снова открыть файл.</string>
+    <string name="vault_list_remove_title">Удалить все хранилища из списка?</string>
+    <string name="vault_list_remove_message">Сами файлы хранилищ не затрагиваются. Сохранённая для них биометрическая разблокировка тоже удаляется.</string>
+    <string name="vault_list_remove">Удалить</string>
 
     <string name="settings_pony_header">Другие приложения pony</string>
     <string name="pony_pgpony_subtitle">Шифрование OpenPGP</string>
@@ -75,10 +86,14 @@
     <string name="home_opened_relative">открыто %1$s</string>
     <string name="home_recently">недавно</string>
     <string name="home_forget">Забыть</string>
+    <string name="home_vault_numbered">Хранилище %1$d</string>
 
     <string name="viewer_binary">Двоичный файл (%1$s). Экспортируйте его, чтобы открыть в другом приложении.</string>
     <string name="viewer_too_big">Размер файла %1$s. Слишком большой для предпросмотра в приложении. Экспортируйте его.</string>
     <string name="viewer_read_error">Не удалось прочитать этот файл: %1$s</string>
+    <string name="viewer_cant_play">Не удаётся воспроизвести этот файл.</string>
+    <string name="media_play">Воспроизвести</string>
+    <string name="media_pause">Пауза</string>
 
     <string name="common_done">Готово</string>
     <string name="common_op_failed">Не удалось выполнить операцию</string>
@@ -111,7 +126,16 @@
     <string name="change_pw_working">Перешифрование заголовка…</string>
     <string name="change_pw_success">Пароль изменён. Теперь используйте новый пароль.</string>
     <string name="change_pw_error">Не удалось сменить пароль.</string>
-    <string name="change_pw_keyfile_note">Хранилища, защищённые файлами-ключами, пока нельзя изменить здесь. Используйте CLI.</string>
+    <string name="change_pw_current_keyfiles">Текущие файлы-ключи</string>
+    <string name="change_pw_new_keyfiles">Новые файлы-ключи</string>
+    <string name="change_pw_keyfiles_none">Нет</string>
+    <plurals name="change_pw_keyfiles_selected">
+        <item quantity="one">Выбрано: %d</item>
+        <item quantity="few">Выбрано: %d</item>
+        <item quantity="many">Выбрано: %d</item>
+        <item quantity="other">Выбрано: %d</item>
+    </plurals>
+    <string name="change_pw_keyfiles_note">Чтобы продолжить использовать те же файлы-ключи, добавьте их снова в разделе «Новые файлы-ключи». Оставьте раздел «Новые файлы-ключи» пустым, чтобы перестать использовать файлы-ключи.</string>
 
     <string name="unlock_title">Открыть хранилище</string>
     <string name="unlock_subtitle_none">Откройте или создайте зашифрованный контейнер</string>
@@ -185,6 +209,49 @@
     <string name="browser_err_mkdir">Не удалось создать папку</string>
     <string name="browser_err_rename">Не удалось переименовать</string>
     <string name="browser_err_delete">Не удалось удалить</string>
+    <string name="browser_more_options">Другие параметры</string>
+    <string name="browser_view_list">Список</string>
+    <string name="browser_view_grid">Сетка</string>
+    <string name="browser_sort_by">Сортировка</string>
+    <string name="browser_sort_name">Имя</string>
+    <string name="browser_sort_size">Размер</string>
+    <string name="browser_sort_date">Дата изменения</string>
+    <string name="browser_sort_ascending">По возрастанию</string>
+    <string name="browser_sort_descending">По убыванию</string>
+    <string name="browser_search">Поиск</string>
+    <string name="browser_search_this_folder">Эта папка</string>
+    <string name="browser_search_whole_vault">Всё хранилище</string>
+    <string name="browser_search_no_matches">Ничего не найдено</string>
+    <string name="browser_searching">Поиск…</string>
+    <plurals name="browser_selected">
+        <item quantity="one">Выбрано: %d</item>
+        <item quantity="few">Выбрано: %d</item>
+        <item quantity="many">Выбрано: %d</item>
+        <item quantity="other">Выбрано: %d</item>
+    </plurals>
+    <string name="browser_select_all">Выбрать все</string>
+    <string name="browser_export">Экспорт</string>
+    <string name="browser_move">Переместить</string>
+    <plurals name="browser_delete_items_title">
+        <item quantity="one">Удалить %d элемент?</item>
+        <item quantity="few">Удалить %d элемента?</item>
+        <item quantity="many">Удалить %d элементов?</item>
+        <item quantity="other">Удалить %d элемента?</item>
+    </plurals>
+    <string name="browser_delete_items_message">Это действие нельзя отменить.</string>
+    <string name="browser_move_to">Переместить в</string>
+    <string name="browser_move_here">Переместить сюда</string>
+    <string name="browser_err_move">Не удалось переместить</string>
+    <string name="share_target_label">Сохранить в VaultPony</string>
+    <string name="share_unlock_first">Разблокируйте хранилище, чтобы сохранить эти файлы.</string>
+    <string name="share_choose_folder">Выберите папку</string>
+    <string name="share_save_here">Сохранить здесь</string>
+    <plurals name="share_files_count">
+        <item quantity="one">%d файл для сохранения</item>
+        <item quantity="few">%d файла для сохранения</item>
+        <item quantity="many">%d файлов для сохранения</item>
+        <item quantity="other">%d файла для сохранения</item>
+    </plurals>
 
     <!-- Browser: volume facts (2.0.0) -->
     <string name="browser_label_hidden">Скрытый том</string>
@@ -257,17 +324,15 @@
     <string name="transfer_err_write">Не удалось записать %1$s</string>
 
     <!-- Argon2id (1.1.0) -->
-    <string name="unlock_kdf_button">Формирование ключа</string>
-    <string name="unlock_kdf_label">Формирование ключа (KDF)</string>
     <string name="kdf_auto">Авто</string>
     <string name="kdf_pbkdf2">PBKDF2</string>
-    <string name="kdf_argon2id">Argon2id</string>
-    <string name="unlock_kdf_note">«Авто» пробует все KDF, как VeraCrypt. Если вы знаете, какую использует ваше хранилище, выберите её, и разблокировка пройдёт быстрее.</string>
+    <string name="unlock_hash_label">Хеш</string>
+    <string name="unlock_hash_note">«Авто» пробует все хеши, как VeraCrypt. Если вы знаете, какой хеш использует ваше хранилище, выберите его, и разблокировка пройдёт быстрее.</string>
     <string name="unlock_cancel">Отмена</string>
     <string name="unlock_memory_warning">Argon2id с этим PIM требует около %1$d МБ памяти, а на устройстве свободно около %2$d МБ. Разблокировка может не удаться.</string>
     <string name="unlock_memory_try">Всё равно попробовать</string>
     <string name="unlock_memory_pbkdf2">Пропустить Argon2id</string>
-    <string name="error_kdf_memory">Недостаточно свободной памяти для Argon2id (нужно %1$d МБ). Закройте другие приложения и попробуйте снова или выберите PBKDF2, если это хранилище не использует Argon2id.</string>
+    <string name="error_kdf_memory_hash">Недостаточно свободной памяти для Argon2id (нужно %1$d МБ). Закройте другие приложения и попробуйте снова. Если это хранилище не использует Argon2id, выберите его хеш в поле «Хеш» на экране разблокировки.</string>
     <string name="error_short_password_pim">PIM меньше %1$d требует пароль длиной не менее %2$d символов.</string>
     <string name="create_argon2_note">Argon2id требует много памяти: для открытия этого хранилища нужно около 416 МБ свободной памяти и несколько секунд. VeraCrypt на компьютере открывает его начиная с версии 1.26.29.</string>
     <string name="change_pw_kdf_label">Формирование ключа (KDF)</string>
@@ -286,6 +351,7 @@
     <string name="err_read_only">Это хранилище доступно только для чтения.</string>
     <string name="err_vault_full">Хранилище заполнено.</string>
     <string name="err_vault_generic">В хранилище произошла ошибка.</string>
+    <string name="err_empty_keyfile">Файл-ключ пуст. VeraCrypt не принимает пустые файлы-ключи.</string>
 
     <!-- Lock controls and copy notifications (2.0.0 rc2). -->
     <string name="notif_channel_unlocked">Разблокированные хранилища</string>

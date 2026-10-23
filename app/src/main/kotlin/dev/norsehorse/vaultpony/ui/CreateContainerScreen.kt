@@ -56,26 +56,29 @@ import dev.norsehorse.vaultpony.ui.components.VaultSeal
 import kotlinx.coroutines.launch
 
 /** A labelled dropdown backed by [options]; stable Material3 only (no
- *  experimental menu-anchor APIs). */
+ *  experimental menu-anchor APIs). [display] is what the user sees for an
+ *  option (a scheme's VeraCrypt name, say), while [onSelect] gets the option
+ *  itself. */
 @Composable
-internal fun ChoiceDropdown(
+internal fun <T> ChoiceDropdown(
     label: String,
-    options: List<String>,
-    selected: String,
-    onSelect: (String) -> Unit,
+    options: List<T>,
+    selected: T,
+    display: (T) -> String = { it.toString() },
+    onSelect: (T) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     SectionLabel(label, Modifier.fillMaxWidth())
     Box(Modifier.fillMaxWidth()) {
         OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(selected)
+            Text(display(selected))
             Spacer(Modifier.weight(1f))
             Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { opt ->
                 DropdownMenuItem(
-                    text = { Text(opt) },
+                    text = { Text(display(opt)) },
                     onClick = {
                         onSelect(opt)
                         expanded = false
@@ -85,6 +88,11 @@ internal fun ChoiceDropdown(
         }
     }
 }
+
+/** The name VeraCrypt shows for a core scheme name ("AES(Twofish(Serpent))"
+ *  is "AES-Twofish-Serpent"). For display only (D16). */
+internal fun schemeName(registryName: String): String =
+    runCatching { uniffi.vault_ffi.schemeDisplayName(registryName) }.getOrDefault(registryName)
 
 /** Compact unit selector (MB / GB / TB) for the custom size field. */
 @Composable
@@ -258,7 +266,7 @@ fun CreateContainerScreen(
         VaultSeal()
         Text(stringResource(R.string.home_new_vault_title), style = MaterialTheme.typography.headlineMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            MonoChip(scheme, ChipTone.Accent)
+            MonoChip(schemeName(scheme), ChipTone.Accent)
             MonoChip(hash)
             MonoChip(filesystem)
         }
@@ -331,7 +339,9 @@ fun CreateContainerScreen(
 
         // -- Encryption, hash, and filesystem. All sourced from the core so
         // the picker can never offer something creation would reject.
-        ChoiceDropdown(stringResource(R.string.create_encryption), schemes, scheme) { scheme = it }
+        // VeraCrypt's names ("AES-Twofish-Serpent"); the registry name is
+        // what goes to the core (D16).
+        ChoiceDropdown(stringResource(R.string.create_encryption), schemes, scheme, display = ::schemeName) { scheme = it }
         ChoiceDropdown(stringResource(R.string.create_hash), hashList, hash) { hash = it }
         if (hash == "Argon2id") {
             Text(
