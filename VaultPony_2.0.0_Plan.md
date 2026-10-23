@@ -1,6 +1,6 @@
 # VaultPony 2.0.0 Plan
 
-Rev 7, 2026-10-22. Scope decided (section 0). Section 10 holds what is still open; section 11
+Rev 8, 2026-10-22. Scope decided (section 0). Section 10 holds what is still open; section 11
 covers issues #4 to #6. The rc3 Phase 0 spike (desk research) is in
 `VaultPony_2.0.0_rc3_Spike.md`; section 4.2 carries its recommendation.
 
@@ -230,6 +230,29 @@ spike doc) run as part of the rc3 device test.
   residue the system keeps outside VaultPony's control. "Show in Files" is off while
   no-trace mode is on, and its setting text says plaintext copies exist while unlocked.
 - iPad drag and drop works against the domain for free once it exists.
+
+rc3 as built (2026-10-22):
+- "Immediately" with Files access: the vault stays unlocked until 2 minutes after the later
+  of leaving the app and the last Files activity (D19's window), at most 1 hour after leaving.
+  The app writes a heartbeat to the gate file while in front, so an app that crashes in front
+  still starts the clock.
+- Gate file (app group): generation counter, last Files activity, when the app left, heartbeat.
+  `flock` per core call; a write flushes and bumps the generation; the other side remounts.
+- Temp names for Files saves never match the app's import temp names, so neither side deletes
+  the other's work in progress. Finished saves are renamed to a `.vpdone` name carrying the
+  target before the swap; a listing finishes any swap a kill interrupted.
+- Item identifiers are AES-GCM encrypted paths under a key minted per unlock; materialized
+  files live under the identifier split into path parts, so a URL maps back without a table.
+- Core: positional I/O, key handoff, `remount`, `replace`, low-memory profile. While building
+  it the FAT power-loss harness (fsck at every cut) found that fatfs wrote directory entries
+  field by field, so a kill mid-entry could cross-link a new file with a live one; fixed in
+  the vendored fatfs, which benefits Android and Desktop as well.
+- Two independent reviews (core and iOS) ran before commit; their fixes are in. Known limits
+  left for the device test and later: a save iOS kills the extension in the middle of (within
+  the 1 second burst window) is lost; locking stores pending saves for at most 10 seconds; a
+  suspended extension can't lock until it runs again; names too long to carry the target in
+  the temp name can lose the edit on a kill mid-swap; very deep vault paths (around 500 bytes)
+  exceed the materialized path limit.
 
 ### 4.3 Lock controls and long operations
 
