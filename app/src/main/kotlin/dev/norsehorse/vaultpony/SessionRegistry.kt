@@ -104,6 +104,9 @@ object SessionRegistry {
     // copying, so an abandoned dialog can't keep a vault open.
     private var batchActive = false
     private var keep: VaultSession? = null
+    // Convert to VeraCrypt (2.0.0 rc5, plan 6.2) copies between two vaults:
+    // the new container is kept open with [keep] (TransferJobs.partner).
+    private var keepPartner: VaultSession? = null
     private var keepUntil = 0L
 
     // A Lock the user asked for while a batch copies into or out of that vault:
@@ -202,7 +205,10 @@ object SessionRegistry {
             untilLocked = false
             lockDeadline = 0L
             backgroundDelay = 0L
-            if (!batchActive) keep = null
+            if (!batchActive) {
+                keep = null
+                keepPartner = null
+            }
             publishStatus()
         }
         _foregrounds.value = _foregrounds.value + 1
@@ -237,16 +243,19 @@ object SessionRegistry {
             batchActive = active
             if (active) {
                 keep = TransferJobs.owner
+                keepPartner = TransferJobs.partner
                 keepUntil = Long.MAX_VALUE
             } else if (inBackground && untilLocked) {
                 // No deadline to wait for; a later fallback to 1 hour counts
                 // from when the app left, like every other vault.
                 keep = null
+                keepPartner = null
             } else if (inBackground) {
                 keepUntil = SystemClock.elapsedRealtime() + backgroundDelay
                 schedule = backgroundDelay
             } else {
                 keep = null
+                keepPartner = null
             }
         }
         if (schedule >= 0L) mainHandler.postDelayed(delayedLock, schedule)
@@ -261,15 +270,21 @@ object SessionRegistry {
         if (!inBackground || lockDeadline == 0L) return
         val now = SystemClock.elapsedRealtime()
         if (now < lockDeadline) return
-        val kept = keep?.takeIf { now < keepUntil && sessions.values.any { s -> s === it } }
-        if (kept == null) lockAll() else lockAllExcept(kept)
+        val kept = if (now < keepUntil) {
+            listOfNotNull(keep, keepPartner).filter { k -> sessions.values.any { s -> s === k } }
+        } else {
+            emptyList()
+        }
+        if (kept.isEmpty()) lockAll() else lockAllExcept(kept)
     }
 
-    /** Lock every vault but [kept] (the one a batch is copying with). */
+    /** Lock every vault but [kept] (the one a batch is copying with, and
+     *  for a convert the one it copies into). */
     @Synchronized
-    private fun lockAllExcept(kept: VaultSession) {
-        val gone = sessions.entries.filter { it.value !== kept }.map { it.key to it.value }
+    private fun lockAllExcept(kept: List<VaultSession>) {
+        val gone = sessions.entries.filter { e -> kept.none { it === e.value } }.map { it.key to it.value }
         if (gone.isEmpty()) return
+        CameraCapture.discardFor(gone.map { it.second })
         for ((id, s) in gone) {
             sessions.remove(id)
             providerTokens.remove(id)
@@ -292,9 +307,11 @@ object SessionRegistry {
      */
     fun requestLock(volumeId: String? = null) {
         synchronized(this) {
-            val owner = TransferJobs.owner
-            val ownerId = if (owner == null) null else sessions.entries.firstOrNull { it.value === owner }?.key
-            val hitsBatch = ownerId != null && TransferJobs.busy && (volumeId == null || volumeId == ownerId)
+            // The batch's vault, and for a convert the vault it copies into.
+            val batchIds = listOfNotNull(TransferJobs.owner, TransferJobs.partner)
+                .mapNotNull { b -> sessions.entries.firstOrNull { it.value === b }?.key }
+            val hitsBatch = batchIds.isNotEmpty() && TransferJobs.busy &&
+                (volumeId == null || volumeId in batchIds)
             if (hitsBatch) {
                 if (holding) {
                     // Already stopping that batch; widen the pending lock if asked.
@@ -335,6 +352,7 @@ object SessionRegistry {
     @Synchronized
     fun put(volumeId: String, session: VaultSession, uri: String? = null) {
         sessions.remove(volumeId)?.let {
+            CameraCapture.discardFor(listOf(it))
             it.lock()
             latched.remove(it)
             ThumbnailCache.clear()
@@ -393,6 +411,10 @@ object SessionRegistry {
         return ProviderRoot(token, id, s)
     }
 
+    /** The container URI of the unlocked vault [volumeId], or null. */
+    @Synchronized
+    fun uriOf(volumeId: String): String? = if (volumeId in sessions) uris[volumeId] else null
+
     /** The volume id [session] is registered under, or null once it locked. */
     @Synchronized
     fun idOf(session: VaultSession): String? =
@@ -422,6 +444,9 @@ object SessionRegistry {
         val removed = sessions.remove(volumeId) ?: return
         providerTokens.remove(volumeId)
         if (keep === removed) keep = null
+        if (keepPartner === removed) keepPartner = null
+        // A camera capture going into it loses its temp file first (plan 5.6).
+        CameraCapture.discardFor(listOf(removed))
         // A batch on this vault waiting on a question would wait forever.
         TransferJobs.abandonFor(listOf(removed))
         removed.lock()
@@ -439,10 +464,12 @@ object SessionRegistry {
         }
         TransferJobs.abandonFor(sessions.values.toList())
         val gone = sessions.entries.map { it.key to it.value }
+        CameraCapture.discardFor(gone.map { it.second })
         sessions.values.forEach { it.lock() }
         sessions.clear()
         providerTokens.clear()
         keep = null
+        keepPartner = null
         latched.clear()
         afterLocked(gone)
         notifyRootsChanged()

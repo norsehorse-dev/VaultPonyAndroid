@@ -29,8 +29,8 @@ android {
         // minSdk 26: openProxyFileDescriptor (planning doc §8).
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "2.0.0-rc4"
+        versionCode = 11
+        versionName = "2.0.0-rc5"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
@@ -229,6 +229,15 @@ dependencies {
     // UniFFI-generated Kotlin needs JNA.
     implementation("net.java.dev.jna:jna:5.15.0@aar")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // In-app camera capture straight into the vault (2.0.0 rc5, plan 5.6,
+    // D10). Photos are taken in memory and video goes through a proxy file
+    // descriptor into the vault, so nothing reaches MediaStore or the cache.
+    val cameraX = "1.4.2"
+    implementation("androidx.camera:camera-core:$cameraX")
+    implementation("androidx.camera:camera-camera2:$cameraX")
+    implementation("androidx.camera:camera-lifecycle:$cameraX")
+    implementation("androidx.camera:camera-video:$cameraX")
+    implementation("androidx.camera:camera-view:$cameraX")
     debugImplementation("androidx.compose.ui:ui-tooling")
     // JVM unit tests for the bulk transfer planner (BulkTransfer.kt).
     testImplementation("junit:junit:4.13.2")

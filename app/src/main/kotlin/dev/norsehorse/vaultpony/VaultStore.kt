@@ -9,9 +9,16 @@ import org.json.JSONObject
 import uniffi.vault_ffi.KdfFilter
 
 /** One remembered container: its persisted SAF uri, a display name (empty
- *  under "Hide names"), when it was last opened, and the hash the user picked
- *  by hand on the unlock screen (a [KdfFilter] name), if any. */
-data class VaultRef(val uri: String, val name: String, val lastOpened: Long, val hash: String? = null)
+ *  under "Hide names"), when it was last opened, the hash the user picked
+ *  by hand on the unlock screen (a [KdfFilter] name), if any, and whether the
+ *  user ticked "TrueCrypt mode" by hand for it (2.0.0 rc5, plan 6.2). */
+data class VaultRef(
+    val uri: String,
+    val name: String,
+    val lastOpened: Long,
+    val hash: String? = null,
+    val truecrypt: Boolean = false,
+)
 
 /** The remembered-vaults list (home screen). Written only while the vault
  *  list setting keeps a list; "Don't keep" leaves it empty (plan §5.4). */
@@ -32,6 +39,7 @@ object VaultStore {
                     name = o.optString("name", ""),
                     lastOpened = o.optLong("ts"),
                     hash = if (o.has("hash")) o.optString("hash").takeIf { h -> h.isNotEmpty() } else null,
+                    truecrypt = o.optBoolean("tc", false),
                 )
             }.sortedByDescending { it.lastOpened }
         } catch (e: Exception) {
@@ -39,8 +47,9 @@ object VaultStore {
         }
     }
 
-    /** Remember [uri] as just opened. Keeps a hash remembered for it. Stores
-     *  no display name under "Hide names", nothing at all under "Don't keep". */
+    /** Remember [uri] as just opened. Keeps a hash and the TrueCrypt mode
+     *  remembered for it. Stores no display name under "Hide names", nothing
+     *  at all under "Don't keep". */
     fun add(c: Context, uri: Uri) {
         val mode = AppPrefs.vaultListMode(c)
         if (mode == VaultListMode.NONE) return
@@ -48,7 +57,7 @@ object VaultStore {
         val current = list(c)
         val previous = current.firstOrNull { it.uri == u }
         val name = if (mode == VaultListMode.HIDE) "" else displayName(c, uri)
-        val entry = VaultRef(u, name, System.currentTimeMillis(), previous?.hash)
+        val entry = VaultRef(u, name, System.currentTimeMillis(), previous?.hash, previous?.truecrypt ?: false)
         val next = (listOf(entry) + current.filter { it.uri != u }).take(MAX)
         save(c, next)
     }
@@ -76,6 +85,25 @@ object VaultStore {
         save(c, current.map { if (it.uri == u) it.copy(hash = value) else it })
     }
 
+    /** Whether "TrueCrypt mode" is remembered for [uri] (the unlock screen's
+     *  checkbox starts ticked). Never under "Don't keep". */
+    fun rememberedTrueCrypt(c: Context, uri: Uri): Boolean {
+        if (AppPrefs.vaultListMode(c) == VaultListMode.NONE) return false
+        return list(c).firstOrNull { it.uri == uri.toString() }?.truecrypt ?: false
+    }
+
+    /** Remember "TrueCrypt mode" for [uri] after the user ticked it by hand
+     *  and the unlock succeeded, or forget it ([on] false: unticked). Same
+     *  rules as [setHash]: only for a vault on the list, never under "Don't
+     *  keep" (2.0.0 rc5, plan 6.2). */
+    fun setTrueCrypt(c: Context, uri: Uri, on: Boolean) {
+        if (AppPrefs.vaultListMode(c) == VaultListMode.NONE) return
+        val u = uri.toString()
+        val current = list(c)
+        if (current.none { it.uri == u }) return
+        save(c, current.map { if (it.uri == u) it.copy(truecrypt = on) else it })
+    }
+
     /** "Hide names": drop every stored display name. */
     fun wipeNames(c: Context) {
         val current = list(c)
@@ -85,8 +113,8 @@ object VaultStore {
 
     /** "Don't keep": delete every entry rather than hide it. Each one's
      *  persisted file permission is released and its biometric unlock removed
-     *  (its remembered hash goes with the entry). [keepUris] are containers
-     *  unlocked right now; they lose theirs when they lock. */
+     *  (its remembered hash and TrueCrypt mode go with the entry). [keepUris]
+     *  are containers unlocked right now; they lose theirs when they lock. */
     fun deleteAll(c: Context, keepUris: Set<String> = emptySet()) {
         clear(c)
         releaseGrants(c, keepUris)
@@ -116,6 +144,7 @@ object VaultStore {
         refs.forEach {
             val o = JSONObject().put("uri", it.uri).put("name", it.name).put("ts", it.lastOpened)
             if (it.hash != null) o.put("hash", it.hash)
+            if (it.truecrypt) o.put("tc", true)
             arr.put(o)
         }
         p(c).edit().putString(KEY, arr.toString()).apply()

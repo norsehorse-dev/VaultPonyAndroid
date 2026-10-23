@@ -57,3 +57,9 @@ internal fun ShareSaveScreen(
     )
     if (started) TransferDialogs(transfer, fallbackError = errImport)
 }
+
+/** True when files can be written into [session]: not NTFS, ext4 or
+ *  TrueCrypt (facts.writable), and not latched read-only by hidden-volume
+ *  protection. Share only offers such vaults (2.0.0 rc5). */
+internal fun sessionWritable(session: VaultSession): Boolean =
+    runCatching { session.facts().writable }.getOrDefault(false) && !SessionRegistry.isReadOnlyLatched(session)

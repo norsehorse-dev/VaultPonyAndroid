@@ -350,4 +350,66 @@
     <string name="tile_nothing_unlocked">Nada desbloqueado</string>
     <string name="notif_permission_rationale">VaultPony muestra una notificación con un botón Bloquear mientras una bóveda sigue desbloqueada en segundo plano.</string>
     <string name="notif_permission_not_now">Ahora no</string>
+
+    <!-- TrueCrypt mode at unlock (2.0.0 rc5) -->
+    <string name="unlock_truecrypt">Modo TrueCrypt</string>
+    <string name="unlock_truecrypt_note">Para volúmenes creados con TrueCrypt 6.0 a 7.1a. Se abren como solo lectura.</string>
+    <!-- TrueCrypt and ext4 errors (2.0.0 rc5) -->
+    <string name="err_truecrypt_version">Este volumen se creó con una versión de TrueCrypt anterior a la 6.0, que VaultPony no puede abrir.</string>
+    <string name="err_truecrypt_read_only">Los volúmenes TrueCrypt se abren como solo lectura. Convierte el volumen a VeraCrypt para hacer cambios.</string>
+    <string name="err_ext4_unsupported">Este volumen ext4 usa una función que VaultPony aún no puede leer (%1$s).</string>
+
+    <!-- Read-only TrueCrypt volumes in the browser and volume info (2.0.0 rc5) -->
+    <string name="browser_truecrypt_banner">Volumen TrueCrypt: solo lectura. Conviértelo a VeraCrypt para hacer cambios.</string>
+    <string name="info_format">Formato</string>
+    <string name="info_format_veracrypt">VeraCrypt</string>
+    <string name="info_format_truecrypt">TrueCrypt (solo lectura)</string>
+
+    <!-- Convert to VeraCrypt (2.0.0 rc5) -->
+    <string name="convert_title">Convertir a VeraCrypt</string>
+    <string name="convert_intro">VaultPony crea un contenedor VeraCrypt nuevo y copia en él todos los archivos. El contenedor TrueCrypt no se modifica ni se elimina. Elimínalo tú cuando hayas comprobado el nuevo.</string>
+    <string name="convert_hidden_note">Este es un volumen oculto de TrueCrypt. Se convierte en un contenedor VeraCrypt normal; la estructura de volumen oculto no se conserva.</string>
+    <string name="convert_counting">Contando archivos…</string>
+    <string name="convert_min_size">El nuevo contenedor debe tener al menos %1$s.</string>
+    <string name="convert_exfat_note">Un archivo supera los 4 GB, así que el nuevo contenedor usa exFAT.</string>
+    <string name="convert_action">Convertir</string>
+    <plurals name="convert_progress">
+        <item quantity="one">Copiando %1$d de %2$d archivo</item>
+        <item quantity="other">Copiando %1$d de %2$d archivos</item>
+    </plurals>
+    <string name="convert_done">Convertido. Se copiaron y comprobaron %1$s y %2$s.</string>
+    <plurals name="convert_count_files">
+        <item quantity="one">%d archivo</item>
+        <item quantity="other">%d archivos</item>
+    </plurals>
+    <plurals name="convert_count_folders">
+        <item quantity="one">%d carpeta</item>
+        <item quantity="other">%d carpetas</item>
+    </plurals>
+    <plurals name="convert_renamed">
+        <item quantity="one">Se cambió %d nombre para que funcione en FAT o exFAT.</item>
+        <item quantity="other">Se cambiaron %d nombres para que funcionen en FAT o exFAT.</item>
+    </plurals>
+    <plurals name="convert_skipped">
+        <item quantity="one">Se omitió %d enlace o archivo especial.</item>
+        <item quantity="other">Se omitieron %d enlaces o archivos especiales.</item>
+    </plurals>
+    <string name="convert_open_new">Abrir la nueva bóveda</string>
+    <string name="convert_stopped">Conversión detenida. El nuevo contenedor está incompleto.</string>
+    <string name="convert_delete_new">Eliminar el nuevo contenedor</string>
+    <string name="convert_keep">Conservarlo</string>
+    <string name="common_stop">Detener</string>
+
+    <!-- Camera capture into the vault (2.0.0 rc5) -->
+    <string name="camera_take_photo">Hacer foto</string>
+    <string name="camera_record_video">Grabar vídeo</string>
+    <string name="camera_photo">Foto</string>
+    <string name="camera_video">Vídeo</string>
+    <string name="camera_switch">Cambiar cámara</string>
+    <string name="camera_close">Cerrar</string>
+    <string name="camera_saved_to">Guardado en %1$s</string>
+    <string name="camera_video_failed">No se pudo guardar el vídeo.</string>
+    <string name="camera_no_sound">Grabando sin sonido. Permite el acceso al micrófono para grabar sonido.</string>
+    <string name="camera_denied">VaultPony necesita la cámara para hacer fotos directamente en la bóveda.</string>
+    <string name="camera_open_settings">Abrir Ajustes</string>
 </resources>

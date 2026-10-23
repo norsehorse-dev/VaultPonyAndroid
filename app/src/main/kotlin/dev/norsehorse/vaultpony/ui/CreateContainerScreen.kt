@@ -1,6 +1,9 @@
 package dev.norsehorse.vaultpony.ui
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +52,7 @@ import dev.norsehorse.vaultpony.ui.components.passwordAutofill
 import dev.norsehorse.vaultpony.ui.components.revealTransformation
 import dev.norsehorse.vaultpony.SessionRegistry
 import dev.norsehorse.vaultpony.VaultRepository
+import dev.norsehorse.vaultpony.VaultStore
 import dev.norsehorse.vaultpony.ui.components.ChipTone
 import dev.norsehorse.vaultpony.ui.components.MonoChip
 import dev.norsehorse.vaultpony.ui.components.SectionLabel
@@ -147,6 +151,7 @@ private fun sizeToBytes(amount: String, unit: String): ULong? {
 /** Smallest vault the UI allows; the core enforces its own hard minimum too.
  *  Hidden vaults need extra room so the concealed volume has a usable slice. */
 private val MIN_SIZE_BYTES = 1uL * 1024uL * 1024uL // 1 MB
+private val MIB = 1024uL * 1024uL
 private val MIN_HIDDEN_SIZE_BYTES = 4uL * 1024uL * 1024uL // 4 MB
 
 private data class HiddenFraction(val label: String, val pct: Int)
@@ -167,15 +172,51 @@ private fun hiddenBytesFor(outer: ULong, pct: Int): ULong {
     return minOf(aligned, ceiling - (ceiling % 512uL))
 }
 
+/** Keep a container VaultPony just created: persist read+write so the home
+ *  entry can reopen it after a restart (the create-document grant is
+ *  otherwise only good for this process), and put it on the vault list, which
+ *  respects the list mode (VaultStore.add). Used by create and by Convert to
+ *  VeraCrypt. */
+internal fun adoptCreatedContainer(context: Context, uri: Uri) {
+    val rw = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    runCatching {
+        context.contentResolver.takePersistableUriPermission(uri, rw)
+    }.onFailure {
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+    VaultStore.add(context, uri)
+}
+
+/** Convert to VeraCrypt (2.0.0 rc5, plan 6.2, D9): the create form,
+ *  prefilled for the TrueCrypt volume being copied. [suggestedBytes] is a
+ *  whole number of MiB. The copy needs at least [minBytes]. [needsExfat]: a
+ *  file is over FAT's 4 GB limit, so FAT isn't offered. [hiddenSource]: the
+ *  TrueCrypt volume is a hidden one. */
+internal class ConvertSetup(
+    val suggestedBytes: ULong,
+    val minBytes: ULong,
+    val needsExfat: Boolean,
+    val hiddenSource: Boolean,
+)
+
 /**
  * Create a new container with an empty filesystem. The user sets a password,
  * size, cipher, hash, and filesystem; the SAF "create document" picker chooses
  * where it lands. On success the new file flows into the created screen (doc §7).
+ *
+ * With [convert], the same form and creation code make the new container for
+ * "Convert to VeraCrypt" (no hidden volume, no size presets), and
+ * [onConvertCreated] gets the new file, its password and its hash instead of
+ * [onCreated].
  */
 @Composable
-fun CreateContainerScreen(
+internal fun CreateContainerScreen(
     onCreated: (Uri) -> Unit,
     onCancel: () -> Unit,
+    convert: ConvertSetup? = null,
+    onConvertCreated: (uri: Uri, password: String, hash: String) -> Unit = { _, _, _ -> },
 ) {
     val context = LocalContext.current
     val repo = remember { VaultRepository(context) }
@@ -185,8 +226,8 @@ fun CreateContainerScreen(
     var passwordShown by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf("") }
     var confirmShown by remember { mutableStateOf(false) }
-    var sizeAmount by remember { mutableStateOf("1") }
-    var sizeUnit by remember { mutableStateOf("GB") }
+    var sizeAmount by remember { mutableStateOf(convert?.let { (it.suggestedBytes / MIB).toString() } ?: "1") }
+    var sizeUnit by remember { mutableStateOf(if (convert != null) "MB" else "GB") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -197,10 +238,22 @@ fun CreateContainerScreen(
     // list something creation would reject.
     val schemes = remember { runCatching { repo.encryptionSchemes() }.getOrDefault(listOf("AES")) }
     val hashList = remember { runCatching { repo.hashes() }.getOrDefault(listOf("SHA-512")) }
-    val filesystems = remember { runCatching { repo.filesystems() }.getOrDefault(listOf("FAT")) }
+    val allFilesystems = remember { runCatching { repo.filesystems() }.getOrDefault(listOf("FAT")) }
+    // A convert with a file over 4 GB can't use FAT (plan 6.2).
+    val filesystems = remember(allFilesystems) {
+        if (convert?.needsExfat == true) allFilesystems.filter { it != "FAT" }.ifEmpty { allFilesystems } else allFilesystems
+    }
     var scheme by remember { mutableStateOf(schemes.firstOrNull() ?: "AES") }
     var hash by remember { mutableStateOf(if ("SHA-512" in hashList) "SHA-512" else hashList.firstOrNull() ?: "SHA-512") }
-    var filesystem by remember { mutableStateOf(filesystems.firstOrNull() ?: "FAT") }
+    var filesystem by remember {
+        mutableStateOf(
+            when {
+                convert?.needsExfat == true -> filesystems.firstOrNull { it == "exFAT" } ?: filesystems.firstOrNull() ?: "exFAT"
+                convert != null && "FAT" in filesystems -> "FAT"
+                else -> filesystems.firstOrNull() ?: "FAT"
+            },
+        )
+    }
 
     var hiddenEnabled by remember { mutableStateOf(false) }
     var hiddenPassword by remember { mutableStateOf("") }
@@ -238,7 +291,7 @@ fun CreateContainerScreen(
                 } else {
                     repo.createContainer(uri, bytes, password, scheme, hash, filesystem)
                 }
-                onCreated(uri)
+                if (convert != null) onConvertCreated(uri, password, hash) else onCreated(uri)
             } catch (e: Exception) {
                 error = vaultErrorText(context, e, createError)
                 busy = false
@@ -248,7 +301,8 @@ fun CreateContainerScreen(
 
     val sizeBytes = sizeToBytes(sizeAmount, sizeUnit)
     val sizeOk = sizeBytes != null && sizeBytes >= MIN_SIZE_BYTES &&
-        (!hiddenEnabled || sizeBytes >= MIN_HIDDEN_SIZE_BYTES)
+        (!hiddenEnabled || sizeBytes >= MIN_HIDDEN_SIZE_BYTES) &&
+        (convert == null || sizeBytes >= convert.minBytes)
     val outerOk = password.isNotEmpty() && password == confirm
     val hiddenOk = !hiddenEnabled || (
         hiddenPassword.isNotEmpty() &&
@@ -264,7 +318,26 @@ fun CreateContainerScreen(
     ) {
         Spacer(Modifier.height(4.dp))
         VaultSeal()
-        Text(stringResource(R.string.home_new_vault_title), style = MaterialTheme.typography.headlineMedium)
+        Text(
+            stringResource(if (convert != null) R.string.convert_title else R.string.home_new_vault_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        if (convert != null) {
+            Text(
+                stringResource(R.string.convert_intro),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (convert.hiddenSource) {
+                Text(
+                    stringResource(R.string.convert_hidden_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             MonoChip(schemeName(scheme), ChipTone.Accent)
             MonoChip(hash)
@@ -296,19 +369,23 @@ fun CreateContainerScreen(
         )
 
         SectionLabel(stringResource(R.string.create_size), Modifier.fillMaxWidth())
-        Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            SIZE_PRESETS.forEach { p ->
-                FilterChip(
-                    selected = sizeAmount == p.amount && sizeUnit == p.unit,
-                    onClick = {
-                        sizeAmount = p.amount
-                        sizeUnit = p.unit
-                    },
-                    label = { Text(p.label) },
-                )
+        // A convert starts on the size the copy needs; presets would only
+        // offer sizes that may be too small.
+        if (convert == null) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SIZE_PRESETS.forEach { p ->
+                    FilterChip(
+                        selected = sizeAmount == p.amount && sizeUnit == p.unit,
+                        onClick = {
+                            sizeAmount = p.amount
+                            sizeUnit = p.unit
+                        },
+                        label = { Text(p.label) },
+                    )
+                }
             }
         }
         Row(
@@ -329,8 +406,14 @@ fun CreateContainerScreen(
         }
         if (sizeAmount.isNotEmpty() && !sizeOk) {
             Text(
-                if (hiddenEnabled) stringResource(R.string.create_min_hidden)
-                else stringResource(R.string.create_min),
+                when {
+                    convert != null && sizeBytes != null && sizeBytes >= MIN_SIZE_BYTES -> stringResource(
+                        R.string.convert_min_size,
+                        Formatter.formatFileSize(context, convert.minBytes.toLong()),
+                    )
+                    hiddenEnabled -> stringResource(R.string.create_min_hidden)
+                    else -> stringResource(R.string.create_min)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.fillMaxWidth(),
@@ -352,7 +435,14 @@ fun CreateContainerScreen(
             )
         }
         ChoiceDropdown(stringResource(R.string.create_filesystem), filesystems, filesystem) { filesystem = it }
-        if (filesystem == "exFAT") {
+        if (convert?.needsExfat == true) {
+            Text(
+                stringResource(R.string.convert_exfat_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else if (filesystem == "exFAT") {
             Text(
                 stringResource(R.string.create_exfat_note),
                 style = MaterialTheme.typography.bodySmall,
@@ -363,8 +453,9 @@ fun CreateContainerScreen(
         Spacer(Modifier.height(6.dp))
 
         // -- Hidden volume (doc §9). A second, concealed volume inside the
-        // first. The outer password reveals nothing about it.
-        Row(
+        // first. The outer password reveals nothing about it. Not offered
+        // when converting (plan 6.2).
+        if (convert == null) Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
@@ -380,7 +471,7 @@ fun CreateContainerScreen(
             Switch(checked = hiddenEnabled, onCheckedChange = { hiddenEnabled = it })
         }
 
-        if (hiddenEnabled) {
+        if (hiddenEnabled && convert == null) {
             // How the two passwords behave later (issue #3: users didn't know
             // the hidden password goes in the normal field).
             Text(
@@ -471,7 +562,7 @@ fun CreateContainerScreen(
                 },
                 enabled = passwordsOk,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.create_action)) }
+            ) { Text(stringResource(if (convert != null) R.string.convert_action else R.string.create_action)) }
             TextButton(onClick = onCancel) { Text(stringResource(R.string.common_cancel)) }
         }
 

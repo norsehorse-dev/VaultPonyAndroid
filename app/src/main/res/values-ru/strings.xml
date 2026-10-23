@@ -370,4 +370,76 @@
     <string name="tile_nothing_unlocked">Нет разблокированных</string>
     <string name="notif_permission_rationale">VaultPony показывает уведомление с кнопкой «Заблокировать», пока хранилище остаётся разблокированным в фоне.</string>
     <string name="notif_permission_not_now">Не сейчас</string>
+
+    <!-- TrueCrypt mode at unlock (2.0.0 rc5) -->
+    <string name="unlock_truecrypt">Режим TrueCrypt</string>
+    <string name="unlock_truecrypt_note">Для томов, созданных в TrueCrypt версий от 6.0 до 7.1a. Они открываются только для чтения.</string>
+    <!-- TrueCrypt and ext4 errors (2.0.0 rc5) -->
+    <string name="err_truecrypt_version">Этот том создан в TrueCrypt версии ниже 6.0, и VaultPony не может его открыть.</string>
+    <string name="err_truecrypt_read_only">Тома TrueCrypt открываются только для чтения. Чтобы вносить изменения, преобразуйте том в VeraCrypt.</string>
+    <string name="err_ext4_unsupported">Этот том ext4 использует функцию, которую VaultPony пока не умеет читать (%1$s).</string>
+
+    <!-- Read-only TrueCrypt volumes in the browser and volume info (2.0.0 rc5) -->
+    <string name="browser_truecrypt_banner">Том TrueCrypt: только чтение. Чтобы вносить изменения, преобразуйте его в VeraCrypt.</string>
+    <string name="info_format">Формат</string>
+    <string name="info_format_veracrypt">VeraCrypt</string>
+    <string name="info_format_truecrypt">TrueCrypt (только чтение)</string>
+
+    <!-- Convert to VeraCrypt (2.0.0 rc5) -->
+    <string name="convert_title">Преобразовать в VeraCrypt</string>
+    <string name="convert_intro">VaultPony создаёт новый контейнер VeraCrypt и копирует в него все файлы. Контейнер TrueCrypt не изменяется и не удаляется. Удалите его сами, когда проверите новый.</string>
+    <string name="convert_hidden_note">Это скрытый том TrueCrypt. Он преобразуется в обычный контейнер VeraCrypt; структура скрытого тома не переносится.</string>
+    <string name="convert_counting">Подсчёт файлов…</string>
+    <string name="convert_min_size">Новый контейнер должен быть не меньше %1$s.</string>
+    <string name="convert_exfat_note">Один из файлов больше 4 ГБ, поэтому новый контейнер использует exFAT.</string>
+    <string name="convert_action">Преобразовать</string>
+    <plurals name="convert_progress">
+        <item quantity="one">Копирование %1$d из %2$d файла</item>
+        <item quantity="few">Копирование %1$d из %2$d файлов</item>
+        <item quantity="many">Копирование %1$d из %2$d файлов</item>
+        <item quantity="other">Копирование %1$d из %2$d файла</item>
+    </plurals>
+    <string name="convert_done">Преобразовано. %1$s и %2$s скопированы и проверены.</string>
+    <plurals name="convert_count_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="few">%d файла</item>
+        <item quantity="many">%d файлов</item>
+        <item quantity="other">%d файла</item>
+    </plurals>
+    <plurals name="convert_count_folders">
+        <item quantity="one">%d папка</item>
+        <item quantity="few">%d папки</item>
+        <item quantity="many">%d папок</item>
+        <item quantity="other">%d папки</item>
+    </plurals>
+    <plurals name="convert_renamed">
+        <item quantity="one">Изменено имён для совместимости с FAT или exFAT: %d.</item>
+        <item quantity="few">Изменено имён для совместимости с FAT или exFAT: %d.</item>
+        <item quantity="many">Изменено имён для совместимости с FAT или exFAT: %d.</item>
+        <item quantity="other">Изменено имён для совместимости с FAT или exFAT: %d.</item>
+    </plurals>
+    <plurals name="convert_skipped">
+        <item quantity="one">Пропущено ссылок и специальных файлов: %d.</item>
+        <item quantity="few">Пропущено ссылок и специальных файлов: %d.</item>
+        <item quantity="many">Пропущено ссылок и специальных файлов: %d.</item>
+        <item quantity="other">Пропущено ссылок и специальных файлов: %d.</item>
+    </plurals>
+    <string name="convert_open_new">Открыть новое хранилище</string>
+    <string name="convert_stopped">Преобразование остановлено. Новый контейнер неполный.</string>
+    <string name="convert_delete_new">Удалить новый контейнер</string>
+    <string name="convert_keep">Оставить</string>
+    <string name="common_stop">Остановить</string>
+
+    <!-- Camera capture into the vault (2.0.0 rc5) -->
+    <string name="camera_take_photo">Сделать фото</string>
+    <string name="camera_record_video">Записать видео</string>
+    <string name="camera_photo">Фото</string>
+    <string name="camera_video">Видео</string>
+    <string name="camera_switch">Переключить камеру</string>
+    <string name="camera_close">Закрыть</string>
+    <string name="camera_saved_to">Сохранено в «%1$s»</string>
+    <string name="camera_video_failed">Не удалось сохранить видео.</string>
+    <string name="camera_no_sound">Запись без звука. Разрешите доступ к микрофону, чтобы записывать звук.</string>
+    <string name="camera_denied">VaultPony нужен доступ к камере, чтобы снимать фото прямо в хранилище.</string>
+    <string name="camera_open_settings">Открыть настройки</string>
 </resources>

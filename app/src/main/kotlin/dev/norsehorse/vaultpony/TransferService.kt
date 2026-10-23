@@ -91,6 +91,9 @@ class TransferService : Service() {
         if (end is TransferJobs.State.Done && SessionRegistry.isInBackground()) {
             VaultNotifications.showTransferDone(this, end.result)
         }
+        if (end is TransferJobs.State.Converted && SessionRegistry.isInBackground()) {
+            VaultNotifications.showConvertDone(this, end.result)
+        }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         // Keeps running if another batch already asked for the service.
         stopSelfResult(lastStartId)

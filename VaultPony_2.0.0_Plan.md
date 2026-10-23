@@ -1,6 +1,6 @@
 # VaultPony 2.0.0 Plan
 
-Rev 9, 2026-10-22. Scope decided (section 0). Section 10 holds what is still open; section 11
+Rev 10, 2026-10-23. Scope decided (section 0). Section 10 holds what is still open; section 11
 covers issues #4 to #6. The rc3 Phase 0 spike (desk research) is in
 `VaultPony_2.0.0_rc3_Spike.md`; section 4.2 carries its recommendation.
 
@@ -71,6 +71,23 @@ core with Argon2id.
 - D22 (2026-10-22, rc4). Media playback adds no dependency: Android uses the platform
   MediaPlayer with a MediaDataSource over the vault, iOS AVPlayer with a resource loader.
   Desktop gets no in-app player; its mount opens files in the system player (Q2 closed).
+- D23 (2026-10-23, rc5). TrueCrypt mode is a per-unlock "TrueCrypt mode" box, like
+  VeraCrypt's. TrueCrypt 6.0 to 7.1a headers only (header versions 4 and 5, program version
+  0x600 to 0x71a, as VeraCrypt 1.25.9 enforced); RIPEMD-160 (2000 iterations), SHA-512 and
+  Whirlpool (1000); no PIM, no hash menu. Sessions are read-only at the device and filesystem
+  layers; header writes refuse the mode. The box is remembered per vault like the hash (D21).
+- D24 (2026-10-23, rc5). ext4 is read through `ext4-view` 1.0, vendored with one fix (sparse
+  ext2/ext3 files). It also reads ext2 and ext3 and replays the journal in memory. Volumes with
+  inline data (off by default in mkfs.ext4) are refused by name. Symlinks, FIFOs and device
+  nodes list as empty entries that refuse reads; no path ever resolves through a symlink.
+- D25 (2026-10-23, rc5). "Convert to VeraCrypt" copies in the core (`copy_tree`), with the bulk
+  import name rules (D6 and the FAT/exFAT clean-up), links skipped, a pre-flight for space and
+  the 4 GiB FAT limit, and a size-and-count check at the end. It takes the session locks per
+  call, so locking either vault mid-copy ends it cleanly.
+- D26 (2026-10-23, rc5). Camera: Android adds CameraX 1.4.2 (the only new dependency in 2.0.0);
+  photos stay in memory, video goes straight into the vault through a proxy file descriptor.
+  iOS writes video as fragmented MP4 segments from `AVAssetWriter`'s delegate, so D11's temp
+  file is not needed.
 
 ---
 
@@ -455,7 +472,7 @@ over XPC (section 4.2).
 
 Q2. Desktop extras. Answered: tray "Lock all" in rc2 (D13); no in-app player (D22).
 
-Q3. PIM fields stay out of autofill. Confirm.
+Q3. PIM fields stay out of autofill. Answered: yes, PIM is never offered to password managers.
 
 Q4 to Q9 (rc3 spike questions) were answered on 2026-10-22: see D18 to D20.
 

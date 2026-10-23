@@ -363,4 +363,66 @@
     <string name="tile_nothing_unlocked">Nada desbloqueado</string>
     <string name="notif_permission_rationale">O VaultPony mostra uma notificação com um botão Bloquear enquanto um cofre continua desbloqueado em segundo plano.</string>
     <string name="notif_permission_not_now">Agora não</string>
+
+    <!-- TrueCrypt mode at unlock (2.0.0 rc5, plan 6.2, D7) -->
+    <string name="unlock_truecrypt">Modo TrueCrypt</string>
+    <string name="unlock_truecrypt_note">Para volumes criados com o TrueCrypt 6.0 a 7.1a. Eles abrem como somente leitura.</string>
+    <!-- TrueCrypt and ext4 errors (2.0.0 rc5, plan 6.2, 6.3) -->
+    <string name="err_truecrypt_version">Este volume foi criado com uma versão do TrueCrypt anterior à 6.0, que o VaultPony não consegue abrir.</string>
+    <string name="err_truecrypt_read_only">Volumes do TrueCrypt abrem como somente leitura. Converta-o para VeraCrypt para fazer alterações.</string>
+    <string name="err_ext4_unsupported">Este volume ext4 usa um recurso que o VaultPony ainda não consegue ler (%1$s).</string>
+
+    <!-- Read-only TrueCrypt volumes in the browser and volume info (2.0.0 rc5, plan 6.2) -->
+    <string name="browser_truecrypt_banner">Volume do TrueCrypt: somente leitura. Converta-o para VeraCrypt para fazer alterações.</string>
+    <string name="info_format">Formato</string>
+    <string name="info_format_veracrypt">VeraCrypt</string>
+    <string name="info_format_truecrypt">TrueCrypt (somente leitura)</string>
+
+    <!-- Convert to VeraCrypt (2.0.0 rc5, plan 6.2, D9) -->
+    <string name="convert_title">Converter para VeraCrypt</string>
+    <string name="convert_intro">O VaultPony cria um novo contêiner VeraCrypt e copia todos os arquivos para ele. O contêiner TrueCrypt não é alterado nem excluído. Remova-o você mesmo depois de verificar o novo.</string>
+    <string name="convert_hidden_note">Este é um volume oculto do TrueCrypt. Ele é convertido em um contêiner VeraCrypt comum; a estrutura de volume oculto não é mantida.</string>
+    <string name="convert_counting">Contando arquivos…</string>
+    <string name="convert_min_size">O novo contêiner precisa ter pelo menos %1$s.</string>
+    <string name="convert_exfat_note">Um arquivo tem mais de 4 GB, então o novo contêiner usa exFAT.</string>
+    <string name="convert_action">Converter</string>
+    <plurals name="convert_progress">
+        <item quantity="one">Copiando %1$d de %2$d arquivo</item>
+        <item quantity="other">Copiando %1$d de %2$d arquivos</item>
+    </plurals>
+    <string name="convert_done">Conversão concluída. %1$s e %2$s copiados e verificados.</string>
+    <plurals name="convert_count_files">
+        <item quantity="one">%d arquivo</item>
+        <item quantity="other">%d arquivos</item>
+    </plurals>
+    <plurals name="convert_count_folders">
+        <item quantity="one">%d pasta</item>
+        <item quantity="other">%d pastas</item>
+    </plurals>
+    <plurals name="convert_renamed">
+        <item quantity="one">%d nome foi alterado para funcionar em FAT ou exFAT.</item>
+        <item quantity="other">%d nomes foram alterados para funcionar em FAT ou exFAT.</item>
+    </plurals>
+    <plurals name="convert_skipped">
+        <item quantity="one">%d link ou arquivo especial foi pulado.</item>
+        <item quantity="other">%d links ou arquivos especiais foram pulados.</item>
+    </plurals>
+    <string name="convert_open_new">Abrir o novo cofre</string>
+    <string name="convert_stopped">Conversão interrompida. O novo contêiner está incompleto.</string>
+    <string name="convert_delete_new">Excluir o novo contêiner</string>
+    <string name="convert_keep">Manter</string>
+    <string name="common_stop">Parar</string>
+
+    <!-- Camera capture into the vault (2.0.0 rc5, plan 5.6, D10) -->
+    <string name="camera_take_photo">Tirar foto</string>
+    <string name="camera_record_video">Gravar vídeo</string>
+    <string name="camera_photo">Foto</string>
+    <string name="camera_video">Vídeo</string>
+    <string name="camera_switch">Alternar câmera</string>
+    <string name="camera_close">Fechar</string>
+    <string name="camera_saved_to">Salvo em %1$s</string>
+    <string name="camera_video_failed">Não foi possível salvar o vídeo.</string>
+    <string name="camera_no_sound">Gravando sem som. Permita o acesso ao microfone para gravar o som.</string>
+    <string name="camera_denied">O VaultPony precisa da câmera para tirar fotos direto no cofre.</string>
+    <string name="camera_open_settings">Abrir configurações</string>
 </resources>

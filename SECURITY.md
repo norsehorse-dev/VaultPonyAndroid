@@ -34,6 +34,9 @@ Two exceptions keep a vault open past that point:
   progress with Lock and Cancel buttons. Lock stops the copy after the
   current chunk (the half-copied file is removed) and then locks the vault,
   waiting at most 5 seconds for the copy to stop.
+- "Convert to VeraCrypt" copies a TrueCrypt volume into a new VeraCrypt
+  container the same way, so it keeps both of those vaults unlocked until the
+  copy ends.
 
 ### "Until I lock it"
 
@@ -78,6 +81,24 @@ when the vault locks. Video and audio play straight from the vault through
 Android's built-in player, reading only the parts being played: no temporary
 file, and nothing about the file is handed to the system's media controls.
 
+## Camera and microphone
+
+Since 2.0.0, the vault browser can take photos and record videos straight
+into the folder it shows. This needs two permissions, each asked for only
+when first needed: the camera when the in-app camera first opens, and the
+microphone only when you switch it to Video. If you deny the microphone,
+videos are recorded without sound. Without a camera on the device, or with
+the permission denied, the rest of VaultPony works as before.
+
+A photo is taken into memory and written into the vault from there; it never
+exists as a file anywhere else. A video is written by Android's recorder into
+a proxy file descriptor whose writes go straight into the vault, through its
+encryption, as it records. Neither goes to the gallery, MediaStore, the
+app's cache or any other file outside the vault, and no location is added.
+Each capture is written under a temporary name and only gets its real name
+when complete; if the vault locks during a capture, the unfinished file is
+removed before the vault locks.
+
 ## Lock controls
 
 While a vault stays unlocked with the app in the background, VaultPony shows
@@ -109,10 +130,10 @@ pointed at the folder again after the next unlock. Nothing another app keeps
 from an earlier unlock leads back into the vault, and it doesn't reveal which
 container or which volume (outer or hidden) was open.
 
-Read-only vaults (NTFS) refuse all writes from other apps. So does an outer
-volume opened with hidden-volume protection once a write was blocked to
-protect the hidden volume: from then on the vault is read-only until it is
-locked.
+Read-only vaults (NTFS, ext4, and TrueCrypt volumes) refuse all writes from
+other apps. So does an outer volume opened with hidden-volume protection once
+a write was blocked to protect the hidden volume: from then on the vault is
+read-only until it is locked.
 
 ## Reporting a Vulnerability
 

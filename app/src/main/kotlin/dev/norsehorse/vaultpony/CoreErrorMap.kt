@@ -26,6 +26,9 @@ object CoreErrorMap {
         is VaultException.Cancelled -> CoreVariant.CANCELLED
         is VaultException.PasswordTooShortForPim -> CoreVariant.PASSWORD_TOO_SHORT_FOR_PIM
         is VaultException.EmptyKeyfile -> CoreVariant.EMPTY_KEYFILE
+        is VaultException.TrueCryptReadOnly -> CoreVariant.TRUECRYPT_READ_ONLY
+        is VaultException.TrueCryptVersionUnsupported -> CoreVariant.TRUECRYPT_VERSION_UNSUPPORTED
+        is VaultException.Ext4Unsupported -> CoreVariant.EXT4_UNSUPPORTED
         else -> null
     }
 
@@ -33,8 +36,14 @@ object CoreErrorMap {
         is VaultException.Filesystem -> e.detail
         is VaultException.Io -> e.detail
         is VaultException.UnsupportedFilesystem -> e.name
+        is VaultException.Ext4Unsupported -> e.detail
         else -> null
     }
+
+    /** The part of [e] the user's message names: the ext4 feature an
+     *  Ext4Unsupported refers to (English from the core, never a file name).
+     *  Null for every other error. */
+    fun messageDetail(e: Throwable): String? = (e as? VaultException.Ext4Unsupported)?.detail
 
     /** What to tell the user about [e]: null for a cancel, and also null when
      *  [e] isn't a core error at all (the caller decides those). */

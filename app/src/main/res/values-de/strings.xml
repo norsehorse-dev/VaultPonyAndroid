@@ -350,4 +350,67 @@
     <string name="tile_nothing_unlocked">Nichts entsperrt</string>
     <string name="notif_permission_rationale">VaultPony zeigt eine Benachrichtigung mit der Schaltfläche „Sperren“, solange ein Tresor im Hintergrund entsperrt bleibt.</string>
     <string name="notif_permission_not_now">Nicht jetzt</string>
+
+    <!-- TrueCrypt mode at unlock (2.0.0 rc5) -->
+    <string name="unlock_truecrypt">TrueCrypt-Modus</string>
+    <string name="unlock_truecrypt_note">Für Volumes, die mit TrueCrypt 6.0 bis 7.1a erstellt wurden. Sie werden schreibgeschützt geöffnet.</string>
+
+    <!-- TrueCrypt and ext4 errors (2.0.0 rc5) -->
+    <string name="err_truecrypt_version">Dieses Volume wurde mit einer TrueCrypt-Version vor 6.0 erstellt. VaultPony kann es nicht öffnen.</string>
+    <string name="err_truecrypt_read_only">TrueCrypt-Volumes werden schreibgeschützt geöffnet. Wandle das Volume in VeraCrypt um, um Änderungen vorzunehmen.</string>
+    <string name="err_ext4_unsupported">Dieses ext4-Volume nutzt eine Funktion, die VaultPony noch nicht lesen kann (%1$s).</string>
+
+    <!-- Read-only TrueCrypt volumes in the browser and volume info (2.0.0 rc5) -->
+    <string name="browser_truecrypt_banner">TrueCrypt-Volume: schreibgeschützt. Wandle es in VeraCrypt um, um Änderungen vorzunehmen.</string>
+    <string name="info_format">Format</string>
+    <string name="info_format_veracrypt">VeraCrypt</string>
+    <string name="info_format_truecrypt">TrueCrypt (schreibgeschützt)</string>
+
+    <!-- Convert to VeraCrypt (2.0.0 rc5) -->
+    <string name="convert_title">In VeraCrypt umwandeln</string>
+    <string name="convert_intro">VaultPony erstellt einen neuen VeraCrypt-Container und kopiert jede Datei hinein. Der TrueCrypt-Container wird weder geändert noch gelöscht. Entferne ihn selbst, sobald du den neuen geprüft hast.</string>
+    <string name="convert_hidden_note">Dies ist ein verstecktes TrueCrypt-Volume. Es wird in einen gewöhnlichen VeraCrypt-Container umgewandelt; die Struktur des versteckten Volumes wird nicht übernommen.</string>
+    <string name="convert_counting">Dateien werden gezählt…</string>
+    <string name="convert_min_size">Der neue Container muss mindestens %1$s groß sein.</string>
+    <string name="convert_exfat_note">Eine Datei ist größer als 4 GB, daher verwendet der neue Container exFAT.</string>
+    <string name="convert_action">Umwandeln</string>
+    <plurals name="convert_progress">
+        <item quantity="one">Kopiere %1$d von %2$d Datei</item>
+        <item quantity="other">Kopiere %1$d von %2$d Dateien</item>
+    </plurals>
+    <string name="convert_done">Umgewandelt. %1$s und %2$s kopiert und geprüft.</string>
+    <plurals name="convert_count_files">
+        <item quantity="one">%d Datei</item>
+        <item quantity="other">%d Dateien</item>
+    </plurals>
+    <plurals name="convert_count_folders">
+        <item quantity="one">%d Ordner</item>
+        <item quantity="other">%d Ordner</item>
+    </plurals>
+    <plurals name="convert_renamed">
+        <item quantity="one">%d Name wurde geändert, damit er unter FAT oder exFAT funktioniert.</item>
+        <item quantity="other">%d Namen wurden geändert, damit sie unter FAT oder exFAT funktionieren.</item>
+    </plurals>
+    <plurals name="convert_skipped">
+        <item quantity="one">%d Link oder spezielle Datei wurde übersprungen.</item>
+        <item quantity="other">%d Links oder spezielle Dateien wurden übersprungen.</item>
+    </plurals>
+    <string name="convert_open_new">Neuen Tresor öffnen</string>
+    <string name="convert_stopped">Umwandlung abgebrochen. Der neue Container ist unvollständig.</string>
+    <string name="convert_delete_new">Neuen Container löschen</string>
+    <string name="convert_keep">Behalten</string>
+    <string name="common_stop">Stoppen</string>
+
+    <!-- Camera capture into the vault (2.0.0 rc5) -->
+    <string name="camera_take_photo">Foto aufnehmen</string>
+    <string name="camera_record_video">Video aufnehmen</string>
+    <string name="camera_photo">Foto</string>
+    <string name="camera_video">Video</string>
+    <string name="camera_switch">Kamera wechseln</string>
+    <string name="camera_close">Schließen</string>
+    <string name="camera_saved_to">Gespeichert in %1$s</string>
+    <string name="camera_video_failed">Das Video konnte nicht gespeichert werden.</string>
+    <string name="camera_no_sound">Aufnahme ohne Ton. Erlaube den Zugriff auf das Mikrofon, um Ton aufzunehmen.</string>
+    <string name="camera_denied">VaultPony braucht die Kamera, um Fotos direkt in den Tresor aufzunehmen.</string>
+    <string name="camera_open_settings">Einstellungen öffnen</string>
 </resources>

@@ -18,6 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import dev.norsehorse.vaultpony.i18n.LanguageState
 import dev.norsehorse.vaultpony.i18n.LocaleManager
+import dev.norsehorse.vaultpony.ui.convertResultLines
 import dev.norsehorse.vaultpony.ui.transferSummaryLines
 
 /*
@@ -182,9 +183,16 @@ object VaultNotifications {
         val app = context.applicationContext
         val text = LocaleManager.localizedContext(app)
         ensureChannels(app, text)
+        // A convert (2.0.0 rc5, plan 6.2) shows under its own title.
+        val converting = TransferJobs.converting
+        val title = when {
+            converting -> R.string.convert_title
+            export -> R.string.notif_export_title
+            else -> R.string.notif_import_title
+        }
         val b = NotificationCompat.Builder(app, CHANNEL_TRANSFER)
             .setSmallIcon(R.drawable.ic_stat_lock)
-            .setContentTitle(text.getString(if (export) R.string.notif_export_title else R.string.notif_import_title))
+            .setContentTitle(text.getString(title))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -197,7 +205,13 @@ object VaultNotifications {
             .addAction(0, text.getString(R.string.common_cancel), cancelIntent(app))
             .addAction(R.drawable.ic_stat_lock, text.getString(R.string.notif_action_lock), lockIntent(app))
         if (state is TransferJobs.State.Running) {
-            b.setContentText(text.getString(R.string.transfer_progress, state.index, state.total))
+            b.setContentText(
+                if (converting) {
+                    text.resources.getQuantityString(R.plurals.convert_progress, state.total, state.index, state.total)
+                } else {
+                    text.getString(R.string.transfer_progress, state.index, state.total)
+                },
+            )
             if (state.bytesTotal > 0) {
                 val permille = (state.bytesDone.coerceIn(0L, state.bytesTotal) * 1000 / state.bytesTotal).toInt()
                 b.setProgress(1000, permille, false)
@@ -229,6 +243,29 @@ object VaultNotifications {
             .setContentTitle(text.getString(if (result.export) R.string.notif_export_done else R.string.notif_import_done))
             .setContentText(lines.firstOrNull().orEmpty())
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
+            .setAutoCancel(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .setContentIntent(openAppIntent(app))
+            .build()
+        runCatching { manager(app)?.notify(ID_TRANSFER_DONE, n) }
+    }
+
+    /** "Convert to VeraCrypt" ended with the app in the background (2.0.0
+     *  rc5, plan 6.2): the headline of the in-app result, no names. */
+    fun showConvertDone(context: Context, result: ConvertResult) {
+        val app = context.applicationContext
+        if (!canPost(app)) return
+        val text = LocaleManager.localizedContext(app)
+        ensureChannels(app, text)
+        val line = convertResultLines(text.resources, result).firstOrNull().orEmpty()
+        val n = NotificationCompat.Builder(app, CHANNEL_TRANSFER)
+            .setSmallIcon(R.drawable.ic_stat_lock)
+            .setContentTitle(text.getString(R.string.convert_title))
+            .setContentText(line)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(line))
             .setAutoCancel(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)

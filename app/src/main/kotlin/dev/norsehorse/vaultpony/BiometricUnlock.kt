@@ -19,7 +19,7 @@ import uniffi.vault_ffi.KdfFilter
 
 /**
  * Optional, opt-in biometric unlock, per container (doc §8/§11). The secret
- * ({kdf, pim, passphrase}) is encrypted under a biometric-gated AndroidKeyStore key
+ * ({kdf, TrueCrypt mode, pim, passphrase}) is encrypted under a biometric-gated AndroidKeyStore key
  * — StrongBox-backed when the device has it — and every use requires a fresh
  * BiometricPrompt with a CryptoObject, so the key material never leaves secure
  * hardware in usable form.
@@ -67,14 +67,16 @@ object BiometricUnlock {
 
     /** Authenticate, then store the secret encrypted. [kdf] is the KDF family
      *  the container turned out to use, so a biometric unlock can skip the
-     *  other family's work (for Argon2id, the whole PBKDF2 sweep). [onDone]
-     *  receives success. */
+     *  other family's work (for Argon2id, the whole PBKDF2 sweep).
+     *  [truecrypt]: it opened in TrueCrypt mode, so the biometric unlock uses
+     *  that mode too (2.0.0 rc5, plan 6.2). [onDone] receives success. */
     fun enroll(
         activity: FragmentActivity,
         volumeId: String,
         passphrase: String,
         pim: UInt,
         kdf: KdfFilter = KdfFilter.AUTO,
+        truecrypt: Boolean = false,
         onDone: (Boolean) -> Unit,
     ) {
         val cipher = try {
@@ -89,7 +91,7 @@ object BiometricUnlock {
                 return@authenticate
             }
             try {
-                val plain = encodeSecret(kdf, pim, passphrase).toByteArray(Charsets.UTF_8)
+                val plain = encodeSecret(kdf, truecrypt, pim, passphrase).toByteArray(Charsets.UTF_8)
                 val ct = c.doFinal(plain)
                 prefs(activity).edit()
                     .putString("$volumeId.iv", b64(c.iv))
@@ -102,11 +104,12 @@ object BiometricUnlock {
         }
     }
 
-    /** Authenticate, decrypt, and hand back (pim, passphrase, kdf). */
+    /** Authenticate, decrypt, and hand back (pim, passphrase, kdf,
+     *  TrueCrypt mode). */
     fun retrieve(
         activity: FragmentActivity,
         volumeId: String,
-        onSecret: (UInt, String, KdfFilter) -> Unit,
+        onSecret: (UInt, String, KdfFilter, Boolean) -> Unit,
         onError: (String) -> Unit,
     ) {
         val p = prefs(activity)
@@ -140,36 +143,53 @@ object BiometricUnlock {
             }
             try {
                 val plain = c.doFinal(unb64(ctB64)).toString(Charsets.UTF_8)
-                val (kdf, pim, pass) = decodeSecret(plain)
-                onSecret(pim, pass, kdf)
+                val secret = decodeSecret(plain)
+                onSecret(secret.pim, secret.passphrase, secret.kdf, secret.truecrypt)
             } catch (e: Exception) {
                 onError("could not decrypt stored secret")
             }
         }
     }
 
-    /** Current format: "v2\n<kdf>\n<pim>\n<passphrase>". The passphrase goes
-     *  last so any character in it survives. */
-    private fun encodeSecret(kdf: KdfFilter, pim: UInt, passphrase: String): String =
-        "$SECRET_V2\n${kdf.name}\n$pim\n$passphrase"
+    private class Secret(val kdf: KdfFilter, val truecrypt: Boolean, val pim: UInt, val passphrase: String)
 
-    /** Reads both the current format and the original "<pim>\n<passphrase>"
-     *  that enrollments made before 1.1.0 carry (those unlock with Auto). */
-    private fun decodeSecret(plain: String): Triple<KdfFilter, UInt, String> {
+    /** Current format (2.0.0 rc5): "v3\n<kdf>\n<truecrypt 0|1>\n<pim>\n<passphrase>".
+     *  The passphrase goes last so any character in it survives. */
+    private fun encodeSecret(kdf: KdfFilter, truecrypt: Boolean, pim: UInt, passphrase: String): String =
+        "$SECRET_V3\n${kdf.name}\n${if (truecrypt) 1 else 0}\n$pim\n$passphrase"
+
+    /** Reads the current format, "v2\n<kdf>\n<pim>\n<passphrase>" from 1.1.0
+     *  to 2.0.0 rc4, and the original "<pim>\n<passphrase>" that enrollments
+     *  made before 1.1.0 carry (those unlock with Auto). Older formats read as
+     *  not TrueCrypt. */
+    private fun decodeSecret(plain: String): Secret {
         val nl = plain.indexOf('\n')
-        if (plain.substring(0, nl) == SECRET_V2) {
+        val tag = plain.substring(0, nl)
+        if (tag == SECRET_V3) {
+            val kdfEnd = plain.indexOf('\n', nl + 1)
+            val tcEnd = plain.indexOf('\n', kdfEnd + 1)
+            val pimEnd = plain.indexOf('\n', tcEnd + 1)
+            val kdf = kdfNamed(plain.substring(nl + 1, kdfEnd))
+            val truecrypt = plain.substring(kdfEnd + 1, tcEnd) == "1"
+            val pim = plain.substring(tcEnd + 1, pimEnd).toUIntOrNull() ?: 0u
+            return Secret(kdf, truecrypt, pim, plain.substring(pimEnd + 1))
+        }
+        if (tag == SECRET_V2) {
             val kdfEnd = plain.indexOf('\n', nl + 1)
             val pimEnd = plain.indexOf('\n', kdfEnd + 1)
-            val kdfName = plain.substring(nl + 1, kdfEnd)
-            val kdf = KdfFilter.entries.firstOrNull { it.name == kdfName } ?: KdfFilter.AUTO
+            val kdf = kdfNamed(plain.substring(nl + 1, kdfEnd))
             val pim = plain.substring(kdfEnd + 1, pimEnd).toUIntOrNull() ?: 0u
-            return Triple(kdf, pim, plain.substring(pimEnd + 1))
+            return Secret(kdf, false, pim, plain.substring(pimEnd + 1))
         }
-        val pim = plain.substring(0, nl).toUIntOrNull() ?: 0u
-        return Triple(KdfFilter.AUTO, pim, plain.substring(nl + 1))
+        val pim = tag.toUIntOrNull() ?: 0u
+        return Secret(KdfFilter.AUTO, false, pim, plain.substring(nl + 1))
     }
 
+    private fun kdfNamed(name: String): KdfFilter =
+        KdfFilter.entries.firstOrNull { it.name == name } ?: KdfFilter.AUTO
+
     private const val SECRET_V2 = "v2"
+    private const val SECRET_V3 = "v3"
 
     private fun authenticate(
         activity: FragmentActivity,

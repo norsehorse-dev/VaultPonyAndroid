@@ -1,5 +1,6 @@
 package dev.norsehorse.vaultpony.ui
 
+import android.content.pm.PackageManager
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -44,7 +45,9 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
@@ -62,6 +65,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -133,7 +137,7 @@ private const val MAX_SEARCH_HITS = 2000
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
+fun BrowserScreen(session: VaultSession, onLock: () -> Unit, onConvert: () -> Unit = {}) {
     val context = LocalContext.current
     val repo = remember { VaultRepository(context) }
     val scope = rememberCoroutineScope()
@@ -204,11 +208,20 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
     // Selection waiting for the export destination picker (saveable, as above).
     var exportNames by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
     var exportNamesDir by rememberSaveable { mutableStateOf<String?>(null) }
+    // Camera capture into the folder on screen (2.0.0 rc5, plan 5.6): the
+    // mode it opened in, CAMERA_PHOTO or CAMERA_VIDEO, while it is open.
+    var camera by rememberSaveable { mutableStateOf<String?>(null) }
+    val hasCamera = remember { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) }
 
     // Bulk import/export runs in TransferJobs, outside this composable, so a
-    // rotation or recomposition can't kill it. Only this session's batch shows.
+    // rotation or recomposition can't kill it. Only this session's batch shows,
+    // and never a convert, which has its own screen (2.0.0 rc5).
     val transferAll by TransferJobs.state.collectAsState()
-    val transfer = if (TransferJobs.owner === session) transferAll else TransferJobs.State.Idle
+    val transfer = if (TransferJobs.owner === session && !TransferJobs.converting) {
+        transferAll
+    } else {
+        TransferJobs.State.Idle
+    }
 
     val importFilesPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
@@ -374,6 +387,21 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
         }
     }
 
+    val cam = camera
+    if (cam != null) {
+        CameraScreen(
+            session = session,
+            dir = path,
+            folderLabel = if (path == "/") rootLabel else path.trimEnd('/').substringAfterLast('/'),
+            startVideo = cam == CAMERA_VIDEO,
+            onClose = {
+                camera = null
+                refresh++
+            },
+        )
+        return
+    }
+
     val current = viewing
     if (current != null) {
         ViewerScreen(
@@ -521,6 +549,28 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                 )
             }
 
+            // TrueCrypt volumes open read-only; the way to change one is to
+            // convert it (2.0.0 rc5, plan 6.2, D9).
+            if (facts?.truecrypt == true) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    shape = RoundedCornerShape(11.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                ) {
+                    Column(Modifier.padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 2.dp)) {
+                        Text(
+                            stringResource(R.string.browser_truecrypt_banner),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                        TextButton(onClick = onConvert, modifier = Modifier.align(Alignment.End)) {
+                            Text(stringResource(R.string.convert_title))
+                        }
+                    }
+                }
+            }
+
             if (searchOpen) {
                 OutlinedTextField(
                     value = query,
@@ -639,6 +689,15 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
                             notifGate.runAfter {
                                 SessionRegistry.expectPicker()
                                 importFolderPicker.launch(null)
+                            }
+                        }
+                        // Straight into this folder, never the gallery (plan 5.6).
+                        if (hasCamera) {
+                            ActionPill(Icons.Filled.PhotoCamera, stringResource(R.string.camera_take_photo)) {
+                                camera = CAMERA_PHOTO
+                            }
+                            ActionPill(Icons.Filled.Videocam, stringResource(R.string.camera_record_video)) {
+                                camera = CAMERA_VIDEO
                             }
                         }
                     }
@@ -855,11 +914,25 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit) {
             labelRes = volumeLabel,
             writable = writable,
             onDismiss = { showInfo = false },
+            onConvert = {
+                showInfo = false
+                onConvert()
+            },
         )
     }
 
     TransferDialogs(transfer, fallbackError = if (transferIsExport(transfer)) errExport else errImport)
 }
+
+// The browser's camera modes (plan 5.6), saved across a rotation.
+private const val CAMERA_PHOTO = "photo"
+private const val CAMERA_VIDEO = "video"
+
+/** A filesystem as the user knows it: the core says "Ext4" for ext2, ext3
+ *  and ext4 alike, shown as "ext4" (2.0.0 rc5, plan 6.3). Others as the core
+ *  names them. */
+internal fun filesystemName(raw: String): String =
+    if (raw.equals("Ext4", ignoreCase = true)) "ext4" else raw
 
 /** Folders first (always), then by [sort], ties by name. */
 private fun sortEntries(list: List<DirEntry>, sort: BrowserSort, descending: Boolean): List<DirEntry> {
@@ -1207,6 +1280,7 @@ private fun VolumeInfoDialog(
     labelRes: Int?,
     writable: Boolean,
     onDismiss: () -> Unit,
+    onConvert: () -> Unit,
 ) {
     val context = LocalContext.current
     AlertDialog(
@@ -1216,10 +1290,16 @@ private fun VolumeInfoDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 labelRes?.let { MonoChip(stringResource(it), ChipTone.Hidden) }
                 if (facts != null) {
-                    // VeraCrypt's name for the scheme (D16).
+                    // VeraCrypt or TrueCrypt (2.0.0 rc5, plan 6.2).
+                    InfoRow(
+                        stringResource(R.string.info_format),
+                        stringResource(if (facts.truecrypt) R.string.info_format_truecrypt else R.string.info_format_veracrypt),
+                    )
+                    // VeraCrypt's name for the scheme (D16). The hash can be
+                    // RIPEMD-160 for TrueCrypt.
                     InfoRow(stringResource(R.string.info_encryption), schemeName(facts.scheme))
                     InfoRow(stringResource(R.string.info_hash), facts.prf)
-                    InfoRow(stringResource(R.string.info_filesystem), facts.filesystem)
+                    InfoRow(stringResource(R.string.info_filesystem), filesystemName(facts.filesystem))
                 }
                 if (space != null) {
                     InfoRow(
@@ -1241,6 +1321,9 @@ private fun VolumeInfoDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (facts?.truecrypt == true) {
+                    TextButton(onClick = onConvert) { Text(stringResource(R.string.convert_title)) }
                 }
             }
         },
@@ -1395,6 +1478,9 @@ internal fun TransferDialogs(state: TransferJobs.State, fallbackError: String) {
         )
 
         is TransferJobs.State.Done -> TransferSummaryDialog(state.result, fallbackError)
+
+        // The convert screen shows its own result (2.0.0 rc5).
+        is TransferJobs.State.Converted -> Unit
     }
 }
 

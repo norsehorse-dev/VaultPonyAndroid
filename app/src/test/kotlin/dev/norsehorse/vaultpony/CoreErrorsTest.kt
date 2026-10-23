@@ -3,6 +3,7 @@ package dev.norsehorse.vaultpony
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import uniffi.vault_ffi.VaultException
 
 class CoreErrorsTest {
 
@@ -15,6 +16,31 @@ class CoreErrorsTest {
         assertEquals(VaultErrorKind.WRONG_PASSWORD, CoreErrors.classify(CoreVariant.NOT_FOUND_OR_WRONG_PASSWORD, null))
         assertEquals(VaultErrorKind.UNSUPPORTED_FS, CoreErrors.classify(CoreVariant.UNSUPPORTED_FILESYSTEM, "Ext4"))
         assertEquals(VaultErrorKind.EMPTY_KEYFILE, CoreErrors.classify(CoreVariant.EMPTY_KEYFILE, null))
+    }
+
+    @Test
+    fun trueCryptAndExt4HaveTheirOwnText() {
+        assertEquals(VaultErrorKind.TRUECRYPT_READ_ONLY, CoreErrors.classify(CoreVariant.TRUECRYPT_READ_ONLY, null))
+        assertEquals(
+            VaultErrorKind.TRUECRYPT_TOO_OLD,
+            CoreErrors.classify(CoreVariant.TRUECRYPT_VERSION_UNSUPPORTED, null),
+        )
+        assertEquals(VaultErrorKind.EXT4_UNSUPPORTED, CoreErrors.classify(CoreVariant.EXT4_UNSUPPORTED, "inline data"))
+    }
+
+    @Test
+    fun generatedExceptionsClassifyWithoutTheirMessage() {
+        // UniFFI's variants without fields have an empty message, so the
+        // text must come from the table, never from e.message (2.0.0 rc5).
+        assertEquals("", VaultException.NotFoundOrWrongPassword().message)
+        assertEquals(VaultErrorKind.WRONG_PASSWORD, CoreErrorMap.kindOf(VaultException.NotFoundOrWrongPassword()))
+        assertEquals(VaultErrorKind.TRUECRYPT_READ_ONLY, CoreErrorMap.kindOf(VaultException.TrueCryptReadOnly()))
+        assertEquals(VaultErrorKind.READ_ONLY, CoreErrorMap.kindOf(VaultException.Filesystem(CoreErrors.EXT4_READ_ONLY)))
+        assertEquals(VaultErrorKind.OTHER, CoreErrorMap.kindOf(VaultException.HeaderDamaged()))
+        assertEquals("inline data", CoreErrorMap.messageDetail(VaultException.Ext4Unsupported("inline data")))
+        assertNull(CoreErrorMap.messageDetail(VaultException.Filesystem("x")))
+        assertNull(CoreErrorMap.kindOf(VaultException.Cancelled()))
+        assertNull(CoreErrorMap.kindOf(IllegalStateException("not from the core")))
     }
 
     @Test
@@ -51,8 +77,9 @@ class CoreErrorsTest {
     }
 
     @Test
-    fun readOnlyIsOnlyNtfs() {
+    fun readOnlyIsOnlyNtfsAndExt4() {
         assertEquals(VaultErrorKind.READ_ONLY, fs("NTFS is read-only"))
+        assertEquals(VaultErrorKind.READ_ONLY, fs(CoreErrors.EXT4_READ_ONLY))
         assertEquals(VaultErrorKind.FILESYSTEM, fs("Read-only file system (os error 30)"))
         assertEquals(VaultErrorKind.FILESYSTEM, fs("Bad file descriptor (os error 9)"))
     }

@@ -18,7 +18,15 @@
      explanation; everything works if denied) for the generic "Vault unlocked"
      notification with its Lock button; FOREGROUND_SERVICE and
      FOREGROUND_SERVICE_DATA_SYNC (both "normal", no prompt) so a bulk import
-     or export keeps running in the background. Still no INTERNET, no storage. -->
+     or export keeps running in the background. Still no INTERNET, no storage.
+
+     2.0.0 rc5 adds two runtime permissions for camera capture into the vault
+     (plan 5.6, D10), each asked for only when first needed: CAMERA when the
+     in-app camera opens, RECORD_AUDIO only when Video is chosen (if it is
+     denied, videos are recorded without sound). Photos stay in memory and
+     videos are written straight into the vault through a proxy file
+     descriptor; nothing goes to MediaStore, the gallery or the app's cache.
+     No camera is required to install: the features below are optional. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
@@ -27,6 +35,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
         android:name=".VaultPonyApp"

@@ -1,6 +1,5 @@
 package dev.norsehorse.vaultpony.ui
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -64,6 +63,10 @@ fun VaultPonyRoot(
     var session by remember {
         mutableStateOf<VaultSession?>(openVolumeId?.let { SessionRegistry.get(it) })
     }
+    // Convert to VeraCrypt (2.0.0 rc5, plan 6.2): the TrueCrypt vault whose
+    // convert screen shows instead of its browser. Saveable, so a rotation
+    // mid-copy comes back to the progress.
+    var convertFor by rememberSaveable { mutableStateOf<String?>(null) }
     var screen by remember {
         mutableStateOf<Screen>(
             if (AppPrefs.onboardingDone(context) || share != null) Screen.Home else Screen.Onboarding(),
@@ -98,6 +101,7 @@ fun VaultPonyRoot(
             if (open == null || !SessionRegistry.isOpen(open)) {
                 session = null
                 openVolumeId = null
+                convertFor = null
                 screen = Screen.Home
             }
         }
@@ -108,11 +112,13 @@ fun VaultPonyRoot(
     val visibleSession = session?.takeIf { SessionRegistry.isOpen(it) }
     // The vault a share goes into: the one unlocked for it, else the most
     // recently unlocked one. Re-read every recomposition, so a lock drops it.
+    // Read-only vaults (NTFS, ext4, TrueCrypt) are never offered for it
+    // (2.0.0 rc5): with only those unlocked, home asks to unlock a vault.
     val shareSession = if (share == null) {
         null
     } else {
         shareVolumeId?.let { SessionRegistry.get(it) }
-            ?: SessionRegistry.ids().lastOrNull()?.let { SessionRegistry.get(it) }
+            ?: SessionRegistry.ids().mapNotNull { SessionRegistry.get(it) }.lastOrNull { sessionWritable(it) }
     }
     // A batch summary whose vault isn't on screen any more (a Lock from the
     // notification or tile stopped the batch, or the vault auto-locked after
@@ -122,6 +128,11 @@ fun VaultPonyRoot(
     val onScreen = if (share != null) shareSession else visibleSession
     val orphanSummary = (transferState as? TransferJobs.State.Done)
         ?.takeIf { TransferJobs.owner !== onScreen }
+        ?.result
+    // Likewise a convert's result whose screen is gone (2.0.0 rc5).
+    val convertShowing = share == null && visibleSession != null && convertFor != null && convertFor == openVolumeId
+    val orphanConvert = (transferState as? TransferJobs.State.Converted)
+        ?.takeIf { !convertShowing || TransferJobs.owner !== visibleSession }
         ?.result
 
     // A share is over once its import has settled and its summary was
@@ -144,6 +155,7 @@ fun VaultPonyRoot(
                 ),
             )
         }
+        if (orphanConvert != null) ConvertResultDialog(orphanConvert)
         Scaffold { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 val s = visibleSession
@@ -158,6 +170,22 @@ fun VaultPonyRoot(
                             onShareFinished()
                         },
                     )
+                } else if (s != null && share == null && convertShowing) {
+                    ConvertScreen(
+                        session = s,
+                        volumeId = convertFor!!,
+                        onOpenNew = { newSession, newId ->
+                            convertFor = null
+                            // The new vault replaces the TrueCrypt one on
+                            // screen; the TrueCrypt one locks.
+                            if (SessionRegistry.isOpen(newSession)) {
+                                openVolumeId?.let { SessionRegistry.requestLock(it) }
+                                openVolumeId = newId
+                                session = newSession
+                            }
+                        },
+                        onDone = { convertFor = null },
+                    )
                 } else if (s != null && share == null) {
                     BrowserScreen(
                         session = s,
@@ -168,8 +196,10 @@ fun VaultPonyRoot(
                             if (id != null) SessionRegistry.requestLock(id) else s.lock()
                             session = null
                             openVolumeId = null
+                            convertFor = null
                             screen = Screen.Home
                         },
+                        onConvert = { convertFor = openVolumeId },
                     )
                 } else {
                     BackHandler(
@@ -198,23 +228,11 @@ fun VaultPonyRoot(
                         is Screen.Create -> CreateContainerScreen(
                             onCreated = { uri ->
                                 // Persist read+write so the home entry can reopen
-                                // the new vault after a restart (the create-document
-                                // grant is otherwise only good for this process).
-                                val rw = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                runCatching {
-                                    context.contentResolver.takePersistableUriPermission(uri, rw)
-                                }.onFailure {
-                                    runCatching {
-                                        context.contentResolver.takePersistableUriPermission(
-                                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                                        )
-                                    }
-                                }
-                                // Remember it now so it shows on home even if the
-                                // user taps Done instead of opening it. Respects
-                                // no-trace mode (VaultStore.add gates on the pref).
-                                VaultStore.add(context, uri)
+                                // the new vault after a restart, and remember it now
+                                // so it shows on home even if the user taps Done
+                                // instead of opening it. Respects no-trace mode
+                                // (VaultStore.add gates on the pref).
+                                adoptCreatedContainer(context, uri)
                                 // Always land on the "how to open it" screen first.
                                 screen = Screen.VaultCreated(uri, sc.fromOnboarding)
                             },
@@ -260,6 +278,7 @@ fun VaultPonyRoot(
                                 } else {
                                     openVolumeId = VaultRepository.volumeId(sc.uri)
                                     session = unlocked
+                                    convertFor = null
                                 }
                             },
                             onBack = { screen = Screen.Home },

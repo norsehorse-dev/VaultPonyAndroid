@@ -421,7 +421,8 @@ class VaultDocumentsProvider : DocumentsProvider() {
             CoreErrorMap.log("provider $op", e)
             SessionRegistry.noteFailure(session, e)
             val errno = when (CoreErrorMap.kindOf(e)) {
-                VaultErrorKind.HIDDEN_PROTECTED, VaultErrorKind.READ_ONLY -> OsConstants.EROFS
+                VaultErrorKind.HIDDEN_PROTECTED, VaultErrorKind.READ_ONLY, VaultErrorKind.TRUECRYPT_READ_ONLY ->
+                    OsConstants.EROFS
                 VaultErrorKind.FULL -> OsConstants.ENOSPC
                 else -> OsConstants.EIO
             }
@@ -602,7 +603,7 @@ class VaultDocumentsProvider : DocumentsProvider() {
 
     private fun callerMessage(e: Throwable): String = when (CoreErrorMap.kindOf(e)) {
         VaultErrorKind.HIDDEN_PROTECTED -> "blocked to protect the hidden volume; the vault is now read-only"
-        VaultErrorKind.READ_ONLY -> "the vault is read-only"
+        VaultErrorKind.READ_ONLY, VaultErrorKind.TRUECRYPT_READ_ONLY -> "the vault is read-only"
         VaultErrorKind.FULL -> "the vault is full"
         VaultErrorKind.NOT_FOUND -> "not found"
         else -> "vault error"

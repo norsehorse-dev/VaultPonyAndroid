@@ -59,6 +59,45 @@ class VaultRepository(private val context: Context) {
         session
     }
 
+    /** Unlock a TrueCrypt 6.x/7.x volume ("TrueCrypt mode", 2.0.0 rc5, plan
+     *  6.2). No PIM and no hash choice: the core tries TrueCrypt's three
+     *  hashes at its iteration counts. The session is read-only, so the fd is
+     *  opened read-only too. */
+    suspend fun unlockTrueCrypt(
+        uri: Uri,
+        passphrase: String,
+        keyfiles: List<ByteArray> = emptyList(),
+        cancel: UnlockCancel? = null,
+        onProgress: (UnlockProgress) -> Unit,
+    ): VaultSession = withContext(Dispatchers.IO) {
+        val pfd = context.contentResolver.openFileDescriptor(uri, "r")
+            ?: throw IllegalStateException("could not open container")
+        val fd = pfd.detachFd()
+        val listener = object : UnlockProgressListener {
+            override fun onProgress(step: UInt, total: UInt, prf: String) {
+                onProgress(UnlockProgress(step, total, prf))
+            }
+        }
+        val session = VaultSession.unlockTruecryptFd(fd, passphrase, keyfiles, cancel, listener)
+        SessionRegistry.put(volumeId(uri), session, uri.toString())
+        session
+    }
+
+    /** Size of the container file at [uri] in bytes, or null when the
+     *  provider doesn't say (Convert to VeraCrypt sizes the new one from it). */
+    suspend fun containerSize(uri: Uri): Long? = withContext(Dispatchers.IO) {
+        val fromQuery = runCatching {
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { c ->
+                val idx = c.getColumnIndex(OpenableColumns.SIZE)
+                if (idx >= 0 && c.moveToFirst() && !c.isNull(idx)) c.getLong(idx) else null
+            }
+        }.getOrNull()
+        fromQuery?.takeIf { it > 0 }
+            ?: runCatching {
+                context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize }
+            }.getOrNull()?.takeIf { it > 0 }
+    }
+
     /** Open the OUTER volume of a hidden container read-write while
      *  write-protecting the hidden region (doc §9). Both passwords are
      *  required; the hidden one is used only to locate the bytes to shield.

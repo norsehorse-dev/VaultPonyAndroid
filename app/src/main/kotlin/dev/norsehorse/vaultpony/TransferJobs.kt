@@ -18,6 +18,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import uniffi.vault_ffi.CopyProgressListener
+import uniffi.vault_ffi.CopyReport
+import uniffi.vault_ffi.UnlockCancel
+import uniffi.vault_ffi.VaultException
 import uniffi.vault_ffi.VaultSession
 import java.io.ByteArrayInputStream
 import java.io.IOException
@@ -38,6 +42,10 @@ import java.io.InputStream
  * foreground service, so it keeps going in the background, and the auto-lock
  * timer waits for it (SessionRegistry.setBatchActive). A Lock tapped during a
  * copy stops it at the next chunk boundary first ([stopForLock]).
+ *
+ * rc5 (plan 6.2, D9): "Convert to VeraCrypt" runs here too ([convert]), as a
+ * batch whose [owner] is the TrueCrypt vault and whose [partner] is the new
+ * container it copies into; both stay unlocked while it copies (D13).
  */
 object TransferJobs {
 
@@ -66,6 +74,11 @@ object TransferJobs {
         ) : State
 
         data class Done(val result: TransferResult) : State
+
+        /** A convert ended: copied and checked, stopped, or failed. Shown by
+         *  the convert screen (or VaultPonyRoot when that is gone), never by
+         *  the browser's batch dialogs. */
+        data class Converted(val result: ConvertResult) : State
     }
 
     private val _state = MutableStateFlow<State>(State.Idle)
@@ -87,6 +100,22 @@ object TransferJobs {
     @Volatile
     var owner: VaultSession? = null
         private set
+
+    /** The batch writes into this second vault: the new container of a
+     *  convert. Null for imports and exports. */
+    @Volatile
+    var partner: VaultSession? = null
+        private set
+
+    /** The current (or last) batch is a convert. For the notification. */
+    @Volatile
+    var converting: Boolean = false
+        private set
+
+    // The running convert's handle; cancel() fires it so the core stops the
+    // copy between chunks.
+    @Volatile
+    private var convertCancel: UnlockCancel? = null
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var job: Job? = null
@@ -229,6 +258,7 @@ object TransferJobs {
         cancelRequested = true
         collisionAnswer?.complete(null)
         oversizeAnswer?.complete(false)
+        convertCancel?.cancel()
     }
 
     /** The user tapped Lock (in-app, notification or tile) during a batch:
@@ -249,7 +279,8 @@ object TransferJobs {
      *  wait forever on a session that no longer exists. */
     fun abandonFor(locked: Collection<VaultSession>) {
         val o = owner ?: return
-        if (busy && locked.any { it === o }) {
+        val p = partner
+        if (busy && locked.any { it === o || (p != null && it === p) }) {
             abandoned = true
             cancel()
         }
@@ -268,6 +299,7 @@ object TransferJobs {
         session: VaultSession,
         export: Boolean,
         grants: List<Uri> = emptyList(),
+        partner: VaultSession? = null,
         body: suspend () -> State?,
     ): Boolean {
         synchronized(runLock) {
@@ -279,6 +311,8 @@ object TransferJobs {
             _active.value = true
         }
         owner = session
+        this.partner = partner
+        converting = partner != null
         exporting = export
         _state.value = State.Preparing(export)
         // R1: the auto-lock timer waits while this batch works...
@@ -329,9 +363,74 @@ object TransferJobs {
         SessionRegistry.noteFailure(session, e)
         val kind = CoreErrorMap.kindOf(e)
         return when {
-            kind != null -> BatchError(kind = kind)
+            kind != null -> BatchError(kind = kind, detail = CoreErrorMap.messageDetail(e))
             e is LocalizedIOException -> BatchError(text = e.message)
             else -> BatchError()
+        }
+    }
+
+    // -- Convert to VeraCrypt (2.0.0 rc5, plan 6.2, D9) ------------------------
+
+    /**
+     * Copy every file of the TrueCrypt vault [src] into [dst], the new,
+     * empty VeraCrypt container just created at [dstUri] and unlocked, in the
+     * foreground service like any batch. The core plans, copies, and checks
+     * every file's size and the counts; [src] is only read. False when another
+     * batch is still running, and nothing happens.
+     */
+    fun convert(context: Context, src: VaultSession, dst: VaultSession, dstUri: Uri, dstVolumeId: String): Boolean {
+        val handle = UnlockCancel()
+        return start(context, src, export = false, partner = dst) {
+            convertCancel = handle
+            try {
+                runConvert(src, dst, handle, dstUri, dstVolumeId)
+            } finally {
+                convertCancel = null
+            }
+        }
+    }
+
+    private fun runConvert(
+        src: VaultSession,
+        dst: VaultSession,
+        handle: UnlockCancel,
+        dstUri: Uri,
+        dstVolumeId: String,
+    ): State {
+        fun ended(report: CopyReport?, cancelled: Boolean, error: BatchError?) = State.Converted(
+            ConvertResult(dst, dstUri, dstVolumeId, report, cancelled, error),
+        )
+        if (cancelRequested) return ended(null, cancelled = true, error = null)
+        return try {
+            val plan = src.planCopyTo(dst)
+            // The core refuses these up front too; saying "full" here is clearer
+            // than its generic filesystem error. Too-big files can't happen:
+            // the form picks exFAT when a file is over FAT's limit.
+            val free = runCatching { dst.space().freeBytes }.getOrNull()
+            if (free != null && plan.neededBytes > free) {
+                return ended(null, cancelled = false, error = BatchError(kind = VaultErrorKind.FULL))
+            }
+            _state.value = State.Running(false, 0, plan.files.toInt(), "", 0L, plan.bytes.toLong())
+            // Fired from the copying thread: only publish the numbers.
+            val listener = object : CopyProgressListener {
+                override fun onProgress(filesDone: ULong, filesTotal: ULong, bytesDone: ULong, bytesTotal: ULong) {
+                    _state.value = State.Running(
+                        false, filesDone.toInt(), filesTotal.toInt(), "", bytesDone.toLong(), bytesTotal.toLong(),
+                    )
+                }
+            }
+            if (cancelRequested) handle.cancel()
+            val report = src.copyTreeTo(dst, handle, listener)
+            runCatching { dst.flush() }
+            ended(report, cancelled = false, error = null)
+        } catch (e: Exception) {
+            runCatching { dst.flush() }
+            // A Stop, or a lock of either vault, ends the copy as Cancelled.
+            if (e is VaultException.Cancelled || cancelRequested) {
+                ended(null, cancelled = true, error = null)
+            } else {
+                ended(null, cancelled = false, error = batchError(dst, e))
+            }
         }
     }
 
@@ -815,4 +914,19 @@ object TransferJobs {
         }
         return Outcome.COPIED
     }
+}
+
+/** How a convert ended (2.0.0 rc5, plan 6.2). [report] is set when every
+ *  file was copied and checked; otherwise [cancelled] (Stop, or a lock) or
+ *  [error] says why it stopped. [newSession], [newUri] and [newVolumeId] are
+ *  the new container, for "Open new vault" and "Delete new container". */
+class ConvertResult(
+    val newSession: VaultSession,
+    val newUri: Uri,
+    val newVolumeId: String,
+    val report: CopyReport?,
+    val cancelled: Boolean,
+    val error: BatchError?,
+) {
+    val ok: Boolean get() = report != null
 }

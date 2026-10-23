@@ -117,6 +117,14 @@ fun UnlockScreen(
         mutableStateOf(container?.let { VaultStore.rememberedHash(context, it) } ?: KdfFilter.AUTO)
     }
     var hashPicked by remember(container) { mutableStateOf(false) }
+    // "TrueCrypt mode" (2.0.0 rc5, plan 6.2): starts ticked when remembered
+    // for this vault, which happens only after the user ticked it by hand and
+    // the unlock worked, like the hash (D21). [truecryptPicked]: ticked by
+    // hand on this screen.
+    var truecrypt by remember(container) {
+        mutableStateOf(container?.let { VaultStore.rememberedTrueCrypt(context, it) } ?: false)
+    }
+    var truecryptPicked by remember(container) { mutableStateOf(false) }
     var cancelHandle by remember { mutableStateOf<UnlockCancel?>(null) }
     var memoryWarning by remember { mutableStateOf<MemoryCheck?>(null) }
 
@@ -141,12 +149,16 @@ fun UnlockScreen(
         val uri = container ?: return
         val pass = passphrase
         val hiddenPass = hiddenPassphrase
-        val protect = protectHidden
-        val pimV = pim.toUIntOrNull() ?: 0u
+        val tc = truecrypt
+        // TrueCrypt has no PIM and no hidden-volume protection.
+        val protect = protectHidden && !tc
+        val pimV = if (tc) 0u else pim.toUIntOrNull() ?: 0u
         val kf = keyfiles
         val enrollNow = !protect && keepsList &&
             enrollBio && kf.isEmpty() && activity != null && volumeId != null
-        val rememberHash = hashPicked
+        // The hash menu is hidden in TrueCrypt mode, so nothing to remember.
+        val rememberHash = hashPicked && !tc
+        val rememberTrueCrypt = truecryptPicked && tc
         val handle = UnlockCancel()
         cancelHandle = handle
         memoryWarning = null
@@ -154,7 +166,15 @@ fun UnlockScreen(
         error = null
         scope.launch {
             try {
-                val session = if (protect) {
+                val session = if (tc) {
+                    repo.unlockTrueCrypt(
+                        uri = uri,
+                        passphrase = pass,
+                        keyfiles = kf,
+                        cancel = handle,
+                        onProgress = { progress = it },
+                    )
+                } else if (protect) {
                     repo.unlockOuterProtected(
                         uri = uri,
                         outerPassphrase = pass,
@@ -185,15 +205,21 @@ fun UnlockScreen(
                     VaultStore.add(context, uri)
                     VaultStore.setHash(context, uri, kdfChoice)
                 }
+                // TrueCrypt mode likewise: ticked by hand, and it worked.
+                if (rememberTrueCrypt) {
+                    VaultStore.add(context, uri)
+                    VaultStore.setTrueCrypt(context, uri, true)
+                }
                 if (enrollNow) {
                     // Remember which KDF family opened it, so the biometric
-                    // unlock goes straight there next time.
-                    val found = if (runCatching { session.facts().prf }.getOrNull() == "Argon2id") {
-                        KdfFilter.ARGON2ID_ONLY
-                    } else {
-                        KdfFilter.PBKDF2_ONLY
+                    // unlock goes straight there next time. TrueCrypt mode is
+                    // stored with it and needs no KDF hint.
+                    val found = when {
+                        tc -> KdfFilter.AUTO
+                        runCatching { session.facts().prf }.getOrNull() == "Argon2id" -> KdfFilter.ARGON2ID_ONLY
+                        else -> KdfFilter.PBKDF2_ONLY
                     }
-                    BiometricUnlock.enroll(activity!!, volumeId!!, pass, pimV, found) {
+                    BiometricUnlock.enroll(activity!!, volumeId!!, pass, pimV, found, truecrypt = tc) {
                         onUnlocked(session)
                     }
                 } else {
@@ -260,19 +286,28 @@ fun UnlockScreen(
                         busy = true
                         BiometricUnlock.retrieve(
                             activity, volumeId,
-                            onSecret = { pimV, pass, kdfV ->
+                            onSecret = { pimV, pass, kdfV, tcV ->
                                 val handle = UnlockCancel()
                                 cancelHandle = handle
                                 scope.launch {
                                     try {
-                                        val session = repo.unlock(
-                                            uri = container,
-                                            passphrase = pass,
-                                            pim = pimV,
-                                            kdf = kdfV,
-                                            cancel = handle,
-                                            onProgress = { progress = it },
-                                        )
+                                        val session = if (tcV) {
+                                            repo.unlockTrueCrypt(
+                                                uri = container,
+                                                passphrase = pass,
+                                                cancel = handle,
+                                                onProgress = { progress = it },
+                                            )
+                                        } else {
+                                            repo.unlock(
+                                                uri = container,
+                                                passphrase = pass,
+                                                pim = pimV,
+                                                kdf = kdfV,
+                                                cancel = handle,
+                                                onProgress = { progress = it },
+                                            )
+                                        }
                                         onUnlocked(session)
                                     } catch (e: VaultException) {
                                         error = vaultErrorText(context, e, unlockFailed)
@@ -329,25 +364,28 @@ fun UnlockScreen(
 
             // Protect a hidden volume: open the outer/decoy volume read-write
             // while shielding the hidden region, so adding files here can't
-            // overwrite the hidden volume (doc §9).
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .toggleable(
-                        value = protectHidden,
-                        role = Role.Checkbox,
-                        onValueChange = {
-                            protectHidden = it
-                            if (!it) hiddenPassphrase = ""
-                        },
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(checked = protectHidden, onCheckedChange = null)
-                Text(
-                    stringResource(R.string.unlock_protect_hidden),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+            // overwrite the hidden volume (doc §9). Not in TrueCrypt mode,
+            // which opens read-only.
+            if (!truecrypt) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(
+                            value = protectHidden,
+                            role = Role.Checkbox,
+                            onValueChange = {
+                                protectHidden = it
+                                if (!it) hiddenPassphrase = ""
+                            },
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = protectHidden, onCheckedChange = null)
+                    Text(
+                        stringResource(R.string.unlock_protect_hidden),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
             if (protectHidden) {
                 OutlinedTextField(
@@ -384,7 +422,7 @@ fun UnlockScreen(
                 } else {
                     Spacer(Modifier.size(1.dp))
                 }
-                if (!showPim) {
+                if (!showPim && !truecrypt) {
                     TextButton(onClick = { showPim = true }) { Text(stringResource(R.string.unlock_pim_button)) }
                 }
             }
@@ -395,7 +433,7 @@ fun UnlockScreen(
                     enrollBio = false
                 }) { Text(stringResource(R.string.unlock_clear_keyfiles)) }
             }
-            if (showPim) {
+            if (showPim && !truecrypt) {
                 OutlinedTextField(
                     value = pim,
                     onValueChange = { pim = it.filter(Char::isDigit) },
@@ -405,16 +443,53 @@ fun UnlockScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            HashMenu(
-                selected = kdf,
-                onSelect = {
-                    kdf = it
-                    hashPicked = true
-                    // Picking Auto forgets a remembered hash right away; a
-                    // single hash is only remembered once it opens the vault.
-                    if (it == KdfFilter.AUTO) VaultStore.setHash(context, container, null)
-                },
-            )
+            // TrueCrypt mode (2.0.0 rc5, plan 6.2, D7): TrueCrypt has no PIM
+            // and no hash choice, and its volumes open read-only.
+            Column(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(
+                            value = truecrypt,
+                            role = Role.Checkbox,
+                            onValueChange = {
+                                truecrypt = it
+                                truecryptPicked = it
+                                if (it) {
+                                    protectHidden = false
+                                    hiddenPassphrase = ""
+                                } else {
+                                    // Unticking forgets it right away.
+                                    VaultStore.setTrueCrypt(context, container, false)
+                                }
+                            },
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = truecrypt, onCheckedChange = null)
+                    Text(
+                        stringResource(R.string.unlock_truecrypt),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                Text(
+                    stringResource(R.string.unlock_truecrypt_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (!truecrypt) {
+                HashMenu(
+                    selected = kdf,
+                    onSelect = {
+                        kdf = it
+                        hashPicked = true
+                        // Picking Auto forgets a remembered hash right away; a
+                        // single hash is only remembered once it opens the vault.
+                        if (it == KdfFilter.AUTO) VaultStore.setHash(context, container, null)
+                    },
+                )
+            }
 
             if (canBio && keepsList && activity != null && volumeId != null && !enrolled && keyfiles.isEmpty() && !protectHidden) {
                 Row(
@@ -494,8 +569,8 @@ fun UnlockScreen(
                         val pimV = pim.toUIntOrNull() ?: 0u
                         // Argon2id needs hundreds of MiB for a moment. Check
                         // before starting rather than let the system kill the
-                        // app mid-unlock.
-                        val check = if (mayUseArgon2(kdf)) repo.argon2MemoryCheck(pimV) else null
+                        // app mid-unlock. TrueCrypt mode never runs Argon2id.
+                        val check = if (!truecrypt && mayUseArgon2(kdf)) repo.argon2MemoryCheck(pimV) else null
                         if (check != null && !check.enough) {
                             memoryWarning = check
                         } else {

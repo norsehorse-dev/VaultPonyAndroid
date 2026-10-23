@@ -384,4 +384,71 @@
     <string name="tile_nothing_unlocked">Nothing unlocked</string>
     <string name="notif_permission_rationale">VaultPony shows a notification with a Lock button while a vault stays unlocked in the background.</string>
     <string name="notif_permission_not_now">Not now</string>
+
+    <!-- TrueCrypt mode at unlock (2.0.0 rc5, plan 6.2, D7) -->
+    <string name="unlock_truecrypt">TrueCrypt mode</string>
+    <string name="unlock_truecrypt_note">For volumes made with TrueCrypt 6.0 to 7.1a. They open read-only.</string>
+    <!-- TrueCrypt and ext4 errors (2.0.0 rc5, plan 6.2, 6.3). %1$s in
+         err_ext4_unsupported is the core's English name of the feature. -->
+    <string name="err_truecrypt_version">This volume was made with a TrueCrypt version before 6.0, which VaultPony can\'t open.</string>
+    <string name="err_truecrypt_read_only">TrueCrypt volumes open read-only. Convert the volume to VeraCrypt to make changes.</string>
+    <string name="err_ext4_unsupported">This ext4 volume uses a feature VaultPony can\'t read yet (%1$s).</string>
+
+    <!-- Read-only TrueCrypt volumes in the browser and volume info (2.0.0 rc5, plan 6.2) -->
+    <string name="browser_truecrypt_banner">TrueCrypt volume: read-only. Convert it to VeraCrypt to make changes.</string>
+    <string name="info_format">Format</string>
+    <string name="info_format_veracrypt">VeraCrypt</string>
+    <string name="info_format_truecrypt">TrueCrypt (read-only)</string>
+
+    <!-- Convert to VeraCrypt (2.0.0 rc5, plan 6.2, D9). convert_title is also
+         the button label, the volume info action and the copy notification
+         title. convert_done is filled with convert_count_files and
+         convert_count_folders. -->
+    <string name="convert_title">Convert to VeraCrypt</string>
+    <string name="convert_intro">VaultPony makes a new VeraCrypt container and copies every file into it. The TrueCrypt container is not changed or deleted. Remove it yourself once you\'ve checked the new one.</string>
+    <string name="convert_hidden_note">This is a hidden TrueCrypt volume. It converts to an ordinary VeraCrypt container; the hidden-volume structure doesn\'t carry over.</string>
+    <string name="convert_counting">Counting files…</string>
+    <string name="convert_min_size">The new container needs to be at least %1$s.</string>
+    <string name="convert_exfat_note">A file is larger than 4 GB, so the new container uses exFAT.</string>
+    <string name="convert_action">Convert</string>
+    <plurals name="convert_progress">
+        <item quantity="one">Copying %1$d of %2$d file</item>
+        <item quantity="other">Copying %1$d of %2$d files</item>
+    </plurals>
+    <string name="convert_done">Converted. %1$s and %2$s copied and checked.</string>
+    <plurals name="convert_count_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <plurals name="convert_count_folders">
+        <item quantity="one">%d folder</item>
+        <item quantity="other">%d folders</item>
+    </plurals>
+    <plurals name="convert_renamed">
+        <item quantity="one">%d name was changed to work on FAT or exFAT.</item>
+        <item quantity="other">%d names were changed to work on FAT or exFAT.</item>
+    </plurals>
+    <plurals name="convert_skipped">
+        <item quantity="one">%d link or special file was skipped.</item>
+        <item quantity="other">%d links or special files were skipped.</item>
+    </plurals>
+    <string name="convert_open_new">Open new vault</string>
+    <string name="convert_stopped">Conversion stopped. The new container is incomplete.</string>
+    <string name="convert_delete_new">Delete new container</string>
+    <string name="convert_keep">Keep it</string>
+    <string name="common_stop">Stop</string>
+
+    <!-- Camera capture into the vault (2.0.0 rc5, plan 5.6, D10). %1$s in
+         camera_saved_to is the folder name, or the vault label at the root. -->
+    <string name="camera_take_photo">Take photo</string>
+    <string name="camera_record_video">Record video</string>
+    <string name="camera_photo">Photo</string>
+    <string name="camera_video">Video</string>
+    <string name="camera_switch">Switch camera</string>
+    <string name="camera_close">Close</string>
+    <string name="camera_saved_to">Saved to %1$s</string>
+    <string name="camera_video_failed">Couldn\'t save the video.</string>
+    <string name="camera_no_sound">Recording without sound. Allow the microphone to record sound.</string>
+    <string name="camera_denied">VaultPony needs the camera to take photos into the vault.</string>
+    <string name="camera_open_settings">Open settings</string>
 </resources>

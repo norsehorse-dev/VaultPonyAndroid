@@ -24,6 +24,12 @@ enum class CoreVariant {
     PASSWORD_TOO_SHORT_FOR_PIM,
     /** A keyfile with no bytes; VeraCrypt refuses those (2.0.0 rc4). */
     EMPTY_KEYFILE,
+    /** A write to a TrueCrypt session (2.0.0 rc5, plan 6.2). */
+    TRUECRYPT_READ_ONLY,
+    /** A TrueCrypt header from before 6.0 (2.0.0 rc5, plan 6.2). */
+    TRUECRYPT_VERSION_UNSUPPORTED,
+    /** An ext4 feature the reader doesn't support (2.0.0 rc5, plan 6.3). */
+    EXT4_UNSUPPORTED,
 }
 
 /** What the user is told. Each maps to one string resource. */
@@ -37,6 +43,10 @@ enum class VaultErrorKind {
     READ_ONLY,
     FULL,
     EMPTY_KEYFILE,
+    TRUECRYPT_READ_ONLY,
+    TRUECRYPT_TOO_OLD,
+    /** Its text carries the core's name of the feature (BatchError.detail). */
+    EXT4_UNSUPPORTED,
     OTHER,
 }
 
@@ -58,7 +68,8 @@ object CoreErrors {
      *   ENOSPC ("... (os error 28)") on the container file is not read as a
      *   full vault;
      * - "not found", "not found: <name>", fatfs "No such file or directory";
-     * - NTFS writes say "NTFS is read-only".
+     * - NTFS writes say "NTFS is read-only", ext4 writes "ext4 is read-only
+     *   in this version" (2.0.0 rc5).
      * Anything else is the generic filesystem or I/O text.
      */
     fun classify(variant: CoreVariant, detail: String?): VaultErrorKind? = when (variant) {
@@ -69,6 +80,9 @@ object CoreErrors {
         CoreVariant.FILESYSTEM -> ofFilesystem(detail.orEmpty())
         CoreVariant.IO -> VaultErrorKind.IO
         CoreVariant.EMPTY_KEYFILE -> VaultErrorKind.EMPTY_KEYFILE
+        CoreVariant.TRUECRYPT_READ_ONLY -> VaultErrorKind.TRUECRYPT_READ_ONLY
+        CoreVariant.TRUECRYPT_VERSION_UNSUPPORTED -> VaultErrorKind.TRUECRYPT_TOO_OLD
+        CoreVariant.EXT4_UNSUPPORTED -> VaultErrorKind.EXT4_UNSUPPORTED
         else -> VaultErrorKind.OTHER
     }
 
@@ -77,9 +91,12 @@ object CoreErrors {
         "no free clusters" in msg || msg == "No space left on device" -> VaultErrorKind.FULL
         msg == "not found" || msg.startsWith("not found: ") || msg == "No such file or directory" ->
             VaultErrorKind.NOT_FOUND
-        msg == "NTFS is read-only" -> VaultErrorKind.READ_ONLY
+        msg == "NTFS is read-only" || msg == EXT4_READ_ONLY -> VaultErrorKind.READ_ONLY
         else -> VaultErrorKind.FILESYSTEM
     }
+
+    /** vc-fs ext4.rs READ_ONLY, verbatim. */
+    const val EXT4_READ_ONLY = "ext4 is read-only in this version"
 
     /** vc-types VcError::HiddenVolumeProtected's message, verbatim. */
     const val HIDDEN_GATE = "write blocked to protect the hidden volume; the volume is now read-only"
