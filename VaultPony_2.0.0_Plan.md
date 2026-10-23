@@ -1,6 +1,6 @@
 # VaultPony 2.0.0 Plan
 
-Rev 6, 2026-10-21. Scope decided (section 0). Section 10 holds what is still open; section 11
+Rev 7, 2026-10-22. Scope decided (section 0). Section 10 holds what is still open; section 11
 covers issues #4 to #6. The rc3 Phase 0 spike (desk research) is in
 `VaultPony_2.0.0_rc3_Spike.md`; section 4.2 carries its recommendation.
 
@@ -54,6 +54,15 @@ core with Argon2id.
   choice. Both land in rc4.
 - D17 (2026-10-21, from issue #4). ext4 containers open read-only in 2.0.0 (rc5, with
   TrueCrypt mode); read-write ext4 is planned for 2.1.
+- D18 (2026-10-22, rc3). iOS Files access uses the non-replicated `NSFileProviderExtension`.
+  The app unlocks and pushes the keys and the open container fd to the extension over the
+  File Provider XPC service; keys live only in memory, never in the Keychain.
+- D19 (2026-10-22, rc3). With auto-lock "Immediately", activity from Files keeps the vault
+  unlocked: the deadline counts from the later of leaving the app and the last Files
+  activity, never more than 1 hour after the app was last in front.
+- D20 (2026-10-22, rc3). "Show in Files" is a checkbox on the unlock screen, off by
+  default, per unlock. rc3 leaves out thumbnails, Recents and Files search for vault items,
+  and copy-mode vaults get no Files access.
 
 ---
 
@@ -183,8 +192,8 @@ iOS and Desktop equivalents.
 ### 4.2 iOS: File Provider extension
 
 The big new piece. The Phase 0 desk spike (`VaultPony_2.0.0_rc3_Spike.md`, sources there)
-recommends the design below. It still needs NorseHorse's confirmation (Q4 to Q9) and an
-on-device spike (S1 to S5 in the spike doc) before any rc3 code.
+recommends the design below, confirmed as D18 to D20. The on-device checks (S1 to S5 in the
+spike doc) run as part of the rc3 device test.
 
 - Model: the non-replicated `NSFileProviderExtension`, not the replicated one Rev 5 named.
   It is the only model where VaultPony decides where plaintext lands: its own app-group
@@ -409,7 +418,7 @@ commits, or this document.
 
 ## 10. Open questions
 
-Q1. iOS File Provider keys. Answered by the spike, pending Q9: neither original option.
+Q1. iOS File Provider keys. Answered (D18): neither original option.
 The extension can't run Argon2id in its 20 MB, so the app pushes keys and the container fd
 over XPC (section 4.2).
 
@@ -417,20 +426,7 @@ Q2. Desktop extras: in-app media player, and a tray/menu "Lock all"?
 
 Q3. PIM fields stay out of autofill. Confirm.
 
-From the rc3 spike (section 4.2):
-
-Q4. With auto-lock "Immediately", should Files access require a minimum delay, or should
-Files activity extend the deadline up to the 1 hour cap?
-
-Q5. "Show in Files": a per-unlock checkbox on the unlock screen, or a Settings toggle?
-
-Q6. Skip thumbnails, Recents and Files search for vault items in rc3?
-
-Q7. Leave copy-mode sessions out of Files access in rc3?
-
-Q8. Confirm no Keychain key cache in 2.0.0.
-
-Q9. Confirm the switch from the replicated to the non-replicated model.
+Q4 to Q9 (rc3 spike questions) were answered on 2026-10-22: see D18 to D20.
 
 ---
 
