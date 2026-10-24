@@ -37,7 +37,14 @@ object MediaKinds {
 /** One vault file as MediaPlayer sees it. Reads on the player's own thread.
  *  The size comes from a stat when the player first asks (at open), not
  *  from the folder listing, which may be stale; [listedSize] is only the
- *  fallback if that stat fails. */
+ *  fallback if that stat fails.
+ *
+ *  The player asks for many small ranges, and every vault read opens the
+ *  file again and walks its cluster chain from the start, which gets slower
+ *  the further into a long video it reads. So reads are served from whole
+ *  1 MiB blocks held in memory (the last [CACHED_BLOCKS] of them), and the
+ *  vault is only read once per block. The blocks are wiped when evicted and
+ *  when the player closes. */
 class VaultMediaDataSource(
     private val session: VaultSession,
     private val path: String,
@@ -47,43 +54,73 @@ class VaultMediaDataSource(
     private var closed = false
     private var checkedAt = -OPEN_CHECK_MS
 
+    // Block index -> plaintext, least recently used first. Player thread only
+    // (and close(), under the same lock).
+    private val blocks = object : LinkedHashMap<Long, ByteArray>(CACHED_BLOCKS + 1, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, ByteArray>?): Boolean {
+            if (size <= CACHED_BLOCKS) return false
+            eldest?.value?.fill(0)
+            return true
+        }
+    }
+
     private val fileSize: Long by lazy {
         runCatching { session.stat(path).size.toLong() }.getOrDefault(listedSize)
     }
 
     override fun getSize(): Long = fileSize
 
-    override fun readAt(position: Long, buffer: ByteArray, offset: Int, length: Int): Int {
-        if (closed) throw IOException("closed")
-        if (length <= 0) return 0
-        if (position >= fileSize) return -1
-        // A lock ends playback at the next read, even before the player is
-        // released on the main thread.
-        val now = SystemClock.elapsedRealtime()
-        if (now - checkedAt >= OPEN_CHECK_MS) {
-            if (!SessionRegistry.isOpen(session)) throw IOException("vault locked")
-            checkedAt = now
-        }
-        val want = minOf(length.toLong(), fileSize - position, MAX_READ).toInt()
-        val chunk = try {
-            session.readAt(path, position.toULong(), want.toUInt())
+    private fun block(index: Long): ByteArray {
+        blocks[index]?.let { return it }
+        val start = index * BLOCK
+        val want = minOf(BLOCK, fileSize - start).toInt()
+        val data = try {
+            session.readAt(path, start.toULong(), want.toUInt())
         } catch (e: Exception) {
             throw IOException("vault read failed")
         }
-        if (chunk.isEmpty()) return -1
-        chunk.copyInto(buffer, offset)
-        val n = chunk.size
-        chunk.fill(0)
-        return n
+        blocks[index] = data
+        return data
     }
 
+    override fun readAt(position: Long, buffer: ByteArray, offset: Int, length: Int): Int =
+        synchronized(blocks) {
+            if (closed) throw IOException("closed")
+            if (length <= 0) return 0
+            if (position >= fileSize) return -1
+            // A lock ends playback at the next read, even before the player
+            // is released on the main thread.
+            val now = SystemClock.elapsedRealtime()
+            if (now - checkedAt >= OPEN_CHECK_MS) {
+                if (!SessionRegistry.isOpen(session)) throw IOException("vault locked")
+                checkedAt = now
+            }
+            val want = minOf(length.toLong(), fileSize - position).toInt()
+            var done = 0
+            while (done < want) {
+                val at = position + done
+                val data = block(at / BLOCK)
+                val inBlock = (at % BLOCK).toInt()
+                if (inBlock >= data.size) break
+                val n = minOf(want - done, data.size - inBlock)
+                data.copyInto(buffer, offset + done, inBlock, inBlock + n)
+                done += n
+            }
+            if (done == 0) -1 else done
+        }
+
     override fun close() {
-        closed = true
+        synchronized(blocks) {
+            closed = true
+            blocks.values.forEach { it.fill(0) }
+            blocks.clear()
+        }
     }
 
     private companion object {
         const val OPEN_CHECK_MS = 250L
-        const val MAX_READ = 1L shl 20
+        const val BLOCK = 1L shl 20
+        const val CACHED_BLOCKS = 4
     }
 }
 
