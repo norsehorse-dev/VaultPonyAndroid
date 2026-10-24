@@ -30,7 +30,9 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 12
-        versionName = "2.0.0"
+        // Test builds pass -PvpVersionSuffix=-rc1 so testers' reports name the
+        // RC. Release and F-Droid builds never set it.
+        versionName = "2.0.0" + (project.findProperty("vpVersionSuffix") as String? ?: "")
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
