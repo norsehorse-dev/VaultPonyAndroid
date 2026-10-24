@@ -104,6 +104,7 @@ import dev.norsehorse.vaultpony.CollisionPolicy
 import dev.norsehorse.vaultpony.ProviderPaths
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.SessionRegistry
+import dev.norsehorse.vaultpony.CameraCapture
 import dev.norsehorse.vaultpony.ThumbnailCache
 import dev.norsehorse.vaultpony.TransferJobs
 import dev.norsehorse.vaultpony.TransferResult
@@ -696,8 +697,10 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit, onConvert: () -> Un
                             ActionPill(Icons.Filled.PhotoCamera, stringResource(R.string.camera_take_photo)) {
                                 camera = CAMERA_PHOTO
                             }
-                            ActionPill(Icons.Filled.Videocam, stringResource(R.string.camera_record_video)) {
-                                camera = CAMERA_VIDEO
+                            if (CameraCapture.videoSupported) {
+                                ActionPill(Icons.Filled.Videocam, stringResource(R.string.camera_record_video)) {
+                                    camera = CAMERA_VIDEO
+                                }
                             }
                         }
                     }

@@ -422,6 +422,7 @@
     <string name="camera_close">Fechar</string>
     <string name="camera_saved_to">Salvo em %1$s</string>
     <string name="camera_video_failed">Não foi possível salvar o vídeo.</string>
+    <string name="camera_limit_reached">A gravação parou no limite de tamanho. O vídeo foi salvo.</string>
     <string name="camera_no_sound">Gravando sem som. Permita o acesso ao microfone para gravar o som.</string>
     <string name="camera_denied">O VaultPony precisa da câmera para tirar fotos direto no cofre.</string>
     <string name="camera_open_settings">Abrir configurações</string>

@@ -108,8 +108,9 @@ private fun granted(context: Context, permission: String): Boolean =
  * Full-screen camera writing into the vault folder [dir] of [session].
  * [folderLabel] names it in "Saved to %1$s". [startVideo]: open in Video.
  * Stays open for more captures until [onClose]. A lock takes the browser,
- * and this screen with it, away: the recording stops and its temp file was
- * already removed (CameraCapture.discardFor).
+ * and this screen with it, away: the recording stops, and because the vault
+ * is no longer open its in-memory file is closed without being copied in
+ * (CameraCapture.finishVideo).
  */
 @Composable
 internal fun CameraScreen(
@@ -124,10 +125,11 @@ internal fun CameraScreen(
     val lifecycleOwner = remember(context) { context.findActivity() as? LifecycleOwner }
     val savedTo = stringResource(R.string.camera_saved_to, folderLabel)
     val videoFailed = stringResource(R.string.camera_video_failed)
+    val limitReached = stringResource(R.string.camera_limit_reached)
     val noSound = stringResource(R.string.camera_no_sound)
     val failed = stringResource(R.string.common_op_failed)
 
-    var video by rememberSaveable { mutableStateOf(startVideo) }
+    var video by rememberSaveable { mutableStateOf(startVideo && CameraCapture.videoSupported) }
     var front by rememberSaveable { mutableStateOf(false) }
     var hasPermission by remember { mutableStateOf(granted(context, Manifest.permission.CAMERA)) }
     var denied by remember { mutableStateOf(false) }
@@ -323,12 +325,12 @@ internal fun CameraScreen(
     @SuppressLint("MissingPermission")
     fun startRecording() {
         val vc = videoCapture ?: return
-        if (busy || recording != null) return
+        if (busy || recording != null || !CameraCapture.videoSupported) return
         busy = true
         val started = Date()
         val withSound = granted(context, Manifest.permission.RECORD_AUDIO)
         CameraCapture.scope.launch {
-            val opened = runCatching { CameraCapture.openVideo(appContext, session, dir, started) }
+            val opened = runCatching { CameraCapture.openVideo(appContext, session) }
             withContext(Dispatchers.Main) {
                 busy = false
                 val sink = opened.getOrElse {
@@ -336,12 +338,12 @@ internal fun CameraScreen(
                     return@withContext
                 }
                 if (!alive.get() || videoCapture !== vc) {
-                    CameraCapture.scope.launch { CameraCapture.finishVideo(sink, keep = false) }
+                    CameraCapture.scope.launch { CameraCapture.finishVideo(sink, dir, started, keep = false) }
                     return@withContext
                 }
                 try {
                     val options = FileDescriptorOutputOptions.Builder(sink.pfd)
-                        .apply { sink.sizeLimit?.let { setFileSizeLimit(it) } }
+                        .setFileSizeLimit(sink.sizeLimit)
                         .build()
                     var pending = vc.output.prepareRecording(appContext, options)
                     if (withSound) pending = pending.withAudioEnabled()
@@ -349,16 +351,23 @@ internal fun CameraScreen(
                         if (event is VideoRecordEvent.Finalize) {
                             recording = null
                             val keep = event.error in KEEP_FINALIZE
+                            val atLimit = event.error == VideoRecordEvent.Finalize.ERROR_FILE_SIZE_LIMIT_REACHED
                             CameraCapture.scope.launch {
-                                val name = CameraCapture.finishVideo(sink, keep)
+                                val name = CameraCapture.finishVideo(sink, dir, started, keep)
                                 withContext(Dispatchers.Main) {
-                                    say(if (name != null) savedTo else videoFailed)
+                                    say(
+                                        when {
+                                            name == null -> videoFailed
+                                            atLimit -> limitReached
+                                            else -> savedTo
+                                        },
+                                    )
                                 }
                             }
                         }
                     }
                 } catch (e: Exception) {
-                    CameraCapture.scope.launch { CameraCapture.finishVideo(sink, keep = false) }
+                    CameraCapture.scope.launch { CameraCapture.finishVideo(sink, dir, started, keep = false) }
                     say(videoFailed)
                 }
             }
@@ -418,7 +427,9 @@ internal fun CameraScreen(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ModeTab(stringResource(R.string.camera_photo), selected = !video, enabled = idle) { video = false }
-                    ModeTab(stringResource(R.string.camera_video), selected = video, enabled = idle) { video = true }
+                    if (CameraCapture.videoSupported) {
+                        ModeTab(stringResource(R.string.camera_video), selected = video, enabled = idle) { video = true }
+                    }
                 }
                 Spacer(Modifier.height(18.dp))
                 Box(Modifier.fillMaxWidth()) {

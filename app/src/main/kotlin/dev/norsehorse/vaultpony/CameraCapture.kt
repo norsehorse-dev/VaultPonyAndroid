@@ -1,16 +1,16 @@
 package dev.norsehorse.vaultpony
 
+import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.os.Handler
-import android.os.HandlerThread
+import android.os.Build
 import android.os.ParcelFileDescriptor
-import android.os.ProxyFileDescriptorCallback
-import android.os.storage.StorageManager
-import android.system.ErrnoException
+import android.system.Os
 import android.system.OsConstants
+import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,8 +29,12 @@ import java.util.UUID
  *
  * - Photos arrive as JPEG bytes in memory (CameraX OnImageCapturedCallback)
  *   and are written into the vault.
- * - Video is written by CameraX's muxer into a proxy file descriptor whose
- *   reads and writes go straight to a file in the vault ([openVideo]).
+ * - Video is recorded by CameraX's muxer into an anonymous in-memory file
+ *   (memfd, Android 11+), never a file on disk, and copied into the vault
+ *   when the recording ends ([openVideo], [finishVideo]). An earlier design
+ *   gave the muxer a proxy file descriptor over the vault file; Android's
+ *   MP4 writer refuses those, and CameraX 1.4.2 then crashes on the next
+ *   frame, so it was dropped.
  *
  * Both write to a ".vaultpony-<token>.part" temp in the destination folder,
  * then `replace` it to the final name, as bulk import does, so a crash never
@@ -153,144 +157,108 @@ object CameraCapture {
         }
     }
 
+    /** Video needs memfd_create (Android 11). Older devices get photos only. */
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
+    val videoSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
+    // The most a recording may hold in memory: half of what the system says
+    // is free right now, and never more than 2 GiB.
+    private const val MEMORY_CAP = 2L shl 30
+
     /**
-     * Open a recording's output: an empty temp file in the vault folder [dir]
-     * and a read-write proxy file descriptor over it for CameraX's muxer (it
-     * seeks back to finish the file, which this descriptor supports). Every
-     * read, write and fsync on the descriptor runs on the sink's own thread
-     * through the session. Blocking: call it off the main thread.
+     * Open a recording's output: an anonymous in-memory file (memfd) that
+     * CameraX's muxer writes the MP4 into. It is never a file on disk and has
+     * no path; it lives in RAM until [finishVideo] copies it into the vault
+     * and closes it. Android's MP4 writer needs an ordinary seekable file
+     * descriptor, which a memfd is. The recording is capped ([VideoSink.sizeLimit])
+     * by free memory, the vault's free space and FAT's 4 GB limit, so the
+     * recorder stops cleanly at the cap instead of running out.
      */
-    fun openVideo(context: Context, session: VaultSession, dir: String, started: Date): VideoSink {
-        val temp = register(session, tempPath(dir))
-        var thread: HandlerThread? = null
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun openVideo(context: Context, session: VaultSession): VideoSink {
+        val facts = session.facts()
+        if (!facts.writable) throw IOException("read-only vault")
+        val free = runCatching { session.space().freeBytes.toLong() }.getOrNull()
+        val memory = runCatching {
+            val info = ActivityManager.MemoryInfo()
+            context.getSystemService(ActivityManager::class.java)?.getMemoryInfo(info)
+            info.availMem / 2
+        }.getOrNull()
+        val limit = listOfNotNull(
+            facts.maxFileBytes?.toLong(),
+            free?.let { it - VIDEO_RESERVE },
+            memory,
+            MEMORY_CAP,
+        ).minOrNull()?.takeIf { it > 0 } ?: throw IOException("no room to record")
+        val raw = Os.memfd_create("vaultpony-video", OsConstants.MFD_CLOEXEC)
         try {
-            session.create(temp.path)
-            session.flush()
-            val facts = session.facts()
-            // The recording stops cleanly at FAT's 4 GB limit or when the
-            // vault is nearly full, rather than on a failed write.
-            val free = runCatching { session.space().freeBytes.toLong() }.getOrNull()
-            val limit = listOfNotNull(facts.maxFileBytes?.toLong(), free?.let { it - VIDEO_RESERVE })
-                .minOrNull()
-                ?.takeIf { it > 0 }
-            val t = HandlerThread("VaultPony camera").also { it.start() }
-            thread = t
-            val storage = context.getSystemService(StorageManager::class.java)
-                ?: throw IOException("storage service unavailable")
-            val callback = VideoFdCallback(session, temp.path, t)
-            val pfd = storage.openProxyFileDescriptor(
-                ParcelFileDescriptor.MODE_READ_WRITE,
-                callback,
-                Handler(t.looper),
-            )
-            return VideoSink(session, dir, temp, pfd, started, limit)
-        } catch (e: Exception) {
-            thread?.quitSafely()
-            if (!temp.discarded) {
-                runCatching { session.remove(temp.path) }
-                runCatching { session.flush() }
-            }
-            unregister(temp)
-            throw e
+            val pfd = ParcelFileDescriptor.dup(raw)
+            return VideoSink(session, pfd, limit)
+        } finally {
+            runCatching { Os.close(raw) }
         }
     }
 
     /**
-     * End a recording. [keep]: the muxer finished the file. The descriptor
-     * is closed first; then the temp is renamed to "VID_<started>.mp4"
-     * (keep-both on a clash) and that name returned, or, when not kept or
-     * the vault locked meanwhile, the temp is removed and null returned.
-     * Blocking: call it off the main thread.
+     * End a recording. [keep]: the muxer finished the file. When kept and the
+     * vault is still open, the in-memory file is copied into the vault folder
+     * [dir] under a temp name, then renamed to "VID_<[started]>.mp4"
+     * (keep-both on a clash), and that name is returned. Otherwise nothing is
+     * written and null is returned. The in-memory file is closed either way,
+     * which frees it. Blocking: call it off the main thread.
      */
-    fun finishVideo(sink: VideoSink, keep: Boolean): String? {
-        runCatching { sink.pfd.close() }
+    fun finishVideo(sink: VideoSink, dir: String, started: Date, keep: Boolean): String? {
         val session = sink.session
-        val temp = sink.temp
         try {
-            if (temp.discarded || !SessionRegistry.isOpen(session)) return null
-            if (!keep) {
-                runCatching { session.remove(temp.path) }
-                runCatching { session.flush() }
-                return null
-            }
-            return try {
-                val name = freeName(session, sink.dir, videoName(sink.started))
-                session.replace(temp.path, ProviderPaths.child(sink.dir, name))
-                name
+            if (!keep || !SessionRegistry.isOpen(session)) return null
+            val fd = sink.pfd.fileDescriptor
+            val size = Os.fstat(fd).st_size
+            if (size <= 0) return null
+            val temp = register(session, tempPath(dir))
+            try {
+                session.create(temp.path)
+                val buf = ByteArray(CHUNK)
+                var offset = 0L
+                while (offset < size) {
+                    if (temp.discarded) return null
+                    val want = minOf(CHUNK.toLong(), size - offset).toInt()
+                    var got = 0
+                    while (got < want) {
+                        val n = Os.pread(fd, buf, got, want - got, offset + got)
+                        if (n <= 0) throw IOException("short read")
+                        got += n
+                    }
+                    val chunk = if (got == buf.size) buf else buf.copyOf(got)
+                    val written = session.writeAt(temp.path, offset.toULong(), chunk).toInt()
+                    if (written != got) throw IOException("short write")
+                    offset += got
+                }
+                buf.fill(0)
+                if (temp.discarded) return null
+                val name = freeName(session, dir, videoName(started))
+                session.replace(temp.path, ProviderPaths.child(dir, name))
+                return name
             } catch (e: Exception) {
                 CoreErrorMap.log("camera video", e)
-                runCatching { session.remove(temp.path) }
-                runCatching { session.flush() }
-                null
+                if (!temp.discarded) {
+                    runCatching { session.remove(temp.path) }
+                    runCatching { session.flush() }
+                }
+                return null
+            } finally {
+                unregister(temp)
             }
         } finally {
-            unregister(temp)
+            // Frees the memory the recording held.
+            runCatching { sink.pfd.close() }
         }
     }
 
-    /** One recording's way into the vault. [sizeLimit]: give the recorder
-     *  this as its file size limit, when set. */
+    /** One recording held in memory. [sizeLimit]: give the recorder this
+     *  as its file size limit. */
     class VideoSink internal constructor(
         val session: VaultSession,
-        val dir: String,
-        internal val temp: Temp,
         val pfd: ParcelFileDescriptor,
-        val started: Date,
-        val sizeLimit: Long?,
+        val sizeLimit: Long,
     )
-
-    /**
-     * The muxer's file, as a proxy descriptor sees it. Runs on [thread]. Every
-     * failure, including the vault locking underneath it, becomes an errno:
-     * an exception escaping a callback would take the app down.
-     */
-    private class VideoFdCallback(
-        private val session: VaultSession,
-        private val path: String,
-        private val thread: HandlerThread,
-    ) : ProxyFileDescriptorCallback() {
-        // Tracked here, so the size never needs a core call.
-        private var length = 0L
-
-        override fun onGetSize(): Long = length
-
-        override fun onRead(offset: Long, size: Int, data: ByteArray): Int {
-            if (size <= 0 || offset >= length) return 0
-            val chunk = try {
-                session.readAt(path, offset.toULong(), size.toUInt())
-            } catch (e: Throwable) {
-                throw ErrnoException("read", OsConstants.EIO)
-            }
-            val n = minOf(chunk.size, size, data.size)
-            chunk.copyInto(data, 0, 0, n)
-            return n
-        }
-
-        override fun onWrite(offset: Long, size: Int, data: ByteArray): Int {
-            if (size <= 0) return 0
-            val bytes = if (size == data.size) data else data.copyOf(size)
-            val written = try {
-                session.writeAt(path, offset.toULong(), bytes).toInt()
-            } catch (e: Throwable) {
-                CoreErrorMap.log("camera write", e)
-                val errno = if (CoreErrorMap.kindOf(e) == VaultErrorKind.FULL) OsConstants.ENOSPC else OsConstants.EIO
-                throw ErrnoException("write", errno)
-            }
-            if (offset + written > length) length = offset + written
-            return written
-        }
-
-        override fun onFsync() {
-            try {
-                session.flush()
-            } catch (e: Throwable) {
-                throw ErrnoException("fsync", OsConstants.EIO)
-            }
-        }
-
-        override fun onRelease() {
-            runCatching { session.flush() }
-            thread.quitSafely()
-        }
-    }
 }

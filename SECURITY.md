@@ -91,13 +91,18 @@ videos are recorded without sound. Without a camera on the device, or with
 the permission denied, the rest of VaultPony works as before.
 
 A photo is taken into memory and written into the vault from there; it never
-exists as a file anywhere else. A video is written by Android's recorder into
-a proxy file descriptor whose writes go straight into the vault, through its
-encryption, as it records. Neither goes to the gallery, MediaStore, the
-app's cache or any other file outside the vault, and no location is added.
-Each capture is written under a temporary name and only gets its real name
-when complete; if the vault locks during a capture, the unfinished file is
-removed before the vault locks.
+exists as a file anywhere else. A video is recorded into an anonymous
+in-memory file (memfd: no path, never on disk) and copied into the vault
+when the recording stops, then the memory is freed. Video needs Android 11
+or later for that; older devices get photos only. A recording stops on its
+own when it reaches half the free memory, the vault's free space or FAT's
+4 GB limit, and is saved. As with anything an app holds in memory, a device
+that swaps memory to storage could write some of it there. Neither photos
+nor videos go to the gallery, MediaStore, the app's cache or any other file
+outside the vault, and no location is added. Each capture is written into
+the vault under a temporary name and only gets its real name when complete;
+if the vault locks during a recording or while it is being saved, nothing is
+kept.
 
 ## Lock controls
 

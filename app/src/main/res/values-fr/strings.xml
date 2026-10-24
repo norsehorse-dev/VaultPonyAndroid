@@ -411,6 +411,7 @@
     <string name="camera_close">Fermer</string>
     <string name="camera_saved_to">Enregistré dans %1$s</string>
     <string name="camera_video_failed">Impossible d\'enregistrer la vidéo.</string>
+    <string name="camera_limit_reached">L\'enregistrement s\'est arrêté à la taille maximale. La vidéo a été enregistrée.</string>
     <string name="camera_no_sound">Enregistrement sans son. Autorisez le micro pour enregistrer le son.</string>
     <string name="camera_denied">VaultPony a besoin de l\'appareil photo pour prendre des photos dans le coffre.</string>
     <string name="camera_open_settings">Ouvrir les paramètres</string>
