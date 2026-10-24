@@ -29,8 +29,8 @@ android {
         // minSdk 26: openProxyFileDescriptor (planning doc §8).
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "2.0.0-rc5"
+        versionCode = 12
+        versionName = "2.0.0"
         ndk {
             // armeabi-v7a stays in: this audience runs old hardware (doc §8).
             abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")

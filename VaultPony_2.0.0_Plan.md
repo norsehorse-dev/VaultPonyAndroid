@@ -1,6 +1,6 @@
 # VaultPony 2.0.0 Plan
 
-Rev 10, 2026-10-23. Scope decided (section 0). Section 10 holds what is still open; section 11
+Rev 11, 2026-10-23: as shipped in 2.0.0 (rc1 to rc5 built and device-tested). Scope decided (section 0). Section 10 holds what is still open; section 11
 covers issues #4 to #6. The rc3 Phase 0 spike (desk research) is in
 `VaultPony_2.0.0_rc3_Spike.md`; section 4.2 carries its recommendation.
 
@@ -88,6 +88,12 @@ core with Argon2id.
   photos stay in memory, video goes straight into the vault through a proxy file descriptor.
   iOS writes video as fragmented MP4 segments from `AVAssetWriter`'s delegate, so D11's temp
   file is not needed.
+- D27 (2026-10-23, rc5 testing). Android's MP4 writer refuses the proxy file descriptor of
+  D26, and CameraX 1.4.2 then crashes. Android video is recorded into an anonymous in-memory
+  file (memfd, Android 11+) and copied into the vault when the recording stops; a recording
+  stops itself at half the free memory, the vault's free space or FAT's 4 GB limit. Android 8
+  to 10 get photos only. In-app playback reads the vault in 1 MiB blocks with a 4-block
+  in-memory cache, because each vault read reopens the file and walks its cluster chain.
 
 ---
 
