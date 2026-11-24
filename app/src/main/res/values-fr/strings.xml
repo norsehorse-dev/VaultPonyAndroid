@@ -417,4 +417,11 @@
     <string name="camera_open_settings">Ouvrir les paramètres</string>
     <string name="camera_zoom_step">%1$sx</string>
     <string name="camera_zoom_desc">Zoom %1$s</string>
+
+    <string name="repair_damaged_title">Certains fichiers sont peut-être endommagés</string>
+    <string name="repair_damaged_body">Une version précédente de VaultPony a laissé des entrées parasites dans le dossier racine de ce coffre. Cette version les a supprimées. Si l\'une de ces entrées a été supprimée avant la mise à jour, les fichiers listés ici ont pu être endommagés. Ouvrez chacun d\'eux pour le vérifier et remplacez ceux qui sont endommagés à partir d\'une autre copie.</string>
+    <plurals name="repair_damaged_more">
+        <item quantity="one">et %d autre</item>
+        <item quantity="other">et %d autres</item>
+    </plurals>
 </resources>

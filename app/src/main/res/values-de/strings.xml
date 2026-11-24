@@ -416,4 +416,11 @@
     <string name="camera_open_settings">Einstellungen öffnen</string>
     <string name="camera_zoom_step">%1$sx</string>
     <string name="camera_zoom_desc">Zoom %1$s</string>
+
+    <string name="repair_damaged_title">Einige Dateien könnten beschädigt sein</string>
+    <string name="repair_damaged_body">Eine frühere Version von VaultPony hat im obersten Ordner dieses Tresors überflüssige Einträge hinterlassen. Diese Version hat sie entfernt. Falls einer dieser Einträge vor dem Update gelöscht wurde, könnten die hier aufgeführten Dateien dadurch beschädigt worden sein. Öffne jede Datei, um sie zu prüfen, und ersetze beschädigte Dateien durch eine andere Kopie.</string>
+    <plurals name="repair_damaged_more">
+        <item quantity="one">und %d weitere</item>
+        <item quantity="other">und %d weitere</item>
+    </plurals>
 </resources>

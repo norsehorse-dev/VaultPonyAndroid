@@ -120,6 +120,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import uniffi.vault_ffi.DirEntry
+import uniffi.vault_ffi.RepairNotice
 import uniffi.vault_ffi.VaultSession
 import uniffi.vault_ffi.VolumeFacts
 import uniffi.vault_ffi.VolumeSpace
@@ -223,6 +224,9 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit, onConvert: () -> Un
     } else {
         TransferJobs.State.Idle
     }
+    // Files a top folder repair found damaged (RepairNotice.kt), shown once.
+    var repairNotice by remember(session) { mutableStateOf(RepairNotices.peek(session)) }
+    LaunchedEffect(session) { repairNotice = RepairNotices.pendingFor(context.applicationContext, session) }
 
     val importFilesPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
@@ -925,6 +929,16 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit, onConvert: () -> Un
     }
 
     TransferDialogs(transfer, fallbackError = if (transferIsExport(transfer)) errExport else errImport)
+
+    // Never on top of an import or export dialog.
+    if (transfer == TransferJobs.State.Idle) {
+        repairNotice?.let { notice ->
+            RepairNoticeDialog(notice) {
+                RepairNotices.dismiss(session)
+                repairNotice = null
+            }
+        }
+    }
 }
 
 // The browser's camera modes (plan 5.6), saved across a rotation.

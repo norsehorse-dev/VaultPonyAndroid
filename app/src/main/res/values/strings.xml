@@ -457,4 +457,15 @@
          screen reader says for a step: %1$s is that step's label, "2x". -->
     <string name="camera_zoom_step">%1$sx</string>
     <string name="camera_zoom_desc">Zoom %1$s</string>
+
+    <!-- Top folder repair (2.1.0 plan 2). Shown once after an unlock removed
+         junk entries an earlier version left in the vault's top folder, and
+         only when some real files may have lost data. A list of file names
+         follows the body; repair_damaged_more counts the ones not listed. -->
+    <string name="repair_damaged_title">Some files may be damaged</string>
+    <string name="repair_damaged_body">An earlier version of VaultPony left stray entries in this vault\'s top folder. This version has removed them. If one of those entries was deleted before the update, it may have damaged the files listed here. Open each one to check it, and replace any that are damaged from another copy.</string>
+    <plurals name="repair_damaged_more">
+        <item quantity="one">and %d more</item>
+        <item quantity="other">and %d more</item>
+    </plurals>
 </resources>

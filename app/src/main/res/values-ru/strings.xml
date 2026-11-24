@@ -445,4 +445,13 @@
     <string name="camera_open_settings">Открыть настройки</string>
     <string name="camera_zoom_step">%1$sx</string>
     <string name="camera_zoom_desc">Зум %1$s</string>
+
+    <string name="repair_damaged_title">Некоторые файлы могут быть повреждены</string>
+    <string name="repair_damaged_body">Одна из предыдущих версий VaultPony оставляла лишние записи в корневой папке этого хранилища. Эта версия их удалила. Если одна из таких записей была удалена до обновления, это могло повредить перечисленные ниже файлы. Откройте каждый файл и проверьте его. Повреждённые файлы восстановите из другой копии.</string>
+    <plurals name="repair_damaged_more">
+        <item quantity="one">и ещё %d</item>
+        <item quantity="few">и ещё %d</item>
+        <item quantity="many">и ещё %d</item>
+        <item quantity="other">и ещё %d</item>
+    </plurals>
 </resources>

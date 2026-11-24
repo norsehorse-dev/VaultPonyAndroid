@@ -428,4 +428,11 @@
     <string name="camera_open_settings">Abrir configurações</string>
     <string name="camera_zoom_step">%1$sx</string>
     <string name="camera_zoom_desc">Zoom %1$s</string>
+
+    <string name="repair_damaged_title">Alguns arquivos podem estar danificados</string>
+    <string name="repair_damaged_body">Uma versão anterior do VaultPony deixou entradas residuais na pasta raiz deste cofre. Esta versão as removeu. Se uma dessas entradas foi excluída antes da atualização, isso pode ter danificado os arquivos listados aqui. Abra cada um para verificar e substitua os que estiverem danificados usando outra cópia.</string>
+    <plurals name="repair_damaged_more">
+        <item quantity="one">e mais %d</item>
+        <item quantity="other">e mais %d</item>
+    </plurals>
 </resources>

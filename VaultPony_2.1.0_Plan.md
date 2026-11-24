@@ -56,7 +56,81 @@ Report: importing about 2,900 photos was noticeably slower than another vault ap
 - Directory work grows with the folder: each chunk write resolves the path and scans the parent directory (`locate`), and `create` and `rename` each read the whole directory several times (`heal_dir_at`, `locate`, `find_or_make_slot_run`). With thousands of files in one folder this is quadratic.
 - None of this is measured yet. The measurement has to time inside the core (sync count and time, directory scan time, cipher and write time) as well as the Kotlin side (source read, FFI call, explicit flush).
 
-### Plan
+### Measurement build, 2026-11-23 (not committed)
+
+- Core: `vc_io::stats` counts reads, writes and syncs on the container file with bytes and time, plus time in the cipher. Exposed through the FFI as `io_stats()` and `io_stats_reset()`.
+- App: debug builds time each step of `runImport` and `copyIn` (source open and read, create, write, the rename into place, the explicit flushes) and log three lines under the tag `VaultPonyImport` when a batch ends. Counts, sizes and times only.
+- To run: 500 photos into one empty folder, once in an exFAT vault and once in a FAT vault.
+
+### Measured, 2026-11-23
+
+Phone: moto g play (2026), Android 16, debug build, AES vaults.
+
+- Six photos (18.7 MB) into a 1 GB FAT vault: 3.3 s. Cipher 2,244 ms (67%), opening the sources 403 ms, 31 syncs 202 ms (6%), container writes 84 ms, source read 68 ms. 22,905 container writes and 49,845 reads of 512 bytes.
+- 483 of 500 photos (1.5 GB) into the root of a 16 GiB FAT vault, cancelled after 2 h 41 min: cipher 9,080 s (94% of the time), 2,440 syncs 20 s, container writes 4 s. 409 million reads of 512 bytes (209 GB read to store 1.5 GB). Time per file went from under 1 s to 5 s at about 130 files, then up by about 14 s for every 100 files.
+- The same sequence run against the core on a desktop build (a real container, cipher included) reproduces the read counts, so the findings below come from that.
+
+### Findings
+
+1. Bug, not only speed: on FAT32 the vault's top folder is not cleared when it grows past its first cluster. `fatfs` clears a new directory cluster only when the directory has an entry of its own, and the FAT32 root has none (`file.rs`, the `alloc_cluster` call in `write`). Inside an encrypted container the uncleared cluster is random bytes, which read back as hundreds of junk files and folders. After 200 files in the root the listing held 2,155 entries, 1,955 of them junk. A subfolder is not affected, nor is FAT16 (small vaults) or exFAT. Every new file then needs a fresh cluster because the junk leaves no free run of entries, which is what made the import crawl.
+2. FAT reads directory and FAT entries a field at a time, and each of those reads decrypts a whole 512-byte unit. With bug 1 fixed in a test copy, 500 files still cost 20.8 million reads, growing by about 160 reads per file already in the folder for each file added. At 2,900 files in one folder that is about 460,000 reads per file.
+3. The cipher is slow on the phone: about 22 microseconds per 512-byte unit, roughly 23 MB/s. The build does not turn on the `aes` crate's ARMv8 path (`--cfg aes_armv8`), so AES runs in software. Not yet confirmed on the device.
+4. exFAT is flat: about 450 reads and 9 syncs per 3 MB file at file 1 and at file 500. The syncs are the per-chunk ones noted above.
+5. The explicit flush every 32 files in `runImport` is not a cost on either filesystem.
+
+### Decided 2026-11-23, after the numbers
+
+- Fix finding 1 in the core now.
+- The fix ships in 2.1.0 with the rest, not as a separate 2.0.1.
+- A repair for vaults that already have junk in their top folder goes into the same release.
+- Speed: a read buffer under the FAT layer first, then the ARMv8 AES build flag as its own step.
+- The per-chunk syncs on exFAT stay as they are.
+
+### Order of work (one step at a time, each built and tested before the next)
+
+1. Core: clear new FAT32 root directory clusters (`third_party/fatfs/src/file.rs`), regression test `core/vc-fs/tests/fat_root_growth.rs`, note 6 in `VAULTPONY.md`. Done 2026-11-23, committed in the core. On the phone: 322 photos (1.0 GB) into the top folder of a 3 GB FAT vault in 334 s, a clean listing, 10.2 million reads (cipher 281 s, syncs 11 s). The Android repo's submodule pin moves to the new core commit at release.
+2. Repair for affected vaults: 2a core repair, then 2b the damage notice. See the repair design below.
+3. Read buffer under the FAT layer, measured on the phone with the same 500 photos.
+4. ARMv8 AES build flag, measured the same way.
+5. Take the measurement code out, or keep the core counters behind a debug-only call. To decide.
+
+### Repair design (step 2), agreed 2026-11-24
+
+What an affected top folder looks like: its first cluster is clean. Every later cluster was noise when it was added. Real entries sit among the noise, wherever the noise happened to hold an end-of-directory mark at the time they were written. Reading stops at the first end mark that is left, and everything after it is noise nobody has seen yet, which would surface as more junk the next time a file is added.
+
+Telling junk from real. An entry is junk when it breaks a rule no FAT writer breaks:
+
+- a reserved attribute bit is set, or
+- its first cluster lies outside the volume, or
+- it has a size but no first cluster, or is a folder with a size, or
+- its 8.3 name holds a control character or a character FAT forbids.
+
+Noise passes all four about once in 80,000 entries. A long-name record is kept only when it belongs, by sequence and checksum, to a real entry right after it. An entry that passes the four rules is then checked against the FAT: its cluster chain must exist and match its size. If that fails it is kept and counted as unverified, never removed, because it could be a real file that was damaged.
+
+What the repair writes, in this order:
+
+1. Zero everything after the first end mark, to the end of the folder's clusters. Nothing reads that area today.
+2. Mark each junk entry before it as deleted (first byte 0xE5). No entry is moved, no cluster is freed, real entries are not touched.
+
+Each write stands alone, so a power cut at any point leaves a valid folder with less junk, and running it again finishes the job.
+
+Where it lives: a small module in `vc-fs` that works on the block device before `fatfs` mounts, FAT32 only, top folder only. It costs one pass over the top folder at unlock. A read-only vault is left as it is.
+
+Decided 2026-11-24:
+
+- It runs by itself when a vault is unlocked for writing. No prompt.
+- Junk is marked deleted in place. The folder is not compacted.
+- An entry that passes the format rules but has a broken cluster chain is kept.
+- The user is told when real files look damaged. After a repair the whole vault is walked once, and files and folders whose cluster chain is broken (clusters freed, or shared with another file) are listed. This can happen when someone deleted a junk entry under 2.0.0. The repair cannot bring that data back.
+
+Status:
+
+- 2a, core: `vc_fs::fat_repair`, run from `open_volume` before the FAT mount. Report through `Vfs::take_repair_report()`. Tests in `core/vc-fs/tests/fat_root_repair.rs` build volumes the old way with `FsOptions::legacy_unzeroed_root`. Done 2026-11-24, committed in the core; unit tests and the device check on the damaged 16 GiB vault passed. Also checked against a real container: a 3 GB FAT vault with 200 files and 2,947 junk entries in its top folder lists exactly the 200 files after one unlock.
+- 2b, the notice: `Session::take_repair_report()` and FFI `takeRepairReport()` in the core; on Android `ui/RepairNotice.kt`, a one-time dialog listing the damaged files, shown from the browser and never over an import or export dialog; three strings in six languages. Done 2026-11-24 on Android, committed in both repos. iOS and desktop later.
+- Open on the notice: it lives in memory only, so it is gone if the vault locks before OK is tapped, and the next unlock has nothing to report. The names can be selected and copied from the dialog. Whether to keep the list somewhere longer is undecided. The core names at most 50 files.
+- Debug builds only: a top folder holding a folder named `debug-repair-notice` gets a sample notice, to see the dialog without a damaged vault. To remove before release with the measurement code.
+
+### Plan as first written
 
 1. Measure first: time a fixed batch (for example 500 photos) on a device, with a breakdown of read, write and flush time.
 2. If the flush dominates: in batch imports (`TransferJobs.importFiles`, `importShared`, `importTree`) flush every N files or every few seconds, and always at the end, on cancel and before the vault locks.
