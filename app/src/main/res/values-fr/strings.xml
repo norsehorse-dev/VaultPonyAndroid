@@ -415,4 +415,6 @@
     <string name="camera_no_sound">Enregistrement sans son. Autorisez le micro pour enregistrer le son.</string>
     <string name="camera_denied">VaultPony a besoin de l\'appareil photo pour prendre des photos dans le coffre.</string>
     <string name="camera_open_settings">Ouvrir les paramètres</string>
+    <string name="camera_zoom_step">%1$sx</string>
+    <string name="camera_zoom_desc">Zoom %1$s</string>
 </resources>

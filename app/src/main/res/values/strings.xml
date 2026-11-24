@@ -452,4 +452,9 @@
     <string name="camera_no_sound">Recording without sound. Allow the microphone to record sound.</string>
     <string name="camera_denied">VaultPony needs the camera to take photos into the vault.</string>
     <string name="camera_open_settings">Open settings</string>
+    <!-- Camera zoom (2.1.0 plan 1). camera_zoom_step: %1$s is the ratio as a
+         number in the app language, "0.5", "2". camera_zoom_desc is what a
+         screen reader says for a step: %1$s is that step's label, "2x". -->
+    <string name="camera_zoom_step">%1$sx</string>
+    <string name="camera_zoom_desc">Zoom %1$s</string>
 </resources>

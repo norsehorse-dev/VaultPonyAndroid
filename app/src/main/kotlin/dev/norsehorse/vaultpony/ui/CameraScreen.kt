@@ -10,11 +10,14 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.ZoomState
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FileDescriptorOutputOptions
 import androidx.camera.video.Recorder
@@ -23,6 +26,9 @@ import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,9 +37,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -51,25 +61,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
 import dev.norsehorse.vaultpony.CameraCapture
+import dev.norsehorse.vaultpony.CameraZoom
 import dev.norsehorse.vaultpony.R
 import dev.norsehorse.vaultpony.i18n.findActivity
 import kotlinx.coroutines.Dispatchers
@@ -78,13 +99,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.vault_ffi.VaultSession
 import java.util.Date
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /*
  * The in-app camera (2.0.0 plan 5.6, D10): photos and videos straight into
  * the vault folder the browser shows, through CameraCapture. CAMERA is asked
  * for when the camera first opens, RECORD_AUDIO only when Video is chosen.
  * Nothing is written to the gallery, MediaStore or the app's cache.
+ *
+ * Zoom and focus (2.1.0 plan 1): pinch on the preview or tap a zoom step,
+ * within the range the bound camera reports; tap the preview to focus there.
  */
 
 /** Finalize results whose file the muxer completed: kept. Anything else
@@ -100,6 +127,13 @@ private val KEEP_FINALIZE = setOf(
 
 // How long a "Saved to" or warning line stays up.
 private const val NOTE_MS = 2_500L
+
+// How long the zoom readout stays after a pinch, and the focus ring after a tap.
+private const val ZOOM_READOUT_MS = 1_200L
+private const val FOCUS_RING_MS = 1_000L
+
+// A step counts as the current zoom within this much of its ratio.
+private const val ZOOM_STEP_SLACK = 0.05f
 
 private fun granted(context: Context, permission: String): Boolean =
     ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -142,6 +176,20 @@ internal fun CameraScreen(
     var hasFront by remember { mutableStateOf(false) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
+    // The bound camera: its control sets zoom and focus. Null while unbound.
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    // The zoom ratio asked for. Kept across Photo and Video, 1x after a
+    // switch between the front and back camera.
+    var zoom by rememberSaveable { mutableFloatStateOf(1f) }
+    var zoomMin by remember { mutableFloatStateOf(1f) }
+    var zoomMax by remember { mutableFloatStateOf(1f) }
+    // Counts every time the camera starts over at 1x: a new binding, and the
+    // app coming back to the foreground.
+    var bindSeq by remember { mutableIntStateOf(0) }
+    var pinchSeq by remember { mutableIntStateOf(0) }
+    var pinching by remember { mutableStateOf(false) }
+    var focusAt by remember { mutableStateOf<Offset?>(null) }
+    var focusSeq by remember { mutableIntStateOf(0) }
     var recording by remember { mutableStateOf<Recording?>(null) }
     // A photo being taken or a recording being set up.
     var busy by remember { mutableStateOf(false) }
@@ -228,23 +276,70 @@ internal fun CameraScreen(
             p.unbindAll()
             if (video) {
                 val vc = VideoCapture.withOutput(Recorder.Builder().build())
-                p.bindToLifecycle(owner, selector, preview, vc)
+                camera = p.bindToLifecycle(owner, selector, preview, vc)
                 videoCapture = vc
                 imageCapture = null
             } else {
                 val ic = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
-                p.bindToLifecycle(owner, selector, preview, ic)
+                camera = p.bindToLifecycle(owner, selector, preview, ic)
                 imageCapture = ic
                 videoCapture = null
             }
+            bindSeq++
         } catch (e: Exception) {
+            camera = null
             imageCapture = null
             videoCapture = null
             say(failed)
         }
-        onDispose { p.unbindAll() }
+        onDispose {
+            camera = null
+            p.unbindAll()
+        }
+    }
+
+    // The zoom range of the camera just bound. A new binding starts at 1x,
+    // and so does the camera after the app was in the background, so the
+    // ratio asked for is set again once, inside the range. CameraX hands back
+    // the same Camera for the same lens, hence bindSeq as a key. The ratio
+    // the camera reports at that moment can still be the one from before its
+    // reset, so it is only trusted when 1x is what is wanted.
+    DisposableEffect(camera, bindSeq, lifecycleOwner) {
+        val cam = camera
+        val owner = lifecycleOwner
+        if (cam == null || owner == null) return@DisposableEffect onDispose {}
+        var applied = false
+        val observer = Observer<ZoomState> { state ->
+            zoomMin = state.minZoomRatio
+            zoomMax = maxOf(state.minZoomRatio, state.maxZoomRatio)
+            if (!applied) {
+                applied = true
+                val wanted = zoom.coerceIn(zoomMin, zoomMax)
+                zoom = wanted
+                if (wanted != 1f || abs(wanted - state.zoomRatio) > 0.005f) {
+                    cam.cameraControl.setZoomRatio(wanted)
+                }
+            }
+        }
+        val live = cam.cameraInfo.zoomState
+        live.observe(owner, observer)
+        onDispose { live.removeObserver(observer) }
+    }
+
+    LaunchedEffect(pinchSeq) {
+        if (pinchSeq > 0) {
+            pinching = true
+            delay(ZOOM_READOUT_MS)
+            pinching = false
+        }
+    }
+    LaunchedEffect(focusSeq) {
+        if (focusAt != null) {
+            delay(FOCUS_RING_MS)
+            focusAt = null
+        }
     }
 
     // App to the background: a recording stops and is saved if the vault is
@@ -255,6 +350,8 @@ internal fun CameraScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 recording?.stop()
+            } else if (event == Lifecycle.Event.ON_START) {
+                bindSeq++
             } else if (event == Lifecycle.Event.ON_RESUME &&
                 !hasPermission && granted(context, Manifest.permission.CAMERA)
             ) {
@@ -278,6 +375,33 @@ internal fun CameraScreen(
     fun close() {
         recording?.stop()
         onClose()
+    }
+
+    // False when there is no camera or it has no zoom range.
+    fun setZoom(ratio: Float): Boolean {
+        val cam = camera ?: return false
+        if (zoomMax <= zoomMin) return false
+        val next = ratio.coerceIn(zoomMin, zoomMax)
+        zoom = next
+        cam.cameraControl.setZoomRatio(next)
+        return true
+    }
+
+    // Focus and exposure on the tapped point of the preview. Cameras that
+    // can't meter on a point (many front cameras) show no ring.
+    fun focusOn(at: Offset) {
+        val cam = camera ?: return
+        runCatching {
+            val point = previewView.meteringPointFactory.createPoint(at.x, at.y)
+            val action = FocusMeteringAction.Builder(point)
+                .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                .build()
+            if (cam.cameraInfo.isFocusMeteringSupported(action)) {
+                cam.cameraControl.startFocusAndMetering(action)
+                focusAt = at
+                focusSeq++
+            }
+        }
     }
 
     fun takePhoto() {
@@ -379,6 +503,30 @@ internal fun CameraScreen(
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (hasPermission) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+            // Over the preview and under the controls, the same size as the
+            // preview, so a tap's position is a position in the preview.
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) { detectTapGestures(onTap = { focusOn(it) }) }
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, _, factor, _ ->
+                            if (factor != 1f && setZoom(zoom * factor)) pinchSeq++
+                        }
+                    },
+            )
+            focusAt?.let { at ->
+                Box(
+                    Modifier
+                        .align(AbsoluteAlignment.TopLeft)
+                        .absoluteOffset {
+                            val r = 32.dp.toPx()
+                            IntOffset((at.x - r).roundToInt(), (at.y - r).roundToInt())
+                        }
+                        .size(64.dp)
+                        .border(1.dp, Color.White, CircleShape),
+                )
+            }
         } else if (denied) {
             Column(
                 Modifier.align(Alignment.Center).padding(32.dp),
@@ -425,6 +573,32 @@ internal fun CameraScreen(
                 Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                val locale = context.resources.configuration.locales[0]
+                val steps = remember(zoomMin, zoomMax) { CameraZoom.steps(zoomMin, zoomMax) }
+                if (pinching) {
+                    Text(
+                        stringResource(R.string.camera_zoom_step, CameraZoom.number(zoom, locale)),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (steps.size > 1) {
+                    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        steps.forEach { step ->
+                            val label = stringResource(R.string.camera_zoom_step, CameraZoom.number(step, locale))
+                            ZoomStep(
+                                label = label,
+                                description = stringResource(R.string.camera_zoom_desc, label),
+                                selected = abs(zoom - step) < ZOOM_STEP_SLACK,
+                            ) { setZoom(step) }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ModeTab(stringResource(R.string.camera_photo), selected = !video, enabled = idle) { video = false }
                     if (CameraCapture.videoSupported) {
@@ -467,7 +641,10 @@ internal fun CameraScreen(
                     }
                     if (hasBack && hasFront) {
                         IconButton(
-                            onClick = { front = !front },
+                            onClick = {
+                                zoom = 1f
+                                front = !front
+                            },
                             enabled = idle,
                             modifier = Modifier.align(Alignment.CenterEnd).padding(end = 28.dp),
                         ) {
@@ -499,4 +676,37 @@ private fun ModeTab(label: String, selected: Boolean, enabled: Boolean, onClick:
             .selectable(selected = selected, enabled = enabled, role = Role.Tab, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     )
+}
+
+/** One zoom step, "1x": a 48dp target around a 40dp disc, which widens
+ *  rather than clips its label at large font sizes. */
+@Composable
+private fun ZoomStep(label: String, description: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .heightIn(min = 48.dp)
+            .widthIn(min = 48.dp)
+            .clip(CircleShape)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .height(40.dp)
+                .widthIn(min = 40.dp)
+                .background(if (selected) Color.White else Color.Black.copy(alpha = 0.45f), CircleShape)
+                .padding(horizontal = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                label,
+                color = if (selected) Color.Black else Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        }
+    }
 }

@@ -426,4 +426,6 @@
     <string name="camera_no_sound">Gravando sem som. Permita o acesso ao microfone para gravar o som.</string>
     <string name="camera_denied">O VaultPony precisa da câmera para tirar fotos direto no cofre.</string>
     <string name="camera_open_settings">Abrir configurações</string>
+    <string name="camera_zoom_step">%1$sx</string>
+    <string name="camera_zoom_desc">Zoom %1$s</string>
 </resources>
