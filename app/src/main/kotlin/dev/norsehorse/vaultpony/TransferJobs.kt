@@ -2,11 +2,13 @@ package dev.norsehorse.vaultpony
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.res.Resources
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import android.provider.OpenableColumns
+import android.util.Log
 import android.webkit.MimeTypeMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -143,6 +145,11 @@ object TransferJobs {
     // process kill mid-batch loses little.
     private const val FLUSH_EVERY_FILES = 32
     private const val FLUSH_EVERY_BYTES = 64L shl 20
+
+    // Debug builds time each part of an import and log the totals (2.1.0
+    // plan 2). Set when a batch starts.
+    @Volatile
+    private var probing = false
 
     val busy: Boolean get() = synchronized(runLock) { running }
 
@@ -314,6 +321,7 @@ object TransferJobs {
         this.partner = partner
         converting = partner != null
         exporting = export
+        probing = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         _state.value = State.Preparing(export)
         // R1: the auto-lock timer waits while this batch works...
         SessionRegistry.setBatchActive(true)
@@ -509,6 +517,7 @@ object TransferJobs {
         }
         if (cancelRequested) return stoppedBeforeCopy(plan)
 
+        val probe = if (probing) ImportProbe(facts.filesystem) else null
         var copied = 0
         var skipped = plan.skipped + plan.oversize
         var index = 0
@@ -524,13 +533,15 @@ object TransferJobs {
                     break
                 }
                 when (op) {
-                    is TransferOp.MakeDir -> session.mkdir(BulkPlanner.vaultPath(destDir, op.dest))
+                    is TransferOp.MakeDir -> timed(probe, ImportProbe.MKDIR) {
+                        session.mkdir(BulkPlanner.vaultPath(destDir, op.dest))
+                    }
                     is TransferOp.CopyFile -> {
                         index++
                         val name = op.dest.last()
                         val path = BulkPlanner.vaultPath(destDir, op.dest)
                         _state.value = State.Running(false, index, plan.files, name, bytesDone, plan.bytes)
-                        val outcome = copyIn(resolver, session, op, path, limits.maxFileBytes) { n ->
+                        val outcome = copyIn(resolver, session, op, path, limits.maxFileBytes, probe) { n ->
                             bytesDone += n
                             sinceFlushBytes += n
                             _state.value = State.Running(false, index, plan.files, name, bytesDone, plan.bytes)
@@ -544,7 +555,7 @@ object TransferJobs {
                             }
                         }
                         if (++sinceFlushFiles >= FLUSH_EVERY_FILES || sinceFlushBytes >= FLUSH_EVERY_BYTES) {
-                            session.flush()
+                            timed(probe, ImportProbe.FLUSH) { session.flush() }
                             sinceFlushFiles = 0
                             sinceFlushBytes = 0L
                         }
@@ -556,7 +567,8 @@ object TransferJobs {
             // here and say so; what was already copied stays.
             error = batchError(session, e)
         }
-        runCatching { session.flush() }
+        timed(probe, ImportProbe.FLUSH) { runCatching { session.flush() } }
+        probe?.report(copied, bytesDone)
         return State.Done(
             TransferResult(
                 export = false,
@@ -596,13 +608,14 @@ object TransferJobs {
         op: TransferOp.CopyFile,
         path: String,
         cap: Long?,
+        probe: ImportProbe?,
         onBytes: (Long) -> Unit,
     ): Outcome {
         val input = if (op.source.ref == SHARED_TEXT_REF) {
             sharedText?.let { ByteArrayInputStream(it) }
         } else {
             try {
-                resolver.openInputStream(Uri.parse(op.source.ref))
+                timed(probe, ImportProbe.OPEN) { resolver.openInputStream(Uri.parse(op.source.ref)) }
             } catch (e: Exception) {
                 null
             }
@@ -610,7 +623,7 @@ object TransferJobs {
         val dir = path.substringBeforeLast('/').ifEmpty { "/" }
         val temp = BulkPlanner.vaultPath(dir, listOf(BulkPlanner.tempName(randomToken())))
         input.use { stream ->
-            session.create(temp)
+            timed(probe, ImportProbe.CREATE) { session.create(temp) }
             val buf = ByteArray(CHUNK)
             var offset = 0L
             try {
@@ -620,7 +633,7 @@ object TransferJobs {
                         return Outcome.CANCELLED
                     }
                     val n = try {
-                        readChunk(stream, buf)
+                        timed(probe, ImportProbe.READ) { readChunk(stream, buf) }
                     } catch (e: IOException) {
                         discard(session, temp)
                         return Outcome.SKIPPED
@@ -632,7 +645,7 @@ object TransferJobs {
                         return Outcome.SKIPPED
                     }
                     val chunk = if (n == buf.size) buf else buf.copyOf(n)
-                    val written = session.writeAt(temp, offset.toULong(), chunk)
+                    val written = timed(probe, ImportProbe.WRITE) { session.writeAt(temp, offset.toULong(), chunk) }
                     if (written.toInt() != n) throw IOException()
                     offset += n
                     onBytes(n.toLong())
@@ -645,14 +658,14 @@ object TransferJobs {
         // Complete: swap it in. A replaced original goes only now.
         if (op.replace) {
             try {
-                session.remove(path)
+                timed(probe, ImportProbe.SWAP) { session.remove(path) }
             } catch (e: Exception) {
                 discard(session, temp)
                 throw e
             }
         }
         try {
-            session.rename(temp, path)
+            timed(probe, ImportProbe.SWAP) { session.rename(temp, path) }
         } catch (e: Exception) {
             // After a Replace the original is gone; keep the new copy in the
             // temp rather than lose both (until the next import's sweep).
@@ -660,6 +673,63 @@ object TransferJobs {
             throw e
         }
         return Outcome.COPIED
+    }
+
+    /**
+     * Where a debug build's import spent its time: wall time per step on
+     * this side, and what the core did to the container file meanwhile.
+     * Logged once per batch under the tag VaultPonyImport. Counts, sizes and
+     * times only: no names or paths.
+     */
+    private class ImportProbe(private val filesystem: String) {
+        val ns = LongArray(SLOTS)
+        private val started = System.nanoTime()
+
+        init {
+            uniffi.vault_ffi.ioStatsReset()
+        }
+
+        fun report(files: Int, bytes: Long) {
+            val wall = System.nanoTime() - started
+            val io = uniffi.vault_ffi.ioStats()
+            fun ms(n: Long) = n / 1_000_000
+            Log.i(TAG, "fs=$filesystem files=$files bytes=$bytes wall_ms=${ms(wall)}")
+            Log.i(
+                TAG,
+                "app_ms open=${ms(ns[OPEN])} source_read=${ms(ns[READ])} create=${ms(ns[CREATE])} " +
+                    "write=${ms(ns[WRITE])} swap=${ms(ns[SWAP])} flush=${ms(ns[FLUSH])} mkdir=${ms(ns[MKDIR])} " +
+                    "other=${ms(wall - ns.sum())}",
+            )
+            Log.i(
+                TAG,
+                "core syncs=${io.syncs} sync_ms=${ms(io.syncNs.toLong())} " +
+                    "writes=${io.writes} write_bytes=${io.writeBytes} write_ms=${ms(io.writeNs.toLong())} " +
+                    "reads=${io.reads} read_bytes=${io.readBytes} read_ms=${ms(io.readNs.toLong())} " +
+                    "cipher_ms=${ms(io.cipherNs.toLong())}",
+            )
+        }
+
+        companion object {
+            const val TAG = "VaultPonyImport"
+            const val OPEN = 0
+            const val READ = 1
+            const val CREATE = 2
+            const val WRITE = 3
+            const val SWAP = 4
+            const val FLUSH = 5
+            const val MKDIR = 6
+            const val SLOTS = 7
+        }
+    }
+
+    private inline fun <T> timed(probe: ImportProbe?, slot: Int, block: () -> T): T {
+        if (probe == null) return block()
+        val t = System.nanoTime()
+        try {
+            return block()
+        } finally {
+            probe.ns[slot] += System.nanoTime() - t
+        }
     }
 
     /** Random part of a temp name: 12 hex digits, unique enough per folder. */
