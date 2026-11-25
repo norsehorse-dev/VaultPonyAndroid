@@ -1,7 +1,5 @@
 package dev.norsehorse.vaultpony.ui
 
-import android.content.Context
-import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
@@ -53,12 +51,11 @@ internal object RepairNotices {
      *  from the core and keeping it here is one step that a cancelled caller
      *  (a rotation, leaving the browser) cannot split, or the report would
      *  be taken and then dropped. */
-    suspend fun pendingFor(context: Context, session: VaultSession): RepairNotice? =
+    suspend fun pendingFor(session: VaultSession): RepairNotice? =
         withContext(NonCancellable + Dispatchers.IO) {
             gate.withLock {
                 if (synchronized(this@RepairNotices) { asked.add(session) }) {
                     val report = runCatching { session.takeRepairReport() }.getOrNull()
-                        ?: debugSample(context, session)
                     if (report != null && report.damagedTotal > 0uL) {
                         synchronized(this@RepairNotices) { pending[session] = report }
                     }
@@ -69,18 +66,6 @@ internal object RepairNotices {
 
     fun dismiss(session: VaultSession) {
         synchronized(this) { pending.remove(session) }
-    }
-
-    // Debug builds only, to see the dialog without a damaged vault: a top
-    // folder holding a folder named "debug-repair-notice" gets a sample made
-    // of that folder's own entry names. Goes away with the 2.1.0 measurement
-    // code (plan 2, step 5).
-    private fun debugSample(context: Context, session: VaultSession): RepairNotice? {
-        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) return null
-        val top = runCatching { session.list("/") }.getOrNull() ?: return null
-        if (top.none { it.isDir && it.name == "debug-repair-notice" }) return null
-        val names = top.filter { !it.isDir }.take(6).map { "/" + it.name } + "/debug-repair-notice/"
-        return RepairNotice(junkEntries = 0uL, damaged = names, damagedTotal = (names.size + 54).toULong())
     }
 }
 

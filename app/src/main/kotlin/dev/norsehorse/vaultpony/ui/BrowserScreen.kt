@@ -226,7 +226,7 @@ fun BrowserScreen(session: VaultSession, onLock: () -> Unit, onConvert: () -> Un
     }
     // Files a top folder repair found damaged (RepairNotice.kt), shown once.
     var repairNotice by remember(session) { mutableStateOf(RepairNotices.peek(session)) }
-    LaunchedEffect(session) { repairNotice = RepairNotices.pendingFor(context.applicationContext, session) }
+    LaunchedEffect(session) { repairNotice = RepairNotices.pendingFor(session) }
 
     val importFilesPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
