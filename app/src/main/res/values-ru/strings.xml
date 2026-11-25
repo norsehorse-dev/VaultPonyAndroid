@@ -3,8 +3,6 @@
     <string name="common_back">Назад</string>
 
     <string name="settings_title">Настройки</string>
-    <string name="settings_privacy_header">Конфиденциальность</string>
-    <string name="settings_security_header">Безопасность</string>
     <string name="settings_language_header">Язык</string>
 
     <string name="settings_secure_title">Скрывать содержимое экрана</string>
@@ -32,7 +30,7 @@
     <string name="vault_list_remove_message">Сами файлы хранилищ не затрагиваются. Сохранённая для них биометрическая разблокировка тоже удаляется.</string>
     <string name="vault_list_remove">Удалить</string>
 
-    <string name="settings_pony_header">Другие приложения pony</string>
+    <string name="settings_pony_header">Другие приложения Pony</string>
     <string name="pony_pgpony_subtitle">Шифрование OpenPGP</string>
     <string name="pony_passpony_subtitle">Менеджер паролей</string>
     <string name="pony_burnpony_subtitle">Заметки, удаляемые после прочтения</string>
@@ -40,18 +38,22 @@
     <string name="pony_agepony_subtitle">Шифрование age</string>
     <string name="pony_relaypony_subtitle">Зашифрованная передача файлов</string>
     <string name="pony_quorumpony_subtitle">Резервное копирование ключей с разделением секрета</string>
+    <string name="pony_stegpony_subtitle">Стеганография</string>
+    <string name="pony_tappony_subtitle">Вебхуки по NFC-метке</string>
+    <string name="pony_hashpony_subtitle">Хеши и контрольные суммы файлов</string>
 
     <string name="settings_links_header">Ссылки</string>
     <string name="settings_link_website">Веб-сайт</string>
-    <string name="settings_link_pony_family">Семейство pony</string>
+    <string name="settings_link_pony_family">Семейство Pony</string>
     <string name="settings_link_source_app">Исходный код (VaultPonyAndroid)</string>
     <string name="settings_link_source_core">Исходный код (VaultPonyCore)</string>
     <string name="settings_link_contact">Контакт</string>
 
     <string name="settings_version">Версия</string>
-    <string name="settings_family_footer">VaultPony входит в семейство pony инструментов приватности: шифрование, которое можно проверить, а не верить разработчику на слово.</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_about_version">Версия %1$s</string>
+    <string name="settings_family_footer">VaultPony входит в семейство Pony инструментов приватности: шифрование, которое можно проверить, а не верить разработчику на слово.</string>
 
-    <string name="settings_help_header">Помощь</string>
     <string name="settings_replay_onboarding">Показать введение снова</string>
 
     <string name="onboarding_skip">Пропустить</string>

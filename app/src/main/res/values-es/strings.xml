@@ -3,8 +3,6 @@
     <string name="common_back">Atrás</string>
 
     <string name="settings_title">Ajustes</string>
-    <string name="settings_privacy_header">Privacidad</string>
-    <string name="settings_security_header">Seguridad</string>
     <string name="settings_language_header">Idioma</string>
 
     <string name="settings_secure_title">Ocultar el contenido de la pantalla</string>
@@ -32,7 +30,7 @@
     <string name="vault_list_remove_message">Los archivos de las bóvedas no se modifican. También se eliminan los desbloqueos biométricos guardados para ellas.</string>
     <string name="vault_list_remove">Quitar</string>
 
-    <string name="settings_pony_header">Más apps pony</string>
+    <string name="settings_pony_header">Más apps Pony</string>
     <string name="pony_pgpony_subtitle">Cifrado OpenPGP</string>
     <string name="pony_passpony_subtitle">Gestor de contraseñas</string>
     <string name="pony_burnpony_subtitle">Notas que se destruyen tras leerse</string>
@@ -40,18 +38,22 @@
     <string name="pony_agepony_subtitle">Cifrado age</string>
     <string name="pony_relaypony_subtitle">Transferencia de archivos cifrada</string>
     <string name="pony_quorumpony_subtitle">Copia de claves con reparto de secretos</string>
+    <string name="pony_stegpony_subtitle">Esteganografía</string>
+    <string name="pony_tappony_subtitle">Webhooks con etiquetas NFC</string>
+    <string name="pony_hashpony_subtitle">Hashes y sumas de verificación de archivos</string>
 
     <string name="settings_links_header">Enlaces</string>
     <string name="settings_link_website">Sitio web</string>
-    <string name="settings_link_pony_family">La familia pony</string>
+    <string name="settings_link_pony_family">La familia Pony</string>
     <string name="settings_link_source_app">Código fuente (VaultPonyAndroid)</string>
     <string name="settings_link_source_core">Código fuente (VaultPonyCore)</string>
     <string name="settings_link_contact">Contacto</string>
 
     <string name="settings_version">Versión</string>
-    <string name="settings_family_footer">VaultPony forma parte de la familia pony de herramientas de privacidad: cifrado que puedes inspeccionar en lugar de fiarte de la palabra de un desarrollador.</string>
+    <string name="settings_about">Acerca de</string>
+    <string name="settings_about_version">Versión %1$s</string>
+    <string name="settings_family_footer">VaultPony forma parte de la familia Pony de herramientas de privacidad: cifrado que puedes inspeccionar en lugar de fiarte de la palabra de un desarrollador.</string>
 
-    <string name="settings_help_header">Ayuda</string>
     <string name="settings_replay_onboarding">Ver la introducción de nuevo</string>
 
     <string name="onboarding_skip">Omitir</string>

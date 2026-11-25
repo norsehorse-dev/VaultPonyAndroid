@@ -10,8 +10,6 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_privacy_header">Privacy</string>
-    <string name="settings_security_header">Security</string>
     <string name="settings_language_header">Language</string>
 
     <string name="settings_secure_title">Hide screen contents</string>
@@ -44,7 +42,7 @@
     <string name="vault_list_remove">Remove</string>
 
     <!-- More pony apps -->
-    <string name="settings_pony_header">More pony apps</string>
+    <string name="settings_pony_header">More Pony apps</string>
     <string name="pony_pgpony_subtitle">OpenPGP encryption</string>
     <string name="pony_passpony_subtitle">Password manager</string>
     <string name="pony_burnpony_subtitle">Burn-after-reading notes</string>
@@ -52,20 +50,24 @@
     <string name="pony_agepony_subtitle">age encryption</string>
     <string name="pony_relaypony_subtitle">Encrypted file transfer</string>
     <string name="pony_quorumpony_subtitle">Key backup with secret sharing</string>
+    <string name="pony_stegpony_subtitle">Steganography</string>
+    <string name="pony_tappony_subtitle">Webhooks from NFC tags</string>
+    <string name="pony_hashpony_subtitle">File hashes and checksums</string>
 
     <!-- Links -->
     <string name="settings_links_header">Links</string>
     <string name="settings_link_website">Website</string>
-    <string name="settings_link_pony_family">The Pony Family</string>
+    <string name="settings_link_pony_family">The Pony family</string>
     <string name="settings_link_source_app">Source code (VaultPonyAndroid)</string>
     <string name="settings_link_source_core">Source code (VaultPonyCore)</string>
     <string name="settings_link_contact">Contact</string>
 
     <string name="settings_version">Version</string>
-    <string name="settings_family_footer">VaultPony is part of the pony family of privacy tools: encryption you can inspect instead of taking a developer\'s word for it.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_version">Version %1$s</string>
+    <string name="settings_family_footer">VaultPony is part of the Pony family of privacy tools: encryption you can inspect instead of taking a developer\'s word for it.</string>
 
     <!-- Help -->
-    <string name="settings_help_header">Help</string>
     <string name="settings_replay_onboarding">Show the intro again</string>
 
     <!-- Onboarding -->

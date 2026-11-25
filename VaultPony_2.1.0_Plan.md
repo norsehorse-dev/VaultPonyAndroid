@@ -152,3 +152,17 @@ Status:
 ## 3. Encrypt single files with age or PGP from the file browser (idea, not agreed)
 
 A user asked for per-file encryption outside containers. Out of scope as a built-in feature for now. A cheap version to weigh: a "Send to AgePony / PGPony" action in VaultPony's browser that hands the file to the other app. Waiting on the user's reaction before planning anything.
+
+## 4. Settings screen (added 2026-11-24, done and checked on a device the same day)
+
+The old screen was one long page: ten radio buttons (vault list, auto-lock) always open, then languages, seven pony apps and five links, under small uppercase labels.
+
+### Decided 2026-11-24
+
+- A short main page of rows with dividers, each showing its current value: Vault list, Auto-lock, Hide screen contents (the whole row toggles), Language, Show the intro again, About.
+- Vault list, Auto-lock and Language each open their own page, with the explanation text there. The header title and back arrow follow the page, and system back returns to the main page.
+- The pony apps, links, version and family line move to an About page. Rows that leave the app carry an opens-outside icon.
+- The uppercase section label is replaced in Settings only. The other screens keep it until a separate app-wide UI pass.
+- Ships in 2.1.0, before the tag.
+- Strings: `settings_about` and `settings_about_version` added in six languages; the three unused section header keys removed.
+- StegPony, TapPony and HashPony added to the Pony apps list, and "Pony" is capitalized as a name in all six languages.

@@ -3,8 +3,6 @@
     <string name="common_back">Retour</string>
 
     <string name="settings_title">Paramètres</string>
-    <string name="settings_privacy_header">Confidentialité</string>
-    <string name="settings_security_header">Sécurité</string>
     <string name="settings_language_header">Langue</string>
 
     <string name="settings_secure_title">Masquer le contenu de l\'écran</string>
@@ -32,7 +30,7 @@
     <string name="vault_list_remove_message">Les fichiers des coffres eux-mêmes ne sont pas modifiés. Les déverrouillages biométriques enregistrés pour ces coffres sont également supprimés.</string>
     <string name="vault_list_remove">Retirer</string>
 
-    <string name="settings_pony_header">Autres applications pony</string>
+    <string name="settings_pony_header">Autres applications Pony</string>
     <string name="pony_pgpony_subtitle">Chiffrement OpenPGP</string>
     <string name="pony_passpony_subtitle">Gestionnaire de mots de passe</string>
     <string name="pony_burnpony_subtitle">Notes qui s\'effacent après lecture</string>
@@ -40,18 +38,22 @@
     <string name="pony_agepony_subtitle">Chiffrement age</string>
     <string name="pony_relaypony_subtitle">Transfert de fichiers chiffré</string>
     <string name="pony_quorumpony_subtitle">Sauvegarde de clés par partage de secret</string>
+    <string name="pony_stegpony_subtitle">Stéganographie</string>
+    <string name="pony_tappony_subtitle">Webhooks par tag NFC</string>
+    <string name="pony_hashpony_subtitle">Empreintes et sommes de contrôle de fichiers</string>
 
     <string name="settings_links_header">Liens</string>
     <string name="settings_link_website">Site web</string>
-    <string name="settings_link_pony_family">La famille pony</string>
+    <string name="settings_link_pony_family">La famille Pony</string>
     <string name="settings_link_source_app">Code source (VaultPonyAndroid)</string>
     <string name="settings_link_source_core">Code source (VaultPonyCore)</string>
     <string name="settings_link_contact">Contact</string>
 
     <string name="settings_version">Version</string>
-    <string name="settings_family_footer">VaultPony fait partie de la famille pony d\'outils de confidentialité : un chiffrement que vous pouvez inspecter au lieu de croire un développeur sur parole.</string>
+    <string name="settings_about">À propos</string>
+    <string name="settings_about_version">Version %1$s</string>
+    <string name="settings_family_footer">VaultPony fait partie de la famille Pony d\'outils de confidentialité : un chiffrement que vous pouvez inspecter au lieu de croire un développeur sur parole.</string>
 
-    <string name="settings_help_header">Aide</string>
     <string name="settings_replay_onboarding">Revoir l\'introduction</string>
 
     <string name="onboarding_skip">Passer</string>

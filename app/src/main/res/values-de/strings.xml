@@ -3,8 +3,6 @@
     <string name="common_back">Zurück</string>
 
     <string name="settings_title">Einstellungen</string>
-    <string name="settings_privacy_header">Privatsphäre</string>
-    <string name="settings_security_header">Sicherheit</string>
     <string name="settings_language_header">Sprache</string>
 
     <string name="settings_secure_title">Bildschirminhalt verbergen</string>
@@ -40,6 +38,9 @@
     <string name="pony_agepony_subtitle">age-Verschlüsselung</string>
     <string name="pony_relaypony_subtitle">Verschlüsselte Dateiübertragung</string>
     <string name="pony_quorumpony_subtitle">Schlüssel-Backup mit Secret Sharing</string>
+    <string name="pony_stegpony_subtitle">Steganografie</string>
+    <string name="pony_tappony_subtitle">Webhooks per NFC-Tag</string>
+    <string name="pony_hashpony_subtitle">Datei-Hashes und Prüfsummen</string>
 
     <string name="settings_links_header">Links</string>
     <string name="settings_link_website">Website</string>
@@ -49,9 +50,10 @@
     <string name="settings_link_contact">Kontakt</string>
 
     <string name="settings_version">Version</string>
+    <string name="settings_about">Über die App</string>
+    <string name="settings_about_version">Version %1$s</string>
     <string name="settings_family_footer">VaultPony gehört zur Pony-Familie von Datenschutz-Werkzeugen: Verschlüsselung, die man überprüfen kann, statt dem Wort eines Entwicklers zu vertrauen.</string>
 
-    <string name="settings_help_header">Hilfe</string>
     <string name="settings_replay_onboarding">Einführung erneut anzeigen</string>
 
     <string name="onboarding_skip">Überspringen</string>
