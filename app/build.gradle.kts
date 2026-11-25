@@ -142,9 +142,16 @@ val cargoBuild by tasks.registering(Exec::class) {
     // a developer's home directory produce different embedded strings.
     val cargoHome = System.getenv("CARGO_HOME")
         ?: "${System.getProperty("user.home")}/.cargo"
+    // --cfg aes_armv8: the aes crate (0.8) only uses the ARMv8 AES
+    // instructions on arm64 when this is set; without it AES runs in
+    // software there. It checks the CPU at run time and falls back to
+    // software, and it changes nothing on x86_64 or 32-bit ARM. RUSTFLAGS
+    // from the environment replaces the core's .cargo/config.toml, which
+    // sets the same flag, so it is repeated here.
     environment(
         "RUSTFLAGS",
         "-C link-arg=-Wl,-z,max-page-size=16384 " +
+            "--cfg aes_armv8 " +
             "--remap-path-prefix=${vaultPonyCore.absolutePath}=/build/core " +
             "--remap-path-prefix=$cargoHome=/build/cargo",
     )

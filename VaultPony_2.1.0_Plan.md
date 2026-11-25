@@ -90,8 +90,8 @@ Phone: moto g play (2026), Android 16, debug build, AES vaults.
 
 1. Core: clear new FAT32 root directory clusters (`third_party/fatfs/src/file.rs`), regression test `core/vc-fs/tests/fat_root_growth.rs`, note 6 in `VAULTPONY.md`. Done 2026-11-23, committed in the core. On the phone: 322 photos (1.0 GB) into the top folder of a 3 GB FAT vault in 334 s, a clean listing, 10.2 million reads (cipher 281 s, syncs 11 s). The Android repo's submodule pin moves to the new core commit at release.
 2. Repair for affected vaults: 2a core repair, then 2b the damage notice. See the repair design below.
-3. Read buffer under the FAT layer, measured on the phone with the same 500 photos.
-4. ARMv8 AES build flag, measured the same way.
+3. Read buffer under the FAT layer: a block cache in `vc-fs/src/io.rs` (16 KiB blocks, at most 1 MiB, zeroed when dropped). Small reads are served from it, writes go to the device first and then patch it, reads of a block or more bypass it. On a desktop build with a real container, the reads to import a 3 MB file into a folder of 500 went from 79,601 to 1,536 and no longer grow with the folder. On the phone, 2026-11-24: the same 322 photos into a new 3 GB FAT vault took 122 s, down from 334 s. Reads fell from 10.2 million to 984,000 and cipher time from 281 s to 80 s. Syncs are unchanged at 10 s. Photos open from the new vault and from the repaired one. Done, committed in the core.
+4. ARMv8 AES build flag: `--cfg aes_armv8` in the Android build's RUSTFLAGS and, for every other arm64 build of the core (the Mac's own `cargo test`, desktop, iOS), in `VaultPonyCore/.cargo/config.toml`. The `aes` crate 0.8 runs AES in software on arm64 without it. Done 2026-11-24, committed in both repos. On the phone the same 322 photos took 45 s, down from 122 s, with cipher time down from 80 s to 2.7 s. The cipher tests pass on the Mac through the hardware path, and vaults written by the old build still open.
 5. Take the measurement code out, or keep the core counters behind a debug-only call. To decide.
 
 ### Repair design (step 2), agreed 2026-11-24
