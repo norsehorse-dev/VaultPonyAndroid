@@ -92,7 +92,8 @@ Phone: moto g play (2026), Android 16, debug build, AES vaults.
 2. Repair for affected vaults: 2a core repair, then 2b the damage notice. See the repair design below.
 3. Read buffer under the FAT layer: a block cache in `vc-fs/src/io.rs` (16 KiB blocks, at most 1 MiB, zeroed when dropped). Small reads are served from it, writes go to the device first and then patch it, reads of a block or more bypass it. On a desktop build with a real container, the reads to import a 3 MB file into a folder of 500 went from 79,601 to 1,536 and no longer grow with the folder. On the phone, 2026-11-24: the same 322 photos into a new 3 GB FAT vault took 122 s, down from 334 s. Reads fell from 10.2 million to 984,000 and cipher time from 281 s to 80 s. Syncs are unchanged at 10 s. Photos open from the new vault and from the repaired one. Done, committed in the core.
 4. ARMv8 AES build flag: `--cfg aes_armv8` in the Android build's RUSTFLAGS and, for every other arm64 build of the core (the Mac's own `cargo test`, desktop, iOS), in `VaultPonyCore/.cargo/config.toml`. The `aes` crate 0.8 runs AES in software on arm64 without it. Done 2026-11-24, committed in both repos. On the phone the same 322 photos took 45 s, down from 122 s, with cipher time down from 80 s to 2.7 s. The cipher tests pass on the Mac through the hardware path, and vaults written by the old build still open.
-5. Take the measurement code out, or keep the core counters behind a debug-only call. To decide.
+5. Measurement code, decided 2026-11-24: keep the core counters (`vc_io::stats`, `io_stats()`), committed in the core, and the timing summary that debug builds log after an import. The per-step trace lines and the debug trigger for the damage notice are removed. Done 2026-11-24.
+6. Release prep, Android: version 2.1.0 (versionCode 13), `fastlane/metadata/android/en-US/changelogs/13.txt`, core version 2.1.0. Done 2026-11-24, committed. The submodule pin to the core's v2.1.0 tag comes after the core is signed, tagged and pushed.
 
 ### Repair design (step 2), agreed 2026-11-24
 
@@ -127,8 +128,8 @@ Status:
 
 - 2a, core: `vc_fs::fat_repair`, run from `open_volume` before the FAT mount. Report through `Vfs::take_repair_report()`. Tests in `core/vc-fs/tests/fat_root_repair.rs` build volumes the old way with `FsOptions::legacy_unzeroed_root`. Done 2026-11-24, committed in the core; unit tests and the device check on the damaged 16 GiB vault passed. Also checked against a real container: a 3 GB FAT vault with 200 files and 2,947 junk entries in its top folder lists exactly the 200 files after one unlock.
 - 2b, the notice: `Session::take_repair_report()` and FFI `takeRepairReport()` in the core; on Android `ui/RepairNotice.kt`, a one-time dialog listing the damaged files, shown from the browser and never over an import or export dialog; three strings in six languages. Done 2026-11-24 on Android, committed in both repos. iOS and desktop later.
-- Open on the notice: it lives in memory only, so it is gone if the vault locks before OK is tapped, and the next unlock has nothing to report. The names can be selected and copied from the dialog. Whether to keep the list somewhere longer is undecided. The core names at most 50 files.
-- Debug builds only: a top folder holding a folder named `debug-repair-notice` gets a sample notice, to see the dialog without a damaged vault. To remove before release with the measurement code.
+- The notice lives in memory only, so it is gone if the vault locks before OK is tapped, and the next unlock has nothing to report. Decided 2026-11-24 to leave it that way: the names can be selected and copied from the dialog, and the app does not write a file the user did not ask for. The core names at most 50 files.
+- The debug-only sample notice used to test the dialog is removed (2026-11-24).
 
 ### Plan as first written
 
